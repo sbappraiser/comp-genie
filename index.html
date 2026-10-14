@@ -61,7 +61,7 @@ table.comps td.r,table.comps td:nth-child(6){white-space:nowrap}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g1-1014-1535';
+const BUILD='g1-1014-1614';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1168,12 +1168,12 @@ function render() {
     <span class="pill ${ARCH.loaded ? 'ok' : 'warn'}">${ARCH.loaded ? `Archive: ${ARCH.rows.length.toLocaleString()} records` : 'Archive not loaded'}</span>
     <span class="pill">${app.cort.length ? `CORT: ${app.cort.length} sales` : 'No CORT table'}</span>
     <span class="grow"></span>
-    <label class="jobsel">Assignment <select data-act="pickjob">${app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('')}</select></label>
+    <label class="jobsel">Assignment <select data-act="pickjob" id="jobpick">${app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('')}</select></label>
     <button class="btn" data-act="newjob">New assignment</button>
     <button class="btn" data-act="backup" title="Save this assignment to a file">Back up</button>
     ${app.confirm === 'deljob' ? `<span class="confirm">Delete “${esc(J.name)}”? <button class="btn danger solid" data-act="deljob-yes">Delete</button><button class="btn" data-act="cancel">Keep</button></span>` : `<button class="btn danger" data-act="deljob">Delete</button>`}
   </header>
-  ${ARCH.loaded ? '' : `<section class="card notice"><b>Load your comp archive once.</b> Drop <i>Comp Archive.json.gz</i> anywhere on this page (or <label class="link">choose it<input type="file" accept=".gz,.json" data-act="files" hidden></label>). It is saved on this computer only; nothing is uploaded.</section>`}
+  ${ARCH.loaded ? '' : `<section class="card notice"><b>Load your comp archive once.</b> Drop <i>Comp Archive.json.gz</i> anywhere on this page (or <label class="link">choose it<input type="file" multiple data-act="files" hidden></label>). It is saved on this computer only; nothing is uploaded.</section>`}
   <div class="busy" id="busy" ${app.busy ? '' : 'hidden'}>${esc(app.busy)}</div>
   <section class="card"><h2>Subject</h2>${subjectHTML(J)}</section>
   <section class="card"><h2>Add comps</h2>
@@ -1184,17 +1184,43 @@ function render() {
       <b>Drop files here</b> or click to choose: MLS export (.csv) · MLS photos (.zip) · MLS printout (.pdf) · CRS reports (.pdf) · CORT table (.csv) · comp archive (.gz)</label>
     ${(J.files || []).length ? `<p class="help">In this assignment: ${J.files.map(f => `${esc(f.name)} <small>(${esc(f.kind)}${f.n ? ', ' + f.n : ''})</small>`).join(' · ')}</p>` : ''}
   </section>
-  <section class="card"><h2>Comps considered <small>${J.comps.length}</small></h2>${compsTable(J)}</section>
+  <section class="card" id="compsCard">${compsCardHTML(J)}</section>
   <div id="detail">${app.sel ? detailHTML(J.comps.find(c => c.id === app.sel)) : ''}</div>
-  <section class="card"><h2>Export</h2>${exportHTML(J)}</section>
+  <section class="card" id="exportCard"><h2>Export</h2>${exportHTML(J)}</section>
   <footer class="foot">Comp Genie · your data stays on this computer · build ${typeof BUILD !== 'undefined' ? BUILD : ''}</footer>`;
   fillImages();
+}
+/* Redraw after a field changes without losing your place: Tab moves on first, then the page is
+   redrawn and the cursor is put back in the field you tabbed (or clicked) into. */
+const FOCUS_KEYS = ['data-subj', 'data-edit', 'data-jobname', 'data-notes', 'id'];
+function renderKeepFocus() {
+  setTimeout(() => {
+    const a = document.activeElement; let key = null;
+    if (a && a !== document.body) for (const k of FOCUS_KEYS) { const v = a.getAttribute(k); if (v) { key = [k, v]; break; } }
+    const pos = a && typeof a.selectionStart === 'number' ? [a.selectionStart, a.selectionEnd] : null;
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+    if (key) { const el = document.querySelector(`[${key[0]}="${CSS.escape(key[1])}"]`); if (el) { el.focus({ preventScroll: true }); try { if (pos) el.setSelectionRange(pos[0], pos[1]); } catch (e) {} } }
+  }, 0);
+}
+const compsCardHTML = J => `<h2>Comps considered <small>${J.comps.length}</small></h2>${compsTable(J)}`;
+/* Redraw only what depends on a typed value, so the field you are in (and the next one you Tab to) is never replaced. */
+function renderParts(opts = {}) {
+  const J = app.job;
+  const jp = $('#jobpick'); if (jp) jp.innerHTML = app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('');
+  const cc = $('#compsCard'); if (cc) { cc.innerHTML = compsCardHTML(J); fillImages(cc); }
+  const ex = $('#exportCard'); if (ex) ex.innerHTML = '<h2>Export</h2>' + exportHTML(J);
+  if (opts.field && app.sel) { // one row of the field-by-field table
+    const c = J.comps.find(x => x.id === app.sel); const f = FIELD[opts.field]; const u = val(c, f.k);
+    const inp = document.querySelector(`[data-edit="${f.k}"]`); const row = inp && inp.closest('tr');
+    if (row) { row.querySelector('td.using').innerHTML = `${esc(fmt(f, u.v))}${u.src ? ` <span class="tag ${u.src}">${esc(SRC[u.src].short)}</span>` : ''}${(c.pick[f.k] || !blank(c.edit[f.k])) ? ` <button class="lnk" data-reset="${f.k}" title="Back to the automatic choice">↺</button>` : ''}`;
+      row.querySelectorAll('td.srccell').forEach(td => td.classList.toggle('on', td.dataset.pick === u.src)); }
+  }
 }
 function renderBusy() { const b = $('#busy'); if (b) { b.hidden = !app.busy; b.textContent = app.busy; } }
 function subjectHTML(J) {
   const s = J.subject; const inA = s.addr && ARCH.loaded ? ARCH.byAddr.get(addrKey(s.addr)) : null;
   const f = (k, l, w = '') => `<label class="fld ${w}"><span>${l}</span><input class="txt" data-subj="${k}" value="${esc(s[k] ?? '')}"></label>`;
-  return `<div class="grid6">${f('addr', 'Address', 'w2')}${f('city', 'City')}${f('zip', 'ZIP')}${f('apn', 'APN')}<label class="fld"><span>Effective date</span><input class="txt" type="date" data-subj="eff" value="${esc(s.eff || '')}"></label>
+  return `<div class="grid6">${f('addr', 'Address', 'w2')}${f('city', 'City')}${f('zip', 'ZIP')}${f('apn', 'APN')}<label class="fld"><span>Effective date</span><input class="txt" data-subj="eff" placeholder="mm/dd/yyyy" value="${esc(showDate(s.eff) || s.eff || '')}"></label>
     ${f('lat', 'Latitude')}${f('lon', 'Longitude')}<label class="fld"><span>Assignment name</span><input class="txt" data-jobname="1" value="${esc(J.name)}"></label></div>
     <p class="help">Latitude and longitude give each comp its distance and direction. Drop the subject's CRS report here to fill them: <label class="link">choose the subject's CRS PDF<input type="file" accept=".pdf" data-act="subjcrs" hidden></label>${inA ? ` · Your archive has ${inA.length} record${inA.length > 1 ? 's' : ''} for this address.` : ''}</p>`;
 }
@@ -1335,9 +1361,9 @@ document.addEventListener('change', async e => {
   if (t.dataset.use) { const c = app.job.comps.find(x => x.id === t.dataset.use); const n = t.value ? +t.value : null; if (n) app.job.comps.forEach(x => { if (x !== c && x.use === n) x.use = null; }); c.use = n; save(); render(); return; }
   if (t.dataset.archpick) { const c = app.job.comps.find(x => x.id === t.dataset.archpick); c.archPick = +t.value; save(); render(); return; }
   if (t.dataset.cortpick) { const c = app.job.comps.find(x => x.id === t.dataset.cortpick); c.cortPick = +t.value; save(); render(); return; }
-  if (t.dataset.edit) { const c = app.job.comps.find(x => x.id === app.sel); const f = FIELD[t.dataset.edit]; const v = parseInput(f, t.value); if (blank(v)) delete c.edit[f.k]; else c.edit[f.k] = v; save(); render(); return; }
-  if (t.dataset.subj) { app.job.subject[t.dataset.subj] = t.value.trim(); if (t.dataset.subj === 'addr' && (!app.job.name.trim() || app.job.name === 'New assignment')) app.job.name = t.value.trim() || app.job.name; save(); render(); return; }
-  if (t.dataset.jobname) { app.job.name = t.value.trim() || 'Assignment'; save(); render(); return; }
+  if (t.dataset.edit) { const c = app.job.comps.find(x => x.id === app.sel); const f = FIELD[t.dataset.edit]; const v = parseInput(f, t.value); if (blank(v)) delete c.edit[f.k]; else c.edit[f.k] = v; save(); renderParts({ field: f.k }); return; }
+  if (t.dataset.subj) { app.job.subject[t.dataset.subj] = t.dataset.subj === 'eff' ? (isoDate(t.value) || t.value.trim()) : t.value.trim(); if (t.dataset.subj === 'addr' && (!app.job.name.trim() || app.job.name === 'New assignment')) app.job.name = t.value.trim() || app.job.name; const jn = $('[data-jobname]'); if (jn && document.activeElement !== jn) jn.value = app.job.name; save(); renderParts(); return; }
+  if (t.dataset.jobname) { app.job.name = t.value.trim() || 'Assignment'; save(); renderParts(); return; }
   if (t.dataset.notes) { const c = app.job.comps.find(x => x.id === t.dataset.notes); c.notes = t.value; save(); return; }
 });
 document.addEventListener('input', e => {
