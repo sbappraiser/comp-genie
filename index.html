@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comp Genie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{--ink:#12302f;--muted:#4b6766;--line:#d5e6e7;--bg:#f4f8f8;--card:#fff;--teal:#0b8f96;--teal-d:#066a70;--teal-l:#e3f3f4;--warn:#b35400;--warn-l:#fff2e5;--bad:#b3261e;--ok:#1e7a3c;--ok-l:#e6f4ea;--sel:#fff8d6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Atkinson Hyperlegible",-apple-system,"Segoe UI",Arial,sans-serif}
+#app{max-width:1500px;margin:0 auto;padding:0 16px 40px}
+h1{margin:0;font-size:24px;color:var(--teal-d)}h2{margin:0 0 10px;font-size:19px;color:var(--teal-d)}h2 small,h3 small{color:var(--muted);font-weight:400;font-size:14px}h3{margin:18px 0 6px;font-size:16px;color:var(--teal-d)}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 0;position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line);margin-bottom:12px}
+.grow{flex:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:0 0 14px}
+.notice{border-color:#f0c48a;background:var(--warn-l)}
+.pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;background:#fff}.pill.ok{background:var(--ok-l);border-color:#b8dfc4}.pill.warn{background:var(--warn-l);border-color:#f0c48a}
+.btn{font:inherit;font-size:14px;border:1px solid #9fc9cb;background:#fff;color:var(--teal-d);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--teal-l)}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.primary:hover{background:var(--teal-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}.btn.sm{padding:3px 8px;font-size:13px}.btn.danger{color:var(--bad);border-color:#e3b2ae}.btn.danger.solid{background:var(--bad);color:#fff}
+.lnk{border:0;background:none;color:var(--teal-d);cursor:pointer;font-size:15px;padding:0 2px}
+.link{color:var(--teal-d);text-decoration:underline;cursor:pointer}
+.txt{font:inherit;border:1px solid #b9d3d4;border-radius:7px;padding:7px 9px;width:100%;background:#fff;color:var(--ink)}.txt.big{font-size:17px;padding:10px 12px}.txt.sm{padding:3px 6px;font-size:13px;min-width:90px}
+select{font:inherit;font-size:14px;border:1px solid #b9d3d4;border-radius:6px;padding:4px 6px;background:#fff;max-width:100%}
+.fld{display:flex;flex-direction:column;gap:3px}.fld span{font-size:13px;color:var(--muted)}
+.grid6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.w2{grid-column:span 2}
+@media (max-width:900px){.grid6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.help{color:var(--muted);font-size:13.5px;margin:8px 0 0}
+.addrow{display:flex;gap:10px;align-items:flex-start}.sugwrap{position:relative;flex:1}
+.sugg{position:absolute;left:0;right:0;top:100%;z-index:4;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.08);max-height:320px;overflow:auto}.sugg:empty{display:none}
+.sug{display:block;width:100%;text-align:left;border:0;background:#fff;padding:8px 12px;font:inherit;cursor:pointer;border-bottom:1px solid #eef5f5}.sug:hover{background:var(--teal-l)}.sug small{color:var(--muted)}
+.drop{display:block;margin-top:12px;border:2px dashed #9fc9cb;border-radius:10px;padding:18px;text-align:center;color:var(--muted);cursor:pointer;background:#fafdfd}.drop b{color:var(--teal-d)}.drop.over{background:var(--teal-l);border-color:var(--teal)}
+.busy{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;z-index:20}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line)}th{font-size:13px;color:var(--muted);font-weight:700}.r{text-align:right}
+table.comps tbody tr{cursor:pointer}table.comps tbody tr:hover{background:#f7fbfb}table.comps tr.sel{background:var(--sel)}table.comps tr.used td:first-child{border-left:4px solid var(--teal)}
+.thumb{width:72px;height:48px;object-fit:cover;border-radius:4px;display:block}.nothumb{display:block;width:72px;height:48px;border-radius:4px;background:#eef5f5}
+.src{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin:1px 0;background:#f7fbfb;white-space:nowrap}
+.badge{display:inline-block;min-width:22px;text-align:center;border-radius:999px;background:var(--teal-l);color:var(--teal-d);font-size:12px;font-weight:700;padding:1px 6px}.badge.warn{background:var(--warn-l);color:var(--warn)}
+.confirm{display:inline-flex;gap:6px;align-items:center}
+.detail{border:2px solid var(--teal)}
+.dhead{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:16px}.dhead:has(> div:first-child:empty){grid-template-columns:1fr}
+.hero{width:100%;border-radius:8px;display:block}.big{font-size:17px;margin:4px 0 8px}
+.flags{margin:6px 0;padding-left:18px}.flags li{margin:3px 0}.flags li.warn{color:var(--warn);font-weight:700}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:8px 0}.ph{border:2px solid transparent;padding:0;border-radius:6px;background:none;cursor:pointer;flex:0 0 auto}.ph img{width:110px;height:74px;object-fit:cover;border-radius:4px;display:block}.ph.on{border-color:var(--teal)}
+table.cmp th:first-child{width:210px}table.cmp td.using{font-weight:700;min-width:150px}
+table.cmp tr.grp th{background:var(--teal-l);color:var(--teal-d);font-size:14px}
+.srccell{cursor:pointer;color:#33504f;font-size:14px;max-width:260px}.srccell:hover{background:var(--teal-l)}.srccell.on{background:var(--ok-l);color:var(--ink);font-weight:700}.srccell.empty{cursor:default}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;background:#eef5f5;color:var(--muted);vertical-align:1px}.tag.edit{background:var(--sel);color:#7a5a00}.tag.arch{background:var(--ok-l);color:var(--ok)}
+.diff{color:var(--warn);font-weight:700}
+table.mini{width:auto;min-width:50%}table.mini tr.hot td{background:var(--sel)}
+details{margin:12px 0}summary{cursor:pointer;color:var(--teal-d);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,30,30,.35);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}.sheet{background:#fff;border-radius:12px;padding:20px;max-width:720px;width:100%;max-height:85vh;overflow:auto}.sheet li{margin:6px 0}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;z-index:40;max-width:420px}
+.foot{color:var(--muted);font-size:12.5px;text-align:center;padding:12px}
+.jobsel{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted)}.jobsel select{max-width:260px}
+table.cmp{table-layout:fixed;min-width:900px}table.cmp th select{width:100%;font-size:12.5px}table.cmp td,table.cmp th{overflow-wrap:anywhere}
+table.comps td.r,table.comps td:nth-child(6){white-space:nowrap}
+
+</style></head><body>
+<div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
+<script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
+<script>
+const BUILD='g1-1014-1535';
+/* ---------------- small helpers ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const todayISO = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const blank = v => v === undefined || v === null || v === '' || (typeof v === 'number' && isNaN(v)) || (Array.isArray(v) && !v.length);
+const num = v => { if (blank(v)) return null; const n = Number(String(v).replace(/[$,\s]/g, '')); return isNaN(n) ? null : n; };
+const money = v => blank(v) ? '' : '$' + Math.round(+v).toLocaleString();
+const int = v => blank(v) ? '' : Math.round(+v).toLocaleString();
+const titleCase = s => String(s || '').toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase()).replace(/\b(Ii|Iii|Iv)\b/g, m => m.toUpperCase());
+function toast(msg, ms = 2800) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); setTimeout(() => t.remove(), ms);
+}
+
+/* ---------------- dates: everything is kept as YYYY-MM-DD ---------------- */
+function isoDate(v) {
+  if (blank(v)) return '';
+  const s = String(v).trim(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))) { let y = +m[3]; if (y < 100) y += y > 50 ? 1900 : 2000; return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; }
+  if ((m = s.match(/^(\d{4})-(\d{1,2})$/))) return `${m[1]}-${m[2].padStart(2, '0')}`; // month only (archive)
+  return '';
+}
+const showDate = v => { const d = isoDate(v); if (!d) return ''; const [y, m, dd] = d.split('-'); return dd ? `${m}/${dd}/${y}` : `${m}/${y}`; };
+const monthsBetween = (a, b) => { const A = new Date(isoDate(a).length === 7 ? a + '-15' : a), B = new Date(isoDate(b).length === 7 ? b + '-15' : b); return (B - A) / (30.44 * 864e5); };
+
+/* ---------------- addresses ----------------
+   One key per property that survives the ways the sources write an address:
+   "1848 E Valley Rd" (archive), "1848 Valley" (MLS export), "1848 E VALLEY RD" (CORT / CRS).
+   Key = street number + the street name without direction and suffix (+ unit). */
+const DIRS = new Set(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw', 'north', 'south', 'east', 'west']);
+const SUFFIX = new Set(['rd', 'road', 'dr', 'drive', 'ln', 'lane', 'st', 'street', 'ave', 'avenue', 'av', 'way', 'wy', 'ct', 'court', 'pl', 'place', 'cir', 'circle', 'blvd', 'boulevard', 'ter', 'terrace', 'trl', 'trail', 'pkwy', 'parkway', 'hwy', 'highway', 'loop']);
+function splitAddr(s) {
+  s = String(s || '').replace(/,.*$/, '').trim();
+  let unit = ''; const um = s.match(/\s+(?:#|unit|apt|ste|suite|spc|space)\s*([\w-]+)\s*$/i); if (um) { unit = um[1]; s = s.slice(0, um.index); }
+  const m = s.match(/^(\d+[A-Za-z]?(?:-\d+)?)\s+(.*)$/); if (!m) return { no: '', street: s, unit };
+  return { no: m[1], street: m[2].trim(), unit };
+}
+function addrKey(no, street, unit) {
+  if (street === undefined) { const p = splitAddr(no); no = p.no; street = p.street; unit = p.unit; }
+  const w = String(street || '').toLowerCase().replace(/[.'’]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
+  while (w.length > 1 && DIRS.has(w[0])) w.shift();
+  while (w.length > 1 && (SUFFIX.has(w[w.length - 1]) || DIRS.has(w[w.length - 1]))) w.pop();
+  const base = String(no || '').toLowerCase().replace(/-.*$/, '') + '|' + w.join(' ');
+  return unit ? base + '#' + String(unit).toLowerCase() : base;
+}
+const apnKey = s => { const d = String(s || '').replace(/\D/g, ''); return d.length >= 8 ? d.slice(0, 9) : ''; };
+const fmtApn = s => { const d = String(s || '').replace(/\D/g, ''); return d.length >= 8 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 9)}` : String(s || ''); };
+
+/* ---------------- distance and direction from the subject ---------------- */
+function milesBetween(a, b) {
+  if (!a || !b || blank(a.lat) || blank(b.lat) || blank(a.lon) || blank(b.lon)) return null;
+  const R = 3958.8, r = x => x * Math.PI / 180;
+  const dLat = r(b.lat - a.lat), dLon = r(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function directionOf(a, b) { // direction of the comparable (b) from the subject (a), UAD enumeration
+  if (!a || !b || blank(a.lat) || blank(b.lat)) return '';
+  const r = x => x * Math.PI / 180;
+  const y = Math.sin(r(b.lon - a.lon)) * Math.cos(r(b.lat)), x = Math.cos(r(a.lat)) * Math.sin(r(b.lat)) - Math.sin(r(a.lat)) * Math.cos(r(b.lat)) * Math.cos(r(b.lon - a.lon));
+  const deg = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  return ['North', 'NorthEast', 'East', 'SouthEast', 'South', 'SouthWest', 'West', 'NorthWest'][Math.round(deg / 45) % 8];
+}
+
+/* ---------------- CSV (MLS exports are Windows-1252) ---------------- */
+async function readText(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf).replace(/^﻿/, ''); }
+  catch (e) { return new TextDecoder('windows-1252').decode(buf); }
+}
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+const csvCell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+
+/* ---------------- zip (store only for writing; reads stored or deflated) ---------------- */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function makeZip(entries) {
+  const enc = new TextEncoder(); const parts = []; const central = []; let offset = 0;
+  const d = new Date(); const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1); const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const e of entries) {
+    let data = e.data;
+    if (typeof data === 'string') data = enc.encode(data);
+    else if (data instanceof Blob) data = new Uint8Array(await data.arrayBuffer());
+    const name = enc.encode(e.name); const crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, dosTime, true); h.setUint16(12, dosDate, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, dosTime, true); c.setUint16(14, dosDate, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const cSize = central.reduce((s, p) => s + p.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true); end.setUint32(12, cSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+async function readZip(blob) { // Map name -> Uint8Array
+  const buf = new Uint8Array(await blob.arrayBuffer()); const dv = new DataView(buf.buffer); const out = new Map();
+  let e = buf.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('Not a zip file');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const dec = new TextDecoder();
+  for (let i = 0; i < n; i++) {
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    const name = dec.decode(buf.subarray(p + 46, p + 46 + nlen));
+    const lstart = loff + 30 + dv.getUint16(loff + 26, true) + dv.getUint16(loff + 28, true);
+    let data = buf.subarray(lstart, lstart + csize);
+    if (method === 8) data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    if (!name.endsWith('/')) out.set(name, data);
+    p += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+async function gunzipJSON(file) {
+  const head = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+  const stream = head[0] === 0x1f && head[1] === 0x8b ? file.stream().pipeThrough(new DecompressionStream('gzip')) : file.stream();
+  return JSON.parse(await new Response(stream).text());
+}
+async function gzipBlob(text) { return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); }
+
+/* ---------------- save a file (desktop Chrome: straight download) ---------------- */
+const safeName = s => String(s || '').replace(/[\\/:*?"<>|#%]+/g, '-').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90) || 'Comps';
+function download(blob, name) {
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/* ---------------- storage (IndexedDB) ---------------- */
+const DB = (() => {
+  let db = null;
+  const open = () => new Promise((res, rej) => {
+    const r = indexedDB.open('appraisal-assistant', 1);
+    r.onupgradeneeded = () => { const d = r.result;
+      if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('jobs')) d.createObjectStore('jobs', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('photos')) { const p = d.createObjectStore('photos', { keyPath: 'id' }); p.createIndex('job', 'jobId'); } };
+    r.onsuccess = () => { db = r.result; res(db); }; r.onerror = () => rej(r.error);
+  });
+  const tx = (store, mode, fn) => new Promise((res, rej) => {
+    const t = db.transaction(store, mode); const s = t.objectStore(store); let out; const r = fn(s);
+    if (r && 'onsuccess' in r) r.onsuccess = () => { out = r.result; };
+    t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+  return {
+    ready: null,
+    put: (store, obj) => tx(store, 'readwrite', s => s.put(obj)),
+    get: (store, id) => tx(store, 'readonly', s => s.get(id)),
+    del: (store, id) => tx(store, 'readwrite', s => s.delete(id)),
+    all: store => tx(store, 'readonly', s => s.getAll()),
+    byJob: jobId => tx('photos', 'readonly', s => s.index('job').getAll(jobId)),
+    init() { this.ready = open(); return this.ready; },
+  };
+})();
+
+/* ---------------- PDF text, rebuilt into lines ----------------
+   Each line is the text of one printed row; cells more than 8 points apart are joined with " | ". */
+let pdfjsLib = null;
+async function pdfLines(file, onPage) {
+  if (!pdfjsLib) { pdfjsLib = await import('./pdf.min.mjs'); pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs'; }
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  const out = []; out.rows = []; out.pages = doc.numPages; out.pageOf = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const tc = await (await doc.getPage(n)).getTextContent(); const rows = new Map();
+    tc.items.forEach(it => { if (!it.str.trim()) return; const y = Math.round(it.transform[5]); let k = [...rows.keys()].find(r => Math.abs(r - y) <= 2); if (k === undefined) { k = y; rows.set(k, []); } rows.get(k).push({ x: it.transform[4], s: it.str, w: it.width }); });
+    [...rows.entries()].sort((a, b) => b[0] - a[0]).forEach(([, its]) => { its.sort((a, b) => a.x - b.x); let line = '', end = 0; const cells = []; its.forEach(i => { const gap = i.x - end; if (!line || gap > 8) cells.push({ x: i.x, s: i.s }); else cells[cells.length - 1].s += ' ' + i.s; line += (line ? (gap > 8 ? ' | ' : ' ') : '') + i.s; end = i.x + i.w; }); out.push(line.trim()); out.rows.push(cells.map(c => ({ x: c.x, s: c.s.trim() }))); out.pageOf.push(n); });
+    if (onPage) onPage(n, doc.numPages);
+  }
+  return out;
+}
+async function pdfFirstText(file) { // quick look at page 1 to tell what kind of PDF this is
+  if (!pdfjsLib) { pdfjsLib = await import('./pdf.min.mjs'); pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs'; }
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  const tc = await (await doc.getPage(1)).getTextContent(); return { text: tc.items.map(i => i.str).join(' '), pages: doc.numPages };
+}
+
+/* ---------------- CRS Data "Property Report" PDF parser ----------------
+   Input: text lines rebuilt from the PDF, cells separated by " | ".
+   Output: the public-record facts used to pre-fill the inspection. */
+function parseCRS(lines) {
+  const c = {}; const cells = l => l.split(' | ').map(s => s.trim());
+  const after = (label) => { // value in the cell right after an exact label cell
+    for (const l of lines) { const cs = cells(l); const i = cs.findIndex(x => x === label); if (i >= 0 && cs[i + 1] !== undefined) return cs[i + 1]; }
+    return '';
+  };
+  const afterAll = (label) => { for (const l of lines) { const cs = cells(l); const i = cs.findIndex(x => x === label); if (i >= 0) return cs.slice(i + 1); } return []; };
+  // Address: "Property Address | 5464 Berkeley Rd | ..." then next line "Santa Barbara, CA 93111-1614"
+  const ai = lines.findIndex(l => l.startsWith('Property Address'));
+  if (ai >= 0) {
+    c.addr = cells(lines[ai])[1] || '';
+    for (let j = ai + 1; j < ai + 4 && j < lines.length; j++) {
+      const m = lines[j].match(/^([A-Za-z .'-]+),\s*([A-Z]{2})\s+(\d{5})(?:-(\d{4}))?/);
+      if (m) { c.city = m[1].trim(); c.state = m[2]; c.zip = m[3]; c.zip4 = m[4] || ''; c.cityLine = lines[j].split(' | ')[0]; break; }
+    }
+  }
+  c.county = after('County');
+  c.apn = after('APN/Tax ID');
+  c.owner = after('Name');
+  c.landUse = after('Land Use');
+  c.sqft = after('Square Feet').replace(/[^\d]/g, '');
+  c.taxArea = after('Tax Area');
+  c.census = after('2020 Census Trct/Blk');
+  const yb = afterAll('Year Built'); c.yearBuilt = (yb[0] || '').replace(/[^\d]/g, ''); c.yearBuiltMls = (yb[1] || '').replace(/[^\d]/g, '');
+  const bd = afterAll('Bedrooms'); c.beds = bd[0] || ''; c.bedsMls = bd[1] || '';
+  const ba = afterAll('Total Bathrooms'); c.baths = ba[0] || ''; c.bathsMls = ba[1] || '';
+  const isq = afterAll('Improvement Sq. Ft'); c.sqftAssessor = (isq[0] || '').replace(/[^\d]/g, ''); c.sqftMls = (isq[1] || '').replace(/[^\d]/g, '');
+  if (!c.sqftAssessor && c.sqft) c.sqftAssessor = c.sqft;
+  const tr = afterAll('Total Rooms'); c.rooms = (tr[0] || '').replace(/[^\d]/g, ''); c.roomsMls = (tr[1] || '').replace(/[^\d]/g, '');
+  c.lotSf = after('Lot Square Feet').replace(/[^\d]/g, '');
+  c.acres = after('Acreage');
+  const ll = after('Latitude/Longitude').replace(/°/g, ''); const llm = ll.match(/(-?\d+\.\d+)\s*\/\s*(-?\d+\.\d+)/); if (llm) { c.lat = llm[1]; c.lng = llm[2]; }
+  const z = after('Zoning Code'); c.zoning = /^(Special|Owner|Road|Topography|District)/.test(z) ? '' : z;
+  // FEMA: first row after the "Zone Code" header
+  const fi = lines.findIndex(l => l.startsWith('Zone Code'));
+  if (fi >= 0) for (let j = fi + 1; j < fi + 4 && j < lines.length; j++) {
+    const cs = cells(lines[j]); if (/^(A|AE|AH|AO|AR|A99|V|VE|X|B|C|D)$/.test(cs[0])) {
+      c.fema = cs[0]; c.femaRisk = cs[1] || '';
+      const panel = lines[j].match(/(\d{6}-[0-9A-Z]{6,})/); if (panel) c.femaPanel = panel[1];
+      const dt = lines[j].match(/(\d{2}\/\d{2}\/\d{4})\s*$/); if (dt) c.femaDate = dt[1];
+      break;
+    }
+  }
+  // Sales history rows start with two dates
+  const si = lines.findIndex(l => l.startsWith('SALES HISTORY')), ti = lines.findIndex(l => l.startsWith('TAX ASSESSMENT'));
+  c.sales = [];
+  if (si >= 0) for (let j = si + 1; j < (ti > si ? ti : lines.length); j++) {
+    const cs = cells(lines[j]); if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cs[0])) continue;
+    const row = { date: cs[0], recorded: /^\d{1,2}\/\d{1,2}\/\d{4}/.test(cs[1] || '') ? cs[1].split(' ')[0] : '' };
+    const amt = lines[j].match(/\$[\d,]+/); if (amt) row.amount = amt[0];
+    // The seller's name can run into the deed type in one cell ("Funk Brian & Estate Of Grant Deed"): split it off.
+    const INST = /(Grant Deed|Trustee'?s Deed|Quit ?claim Deed|Intrafamily Transfer|Interspousal (Transfer|Deed)|Correction Deed|Affidavit Of Death|Executor'?s Deed|Administrator'?s Deed|Gift Deed|Warranty Deed|Foreclosure|Transfer On Death Deed|Deed Of Distribution|Sheriff'?s Deed|Deed)\s*(\d{4}-)?$/i;
+    const instCell = cs.find(x => INST.test(x)); let sellerPart = '';
+    if (instCell) { const m = instCell.match(INST); row.instrument = m[1]; sellerPart = instCell.slice(0, m.index).trim(); }
+    const rest = cs.slice(1).filter(x => x !== instCell && x !== cs[1] && !/^\$[\d,]+$/.test(x) && !/^\d{4}-$/.test(x) && !/^\d{1,2}\/\d{1,2}\/\d{4}/.test(x));
+    row.buyer = rest[0] || ''; row.seller = rest[1] || sellerPart || '';
+    if (!rest.length && sellerPart) row.names = sellerPart; // buyer and seller printed together; kept as one line
+    const docA = lines[j].match(/(\d{4}-)\s*$/); const nxt = lines[j + 1] ? lines[j + 1].match(/(\d{7})\s*$/) : null; if (docA && nxt) row.doc = docA[1] + nxt[1];
+    c.sales.push(row);
+  }
+  // Mortgage history rows: "MM/DD/YYYY | $amount | borrower | lender | doc"
+  const mi = lines.findIndex(l => l.startsWith('MORTGAGE HISTORY')); c.loans = [];
+  if (mi >= 0) for (let j = mi + 1; j < lines.length && !/^FORECLOSURE|^PROPERTY CHARACTERISTICS/.test(lines[j]); j++) {
+    const cs = cells(lines[j]); if (!/^\d{2}\/\d{2}\/\d{4}$/.test(cs[0]) || !/^\$/.test(cs[1] || '')) continue;
+    c.loans.push({ date: cs[0], amount: cs[1], borrower: cs[2] || '', lender: cs[3] || '', doc: cs[4] || '' });
+  }
+  const li = lines.findIndex(l => l.startsWith('LEGAL DESCRIPTION')); c.legal = '';
+  if (li >= 0) for (let j = li + 1; j < li + 6 && j < lines.length; j++) { const cs = cells(lines[j]); if (cs[0] === 'Description' && cs[1] && !/^(FEMA|Zone)/.test(cs[1])) { c.legal = cs[1]; break; } }
+  return c;
+}
+
+/* =====================================================================
+   Sources. Each reader turns one kind of file into "canonical" records:
+   plain objects whose keys are the field keys in FIELDS (model.js).
+   ===================================================================== */
+
+/* ---------------- 1. Your comp archive (converted from ACI) ---------------- */
+const ARCH = { loaded: false, cols: [], rows: [], sales: {}, byAddr: new Map(), byApn: new Map(), streets: [], zipCity: {} };
+function archiveIndex(data) {
+  ARCH.cols = data.cols; ARCH.rows = data.rows; ARCH.sales = data.sales || {}; ARCH.built = data.built; ARCH.loaded = true;
+  ARCH.c = {}; data.cols.forEach((c, i) => { ARCH.c[c] = i; });
+  ARCH.byAddr = new Map(); ARCH.byApn = new Map(); const zc = {}; const seen = new Set(); ARCH.streets = [];
+  data.rows.forEach((r, i) => {
+    const g = k => r[ARCH.c[k]];
+    const k = addrKey(g('street_number'), g('street_name'), g('unit'));
+    if (!ARCH.byAddr.has(k)) ARCH.byAddr.set(k, []); ARCH.byAddr.get(k).push(i);
+    const ak = apnKey(g('apn')); if (ak) { if (!ARCH.byApn.has(ak)) ARCH.byApn.set(ak, []); ARCH.byApn.get(ak).push(i); }
+    const z = g('zip'), city = g('city'); if (z && city) { zc[z] = zc[z] || {}; zc[z][city] = (zc[z][city] || 0) + 1; }
+    const label = [g('street_number'), g('street_name')].filter(Boolean).join(' ') + (g('unit') ? ' #' + g('unit') : '');
+    if (!seen.has(k)) { seen.add(k); ARCH.streets.push({ k, label, low: label.toLowerCase(), city: g('city') || '' }); }
+  });
+  Object.entries(zc).forEach(([z, m]) => { ARCH.zipCity[z] = Object.entries(m).sort((a, b) => b[1] - a[1])[0][0]; });
+}
+const archRow = i => { const r = ARCH.rows[i], o = {}; ARCH.cols.forEach((c, j) => { o[c] = r[j]; }); o._i = i; return o; };
+function archiveFind({ apn, key }) { // row indexes for one property
+  const set = new Set();
+  if (apn && ARCH.byApn.has(apnKey(apn))) ARCH.byApn.get(apnKey(apn)).forEach(i => set.add(i));
+  if (key && ARCH.byAddr.has(key)) ARCH.byAddr.get(key).forEach(i => set.add(i));
+  // an APN match must not drag in a different street address (lot splits share a parcel root)
+  return [...set].map(archRow).sort((a, b) => String(b.entered_date || '').localeCompare(String(a.entered_date || '')));
+}
+function archiveSuggest(q, n = 8) {
+  const s = q.toLowerCase().trim(); if (s.length < 2) return [];
+  const k = addrKey(s);
+  const out = ARCH.streets.filter(x => x.low.startsWith(s) || x.k === k || (k.split('|')[1] && x.k.startsWith(k))).slice(0, n);
+  return out;
+}
+const VIEW_UAD = { Residential: 'Residential', Water: 'Ocean', Mountain: 'Mountain', 'City Skyline': 'Skyline', Woods: 'Woods', 'Golf Course': 'GolfCourse', Canyon: 'Valley', 'City Street': 'CityStreet', Pastoral: 'Pastoral', Park: 'Park', 'Garden Setting': 'Residential', 'Power Lines': 'Other' };
+const LOC_TEXT = { Res: 'Residential', BusyRd: 'Busy road', ShrDrv: 'Shared drive', PvtLn: 'Private lane', WtrFr: 'Waterfront', InterLot: 'Interior lot', PvtRd: 'Private road', FwyNse: 'Freeway noise', Noise: 'Noise', FldZn: 'Flood zone', Rural: 'Rural', Train: 'Train', 'Debris/Fire': 'Debris flow / fire', FlagLot: 'Flag lot', AdjPrk: 'Adjacent park', Gated: 'Gated', Comm: 'Commercial', DrvEsmt: 'Driveway easement', Schl: 'School', FldWy: 'Floodway', Esmt: 'Easement', SecondRow: 'Second row', NrWtr: 'Near water', LotsToAmenity: 'Lots to amenity' };
+function archCanon(a) {
+  const am = String(a.amenities || '').split(';');
+  const acc = (() => { try { return JSON.parse(a.accessory_json || '[]'); } catch (e) { return []; } })();
+  const hasType = re => acc.some(b => re.test(b.type || ''));
+  // listings in your archive (active, pending, expired…) carry the list price, not a sale price
+  const isListing = (a.listing_status && !/closed|sold/i.test(a.listing_status)) || (a.sale_type === 'Listing' && !a.listing_status);
+  const v = {
+    mls: a.mls_no || '', addr: [a.street_number, a.street_name].filter(Boolean).join(' '), unit: a.unit || '', city: a.city || '', zip: a.zip || '', apn: a.apn || '', nbhd: a.neighborhood || '',
+    status: a.listing_status || (isListing ? 'Listing' : a.record_role === 'subject' ? '' : (a.price ? 'Closed' : '')),
+    salePrice: isListing ? null : a.price, listPrice: isListing ? a.price : null, saleDate: isListing ? '' : (a.sale_month || ''), contractDate: a.contract_month || '', dom: a.dom, saleType: a.sale_type || '', financing: a.financing || '', concessions: a.concession_amt,
+    verification: a.verification || '', lprDays: a.lpr_days,
+    siteSf: a.site_sf, usableSf: a.usable_sf, landSplit: a.land_split || '', topo: a.topography || '',
+    locRating: a.location_rating || '', locFactors: String(a.location_factors || '').split(';').filter(Boolean).map(x => LOC_TEXT[x] || x).join('; '),
+    viewRating: a.view_rating || '', viewTypes: String(a.view_types || '').split(';').filter(Boolean).join('; '), viewRange: a.view_panoramic ? 'Panoramic' : a.view_limited ? 'Limited' : '',
+    attach: a.attachment || '', style: a.style || '', stories: a.stories,
+    quality: a.quality ? 'Q' + a.quality + (a.quality_mod || '') : '', condition: a.condition ? 'C' + a.condition + (a.condition_mod || '') : '',
+    yearBuilt: a.year_built_est || (a.actual_age != null && a.entered_date ? +String(a.entered_date).slice(0, 4) - a.actual_age : null), effAge: a.effective_age,
+    rooms: a.rooms, beds: a.beds, full: a.baths_full, half: a.baths_half, gla: a.gla, bsmtSf: a.bsmt_sf, bsmtFin: a.bsmt_fin_sf,
+    garage: a.garage_spaces, garageType: a.garage_type || '', carport: a.carport_spaces, driveway: a.driveway_spaces,
+    heatCool: a.heating_cooling || '', energy: [a.energy_raw, a.solar ? 'Solar' : '', a.battery ? 'Battery' : '', a.generator ? 'Generator' : ''].filter(Boolean).join('; '),
+    adu: a.adu_or_guest ? (hasType(/^(ADU|JADU)$/) ? 'ADU' : 'Guest house') : (a.acc_count != null ? 'None' : ''),
+    guest: hasType(/guest/i) ? 'Yes' : '', barn: hasType(/barn/i) ? 'Yes' : '', stable: hasType(/stable/i) ? 'Yes' : '', horse: a.equestrian || am.includes('equestrian') ? 'Yes' : '',
+    pool: a.pool ? 'Yes' : (a.amenities != null ? 'No' : ''), spa: a.spa ? 'Yes' : '', tennis: a.tennis ? 'Yes' : '', sport: a.sport_court || a.pickleball ? 'Yes' : '',
+    porch: a.porch_patio || '', accessory: a.accessory_raw || '', otherSf: (a.acc_fin_sf || 0) + (a.acc_unfin_sf || 0) || null, remodel: a.fu_raw || '',
+    hoa: a.hoa_month, priorSaleText: a.prior_sale || '',
+  };
+  return v;
+}
+function archLabel(a) {
+  const role = a.record_role === 'subject' ? 'Subject' : a.record_role === 'comparable' ? 'Comp' : (a.record_role || 'Record');
+  const isListing = (a.listing_status && !/closed|sold/i.test(a.listing_status)) || (a.sale_type === 'Listing' && !a.listing_status);
+  const sale = isListing ? `${a.listing_status || 'Listing'} ${money(a.price)} list` : a.price ? `${money(a.price)} ${showDate(a.sale_month)}` : 'no sale';
+  return `${role} · ${sale} · entered ${showDate(a.entered_date)} · ${a.from_report || ''}`;
+}
+
+/* ---------------- 2. MLS export (flexmls CSV) ---------------- */
+const MLS_STATUS = { A: 'Active', P: 'Pending', C: 'Closed', X: 'Expired', W: 'Withdrawn', K: 'Cancelled', U: 'Under Contract', S: 'Closed' };
+const SF_SOURCE = { M: 'Measured', P: 'Public Records', O: 'Other/See Remarks', A: 'Appraisal', B: 'Builder', S: 'Seller' };
+function parseMlsCsv(text) {
+  const rows = parseCSV(text); if (rows.length < 2) return [];
+  const H = rows[0].map(h => h.trim()); const ix = {}; H.forEach((h, i) => { ix[h.toLowerCase()] = i; });
+  if (!('listing number' in ix)) throw new Error('This CSV has no "Listing Number" column. Is it the MLS export?');
+  return rows.slice(1).map(r => {
+    const g = (...names) => { for (const n of names) { const i = ix[n.toLowerCase()]; if (i !== undefined && String(r[i] || '').trim() !== '') return String(r[i]).trim(); } return ''; };
+    const groups = {}; H.forEach((h, i) => { const m = h.match(/^(.+?):\s*(.+)$/); if (m && /^(yes|y|true|1)$/i.test(String(r[i] || '').trim())) (groups[m[1]] = groups[m[1]] || []).push(m[2]); });
+    const raw = {}; H.forEach((h, i) => { if (String(r[i] || '').trim() !== '') raw[h] = String(r[i]).trim(); });
+    return { raw, groups, g };
+  }).map(({ raw, groups, g }) => mlsCanon(raw, groups, g));
+}
+function mlsCanon(raw, G, g) {
+  const has = (grp, re) => (G[grp] || []).some(x => re.test(x));
+  const list = grp => (G[grp] || []).join('; ');
+  const st = g('Status'); const status = MLS_STATUS[st] || st;
+  const garN = Math.max(0, ...(G['Parking/Garage'] || []).map(x => (x.match(/^Gar #(\d+)/) || [])[1] || 0).map(Number), num(g('Parking/Garage: Total # Garage Spaces')) || 0) || null;
+  const cpN = Math.max(0, ...(G['Parking/Garage'] || []).map(x => (x.match(/^Cpt #(\d+)/) || [])[1] || 0).map(Number)) || null;
+  const uncN = Math.max(0, ...(G['Parking/Garage'] || []).map(x => (x.match(/^Unc #(\d+)/) || [])[1] || 0).map(Number)) || null;
+  const garType = has('Parking/Garage', /^Attached$/) ? 'Attached' : has('Parking/Garage', /^Detached$/) ? 'Detached' : '';
+  const acres = num(g('Apx # Acres')), lotSf = num(g('Apx Lot SqFt'));
+  const typ = g('TYP'); const condoDet = has('Condo/CO-OP/PUD', /^Detached$/), condoAtt = has('Condo/CO-OP/PUD', /^Attached$/);
+  const saleTypeTxt = [...(G['Pub Listing Details'] || []), ...(G['Pvt Listing Details'] || [])].filter(x => !/^(None|Standard)$/.test(x));
+  const saleType = saleTypeTxt.some(x => /REO|Bank Owned|Foreclosure/i.test(x)) ? 'REO' : saleTypeTxt.some(x => /Short/i.test(x)) ? 'Short' : saleTypeTxt.some(x => /Probate|Court|Conservator/i.test(x)) ? 'CrtOrd' : saleTypeTxt.some(x => /Estate|Trust/i.test(x)) ? 'Estate' : saleTypeTxt.some(x => /Bankruptcy/i.test(x)) ? 'CrtOrd' : (status === 'Closed' ? 'ArmLth' : '');
+  const aduN = ['ADU #1: Type', 'ADU #2: Attached'].filter(k => raw[k]).length;
+  const views = G['View'] || [];
+  return {
+    _src: 'mls', mls: g('Listing Number'), addr: [g('Street #'), titleCase(g('Street Name'))].filter(Boolean).join(' '), unit: g('Unit/Space #'), zip: g('Postal Code'), apn: g('Parcel Number'),
+    city: g('City') ? titleCase(g('City')) : '',
+    status, listPrice: num(g('Price')), origList: num(g('Original List Price')), listDate: isoDate(g('Begin Date')),
+    contractDate: isoDate(g('Under Contract Date')), saleDate: isoDate(g('Sold Date', 'COE')), salePrice: num(g('Sold Price')),
+    dom: num(g('Days On Market')), cdom: num(g('Cumulative DOM')), financing: g('Financing'), concessions: num(g('Seller Concessions')),
+    saleType, saleTypeNote: saleTypeTxt.join('; '),
+    siteSf: lotSf || (acres ? Math.round(acres * 43560) : null), acres,
+    topo: list('Location/Topo'), viewTypes: views.filter(v => !/^Setting$/.test(v)).join('; ') || (views.includes('Setting') ? 'Setting' : ''),
+    viewRange: views.includes('Panoramic') ? 'Panoramic' : views.includes('Partial/Filtered') ? 'Partial' : '',
+    attach: condoAtt ? 'Attached' : condoDet ? 'Detached' : (/^HE$/i.test(typ) ? 'Detached' : ''), propType: typ,
+    style: list('Style'), stories: has('Construction', /Single Story/) ? 1 : has('Construction', /Two Story/) ? 2 : has('Construction', /Tri/) ? 3 : null,
+    mlsCondition: list('Condition'), yearBuilt: num(g('Year Built')), assessorYB: num(g('Assessor Year Built')),
+    beds: num(g('Total Bedrooms')), full: num(g('Total Full Baths')), half: num(g('Total Half Baths')), bathsTotal: num(g('Total Bathrooms')),
+    gla: num(g('Total SqFt.', 'Total SqFt')), mainSf: num(g('Main House SqFt')), otherSf: num(g('Other Structures SqFt')), assessorSf: num(g('Assessor SqFt')),
+    sfSource: SF_SOURCE[g('Source')] || g('Source'), basement: has('Rooms', /Basement/) ? 'Basement' : (g('Basement') || ''),
+    garage: garN, garageType: garType, carport: cpN, driveway: uncN,
+    heatCool: [list('Heating'), list('Cooling') || 'No cooling listed'].filter(Boolean).join(' / '), heating: list('Heating'), cooling: list('Cooling'),
+    energy: [has('Amenities', /Solar PV/) || (G['Electric'] || []).length ? 'Solar' + ((G['Electric'] || []).length ? ' (' + G['Electric'].join(', ') + ')' : '') : '', has('Amenities', /Battery/) ? 'Battery' : '', has('Amenities', /Generator/) ? 'Generator' : ''].filter(Boolean).join('; '),
+    adu: /^y/i.test(g('ADU')) || has('Other Buildings', /ADU/) ? (aduN > 1 ? '2 ADUs' : 'ADU') : 'None',
+    aduNote: ['ADU #1: Type', 'ADU #1: Beds', 'ADU #1: Baths', 'ADU #1: Attached', 'ADU #1: Year Built'].filter(k => raw[k]).map(k => k.replace('ADU #1: ', '') + ' ' + raw[k]).join(', '),
+    guest: has('Amenities', /Guest/) || has('Other Buildings', /Second Residence|Employee|Foreman/) ? (list('Amenities').match(/Guest (House|Quarters)/) || ['Yes'])[0] : 'No',
+    barn: has('Other Buildings', /^Barn$/) ? 'Yes' : 'No', stable: has('Other Buildings', /^Stable$/) ? 'Yes' : 'No',
+    horse: has('Grounds/Landscaping', /Horse/) || has('Amenities', /Horses/) || has('Other Buildings', /Paddock/) ? 'Yes' : 'No',
+    pool: (G['Pool Features'] || []).length ? 'Yes' : 'No', spa: has('Grounds/Landscaping', /Hot Tub|SPA/i) ? 'Yes' : 'No',
+    tennis: has('Grounds/Landscaping', /Tennis/) ? 'Yes' : 'No', sport: has('Grounds/Landscaping', /Pickleball|Sport/) ? 'Yes' : 'No',
+    porch: list('Patio and Porch Features'), accessory: list('Other Buildings'),
+    hoa: num(g('Condo/CO-OP/PUD: Association Fee', 'Association Fee', 'HOA Fee')),
+    lat: num(g('Geo Lat', 'Latitude')), lon: num(g('Geo Lon', 'Longitude')),
+    remarks: g('Public Remarks'), privateRemarks: g('Private Remarks'), water: list('Water/Sewer'), roof: list('Roof'), foundation: list('Foundation'),
+    remodel: [has('Amenities', /Remodeled Kitchen/) ? 'Remodeled kitchen' : '', has('Amenities', /Remodeled Bath/) ? 'Remodeled bath' : '', has('Condition', /Updated|Remodeled/) ? 'Updated/Remodeled' : ''].filter(Boolean).join('; '),
+    listAgent: g('Listing Member'), sellAgent: g('Selling Member'),
+  };
+}
+
+/* ---------------- 3. MLS printout (flexmls PDF): detail, square-foot source, location, history ---------------- */
+const RX_LISTING = /^- (\d{2}-\d+)\s+([A-Za-z][A-Za-z /]*?)\s+\$([\d,]+)\s+(?:(-?[\d.,]+)%\s+)?(\d{2}\/\d{2}\/\d{4})\s+(\d+)?\s*(\d+)?\s*(.*)$/;
+const RX_EVENT = /^- (?:- )?([A-Za-z][A-Za-z_ ,./]*?)\s+\$([\d,]+)\s+(?:(-?[\d.,]+)%\s+)?(\d{2}\/\d{2}\/\d{4})(?:\s+(\d+))?\s*$/;
+function parseMlsPdf(L) {
+  const out = []; let cur = null, mode = '', hist = null, ev = null, colLabel = ['', ''];
+  const flat = i => L.rows[i].map(c => c.s).join(' ').replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < L.length; i++) {
+    const line = flat(i); const cells = L.rows[i];
+    if (/^flexmls Web/.test(line) || /^\d+ of \d+ /.test(line) || /^\+ MLS #/.test(line)) continue;
+    let m = line.match(/^MLS #\s?(\d{2}-\d+)$/);
+    if (m) { const addr = i > 0 ? flat(i - 1) : ''; cur = { mls: m[1], addrLine: addr, d: {}, history: [] }; out.push(cur); mode = 'detail'; colLabel = ['', '']; continue; }
+    if (!cur) continue;
+    if ((m = line.match(/^History for MLS # ?(\d{2}-\d+)/))) { mode = 'history'; hist = null; ev = null; continue; }
+    if (/^(Supplement|Photos|Documents|Floor ?plans?) for MLS #/.test(line) || /^MLS # \d{2}-\d+ /.test(line)) { mode = 'skip'; continue; }
+    if (/^Information is deemed|^Information may be|^2026 MLS and FBS|^not be the listing/.test(line)) continue;
+    if (mode === 'detail') {
+      // two columns: labels start at the left margin or just right of the middle; values sit to their right
+      cells.forEach(c => {
+        const col = c.x < 300 ? 0 : 1; const isLabel = (c.x < 60) || (c.x > 290 && c.x < 330);
+        if (isLabel) { colLabel[col] = c.s.replace(/:$/, '').trim(); if (!(colLabel[col] in cur.d)) cur.d[colLabel[col]] = ''; }
+        else if (colLabel[col]) cur.d[colLabel[col]] = (cur.d[colLabel[col]] ? cur.d[colLabel[col]] + ' ' : '') + c.s;
+      });
+    } else if (mode === 'history') {
+      if ((m = line.match(RX_LISTING))) {
+        let cdom = m[7], addr = m[8]; if (!addr && cdom) { addr = ''; }
+        hist = { mls: m[1], status: m[2].trim(), price: num(m[3]), pct: m[4] || '', date: isoDate(m[5]), dom: num(m[6]), cdom: num(cdom), addr: (addr || '').trim(), events: [] };
+        cur.history.push(hist); ev = null; continue;
+      }
+      if (hist && (m = line.match(RX_EVENT))) { ev = { type: m[1].trim(), price: num(m[2]), pct: m[3] || '', date: isoDate(m[4]), dom: num(m[5]), changes: [] }; hist.events.push(ev); continue; }
+      if (ev && /^(Change at|Old Value|New Value|Change by)/.test(line)) ev.changes.push(line);
+      else if (ev && ev.changes.length && /^(Old|New) Value/.test(ev.changes[ev.changes.length - 1])) ev.changes[ev.changes.length - 1] += ' ' + line;
+    }
+  }
+  return out.map(pdfCanon);
+}
+function parkingCounts(s) {
+  const n = re => { const m = s.match(re); return m ? +m[1] : null; };
+  return { garage: n(/Total # Garage Spaces:\s*(\d+)/i) ?? n(/Gar #(\d+)/i), carport: n(/Total # Carport Spaces:\s*(\d+)/i) ?? n(/Cpt #(\d+)/i), driveway: n(/Total # Uncovered Spaces:\s*(\d+)/i) ?? n(/Unc #(\d+)/i),
+    garageType: /\bAttached\b/.test(s) ? 'Attached' : /\bDetached\b/.test(s) ? 'Detached' : '' };
+}
+function pdfCanon(p) {
+  const d = p.d, me = p.history.find(h => h.mls === p.mls) || null;
+  const evs = me ? me.events : [];
+  const uc = evs.find(e => /Under Contract Date/i.test(e.type)); // newest first
+  const priceChanges = evs.filter(e => /Price Change/i.test(e.type)).map(e => ({ date: e.date, price: e.price, pct: e.pct }));
+  const falls = evs.filter(e => /Fallthrough/i.test(e.type)).length;
+  const firstNew = [...evs].reverse().find(e => /^(New|Copy)$/i.test(e.type));
+  const am = String(p.addrLine || '').match(/^(.+?),\s*([A-Z .]+),\s*([A-Z]{2})\s+(\d{5})/);
+  const sale = me && /Closed/i.test(me.status) ? me : null;
+  const others = p.history.filter(h => h.mls !== p.mls);
+  return {
+    _src: 'pdf', mls: p.mls, addr: am ? am[1] : '', city: am ? titleCase(am[2]) : '', zip: am ? am[4] : '', apn: d['Parcel Number'] || '',
+    status: d['Status'] || (me ? me.status : ''), listPrice: uc ? uc.price : num(d['Price']), origList: num(d['Original List Price']) || (firstNew ? firstNew.price : null),
+    listDate: isoDate(d['Begin Date']), contractDate: isoDate(d['Under Contract Date']) || (uc ? uc.date : ''),
+    salePrice: num(d['Sold Price']) ?? (sale ? sale.price : null), saleDate: isoDate(d['Sold Date']) || (sale ? sale.date : ''),
+    financing: d['Financing'] || '', concessionsYN: d['Seller Concessions'] || '', nbhd: String(d['Neighborhood'] || '').replace(/^\d+\s*-\s*/, ''),
+    otherSf: num(d['Other Structures SqFt']), cityLimits: d['Within City Limits Y/N'] || '', propType: d['TYP'] || '',
+    dom: num(d['Days on Market']) ?? (me ? me.dom : null), cdom: num(d['Cumulative Days on Market']) ?? (me ? me.cdom : null),
+    terms: d['Terms'] || '', concessionsOffered: d['Seller Consider Concessions'] || '',
+    sfSource: d['Source'] || '', gla: num(d['Total SqFt.']), mainSf: num(d['Main House SqFt']), yearBuilt: num(d['Year Built']),
+    beds: num(d['Total Bedrooms']), full: num(d['Total Full Baths']), half: num(d['Total Half Baths']), acres: num(d['Apx # Acres']),
+    siteSf: num(d['Apx Lot SqFt']) || (num(d['Apx # Acres']) ? Math.round(num(d['Apx # Acres']) * 43560) : null),
+    lat: num(d['Geo Lat']), lon: num(d['Geo Lon']), style: d['Style'] || '', mlsCondition: d['Condition'] || '', viewTypes: d['View'] || '', topo: d['Location/Topo'] || '',
+    parkingText: d['Parking/Garage'] || '', ...parkingCounts(d['Parking/Garage'] || ''), heatCool: [d['Heating'], d['Cooling']].filter(Boolean).join(' / '), heating: d['Heating'] || '', cooling: d['Cooling'] || '',
+    zoning: d['Zoning'] || '', water: d['Water/Sewer'] || '',
+    lpcDate: uc ? uc.date : '', priceChanges, fallthroughs: falls,
+    listings: p.history.map(h => ({ mls: h.mls, status: h.status, price: h.price, date: h.date, dom: h.dom, cdom: h.cdom, addr: h.addr })),
+    priorSales: others.filter(h => /Closed/i.test(h.status)).map(h => ({ date: h.date, price: h.price, src: 'MLS ' + h.mls, type: 'Sale' })),
+    detail: d,
+  };
+}
+
+/* ---------------- 4. CRS Data property report (PDF) ---------------- */
+function crsCanon(c) {
+  const sales = (c.sales || []).map(s => ({ date: isoDate(s.date), recorded: isoDate(s.recorded), price: num(s.amount), src: 'CRS ' + (s.instrument || 'deed'), type: num(s.amount) ? 'Sale' : 'Transfer', inst: s.instrument || '', buyer: s.buyer || '', seller: s.seller || '', doc: s.doc || '' }));
+  return {
+    _src: 'crs', addr: titleCase(c.addr || ''), city: titleCase(c.city || ''), zip: c.zip || '', apn: c.apn || '',
+    beds: num(c.beds), bathsTotal: num(c.baths), gla: num(c.sqftAssessor), yearBuilt: num(c.yearBuilt), rooms: num(c.rooms),
+    siteSf: num(c.lotSf) || (num(c.acres) ? Math.round(num(c.acres) * 43560) : null), acres: num(c.acres),
+    lat: num(c.lat), lon: num(c.lng), zoning: c.zoning || '', landUse: c.landUse || '', fema: [c.fema, c.femaPanel, c.femaDate].filter(Boolean).join(' · '), owner: c.owner || '',
+    priorSales: sales, loans: c.loans || [],
+    lastSale: sales.find(s => s.price) || null,
+  };
+}
+
+/* ---------------- 5. CORT grant-deed printouts (table made from the weekly scans) ---------------- */
+function parseCortCsv(text) {
+  const rows = parseCSV(text); const H = rows[0].map(h => h.trim().toLowerCase());
+  if (!H.includes('grantor') || !H.includes('apn')) throw new Error('This is not a CORT table (no APN / Grantor columns).');
+  return rows.slice(1).map(r => { const o = {}; H.forEach((h, i) => { o[h] = (r[i] || '').trim(); }); return o; }).map(cortCanon);
+}
+const CORT_CITY = { SBAR: 'Santa Barbara', GOLT: 'Goleta', MONT: 'Montecito', CARP: 'Carpinteria', SUMM: 'Summerland', 'I.V.': 'Isla Vista', UNIN: '', ONIN: '' };
+function cortCanon(o) {
+  const noAddr = o.no_address === '1' || /NO (COUNTY|ADDRESS)/.test(o.address);
+  return {
+    _src: 'cort', apn: o.apn, addr: noAddr ? '' : titleCase(o.address), city: CORT_CITY[o.city] ?? titleCase(o.city),
+    salePrice: num(o.price), saleDate: isoDate(o.date), recDate: isoDate(o.date), beds: num(o.beds), bathsTotal: num(o.baths), rooms: num(o.rooms), gla: num(o.sqft), yearBuilt: num(o.year_built),
+    cortRemarks: o.remarks, financing: o.lender ? (/SELLER/i.test(o.lender) ? 'Seller' : 'Loan: ' + o.lender + (num(o.loan) ? ' ' + money(o.loan) : '')) : 'No loan recorded',
+    grantor: o.grantor, grantee: o.grantee, doc: o.instno, period: o.period, conf: num(o.ocr_conf_min), file: o.source_file,
+  };
+}
+
+/* =====================================================================
+   The comp model: fields, which source fills each field, flags.
+   ===================================================================== */
+const SRC = {
+  edit: { name: 'Yours', short: 'You' },
+  arch: { name: 'Your archive', short: 'Archive' },
+  mls: { name: 'MLS export', short: 'MLS' },
+  pdf: { name: 'MLS printout', short: 'Printout' },
+  crs: { name: 'CRS report', short: 'CRS' },
+  cort: { name: 'CORT', short: 'CORT' },
+};
+const SRC_ORDER = ['arch', 'mls', 'pdf', 'crs', 'cort'];
+
+/* kind decides the default source:
+   sale  – the sale itself: your archive only when that record is this same sale
+   phys  – the house: your archive first (your inspection or verification), unless your record is old
+   site  – site, view, location: your archive first
+   id    – identity
+   geo   – map position (MLS / CRS)
+   listing – listing history facts: MLS printout first */
+const FIELDS = [
+  // Sale and listing
+  { k: 'mls', l: 'MLS #', g: 'Sale and listing', kind: 'listing', t: 'text' },
+  { k: 'status', l: 'Listing status', g: 'Sale and listing', kind: 'sale', t: 'text' },
+  { k: 'origList', l: 'Original list price', g: 'Sale and listing', kind: 'listing', t: 'money' },
+  { k: 'listPrice', l: 'List price (final, at contract)', g: 'Sale and listing', kind: 'listing', t: 'money' },
+  { k: 'salePrice', l: 'Sale / contract price', g: 'Sale and listing', kind: 'sale', t: 'money' },
+  { k: 'contractDate', l: 'Contract date', g: 'Sale and listing', kind: 'sale', t: 'date' },
+  { k: 'saleDate', l: 'Sale date', g: 'Sale and listing', kind: 'sale', t: 'date' },
+  { k: 'dom', l: 'Days on market', g: 'Sale and listing', kind: 'listing', t: 'int' },
+  { k: 'cdom', l: 'Cumulative days on market', g: 'Sale and listing', kind: 'listing', t: 'int' },
+  { k: 'saleType', l: 'Sale type', g: 'Sale and listing', kind: 'sale', t: 'text' },
+  { k: 'financing', l: 'Transfer terms (financing)', g: 'Sale and listing', kind: 'sale', t: 'text' },
+  { k: 'concessions', l: 'Known sales concessions ($)', g: 'Sale and listing', kind: 'sale', t: 'money' },
+  { k: 'concessionsYN', l: 'Seller concessions (MLS yes/no)', g: 'Sale and listing', kind: 'listing', t: 'text' },
+  { k: 'verification', l: 'Your verification notes', g: 'Sale and listing', kind: 'sale', t: 'text' },
+  // Location and site
+  { k: 'addr', l: 'Street address', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'unit', l: 'Unit', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'city', l: 'City', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'zip', l: 'ZIP', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'apn', l: 'APN', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'lat', l: 'Latitude', g: 'Location and site', kind: 'geo', t: 'num6' },
+  { k: 'lon', l: 'Longitude', g: 'Location and site', kind: 'geo', t: 'num6' },
+  { k: 'nbhd', l: 'Neighborhood', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'locRating', l: 'Location rating', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'locFactors', l: 'Location factors', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'siteSf', l: 'Site size', g: 'Location and site', kind: 'site', t: 'site' },
+  { k: 'usableSf', l: 'Usable site', g: 'Location and site', kind: 'site', t: 'site' },
+  { k: 'landSplit', l: 'Land split (r/e/o/w acres)', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'topo', l: 'Topography', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'viewRating', l: 'View rating', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'viewTypes', l: 'View', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'viewRange', l: 'View range', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'fema', l: 'Flood zone (CRS)', g: 'Location and site', kind: 'site', t: 'text' },
+  { k: 'hoa', l: 'Association fee ($/month)', g: 'Location and site', kind: 'site', t: 'money' },
+  // Improvements
+  { k: 'attach', l: 'Attached / detached', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'style', l: 'Design (style)', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'stories', l: 'Stories', g: 'Improvements', kind: 'phys', t: 'num' },
+  { k: 'quality', l: 'Quality', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'condition', l: 'Condition', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'mlsCondition', l: 'Condition (MLS words)', g: 'Improvements', kind: 'listing', t: 'text' },
+  { k: 'remodel', l: 'Updates / remodel', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'yearBuilt', l: 'Year built', g: 'Improvements', kind: 'phys', t: 'year' },
+  { k: 'effAge', l: 'Effective age', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'gla', l: 'Total sq ft (GLA)', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'mainSf', l: 'Main house sq ft', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'otherSf', l: 'Other structures sq ft', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'sfSource', l: 'Sq ft source', g: 'Improvements', kind: 'listing', t: 'text' },
+  { k: 'rooms', l: 'Total rooms', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'beds', l: 'Bedrooms', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'full', l: 'Full baths', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'half', l: 'Half baths', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'bathsTotal', l: 'Baths (total, public record)', g: 'Improvements', kind: 'phys', t: 'num' },
+  { k: 'bsmtSf', l: 'Basement sq ft', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'bsmtFin', l: 'Basement finished sq ft', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'basement', l: 'Basement (MLS)', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'garage', l: 'Garage spaces', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'garageType', l: 'Garage type', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'carport', l: 'Carport spaces', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'driveway', l: 'Driveway spaces', g: 'Improvements', kind: 'phys', t: 'int' },
+  { k: 'heatCool', l: 'Heating / cooling', g: 'Improvements', kind: 'phys', t: 'text' },
+  { k: 'energy', l: 'Energy features', g: 'Improvements', kind: 'phys', t: 'text' },
+  // Amenities and other structures
+  { k: 'adu', l: 'ADU', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'guest', l: 'Guest quarters', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'barn', l: 'Barn', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'stable', l: 'Stable', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'horse', l: 'Horse facilities', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'pool', l: 'Pool', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'spa', l: 'Spa', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'tennis', l: 'Tennis court', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'sport', l: 'Sport / pickleball court', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'porch', l: 'Porch / patio / deck', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+  { k: 'accessory', l: 'Other structures', g: 'Amenities and other structures', kind: 'phys', t: 'text' },
+];
+const FIELD = Object.fromEntries(FIELDS.map(f => [f.k, f]));
+
+const SALE_TYPE_TEXT = { ArmLth: "Arm's length", Listing: 'Listing', REO: 'REO (bank owned)', Short: 'Short sale', Estate: 'Estate sale', CrtOrd: 'Court ordered (probate)', NonArm: "Non-arm's length", Relo: 'Relocation', Trust: 'Trust sale' };
+function fmt(f, v) {
+  if (blank(v)) return '';
+  if (f.k === 'saleType') return SALE_TYPE_TEXT[v] || String(v);
+  switch (f.t) {
+    case 'money': return money(v);
+    case 'int': return int(v);
+    case 'year': return String(Math.round(+v));
+    case 'num': return String(+(+v).toFixed(2));
+    case 'num6': return (+v).toFixed(6);
+    case 'date': return showDate(v);
+    case 'site': return +v >= 43560 * 0.5 ? (+v / 43560).toFixed(2) + ' ac' : int(v) + ' sf';
+    default: return String(v);
+  }
+}
+function parseInput(f, s) { // what she types into "Your value"
+  s = String(s ?? '').trim(); if (s === '') return null;
+  if (['money', 'int', 'num', 'year', 'num6'].includes(f.t)) return num(s);
+  if (f.t === 'date') return isoDate(s) || s;
+  if (f.t === 'site') { const m = s.match(/^([\d.,]+)\s*(ac|acre|acres)?$/i); if (!m) return num(s); const n = num(m[1]); return m[2] || n < 200 ? Math.round(n * 43560) : n; }
+  return s;
+}
+const normCmp = (f, v) => {
+  if (blank(v)) return null;
+  if (f.k === 'addr') return addrKey(v);
+  if (f.k === 'apn') return apnKey(v);
+  if (['money', 'int', 'num', 'year', 'site', 'num6'].includes(f.t)) return +v;
+  if (f.t === 'date') return isoDate(v).slice(0, 7);
+  return String(v).toLowerCase().replace(/[^a-z0-9]+/g, '');
+};
+function sameVal(f, a, b) {
+  const x = normCmp(f, a), y = normCmp(f, b); if (x === null || y === null) return true;
+  if (typeof x === 'number') { if (f.t === 'num6') return Math.abs(x - y) < 0.002; if (f.t === 'site') return Math.abs(x - y) <= Math.max(500, 0.03 * Math.max(x, y)); return Math.abs(x - y) <= Math.max(f.t === 'money' ? 1 : 0, 0.005 * Math.max(Math.abs(x), Math.abs(y))); }
+  return x === y;
+}
+
+/* ---------------- one comp ---------------- */
+function newComp(seed) {
+  return { id: uid(), created: Date.now(), key: seed.key || '', apn: seed.apn || '', mls: seed.mls || '', label: seed.label || '',
+    src: { arch: [], mls: null, pdf: null, crs: null, cort: [] }, archPick: null, cortPick: 0, pick: {}, edit: {}, use: null, photos: [], front: null, notes: '' };
+}
+const compKeyOf = c => c.key || addrKey(val(c, 'addr').v || c.label);
+
+/* the sale this comp is about: MLS (closed or pending) → CORT → CRS → your archive */
+function currentSale(c) {
+  const m = c.src.mls, p = c.src.pdf;
+  for (const s of [m, p]) if (s && (s.saleDate || s.contractDate || /Pending|Active/i.test(s.status || ''))) return { date: s.saleDate || s.contractDate || s.listDate || '', price: s.salePrice || null, from: s._src, status: s.status };
+  const t = c.src.cort[c.cortPick || 0]; if (t && t.saleDate) return { date: t.saleDate, price: t.salePrice, from: 'cort', status: 'Closed' };
+  const r = c.src.crs && c.src.crs.lastSale; if (r && r.date && monthsBetween(r.date, todayISO()) < 24) return { date: r.date, price: r.price, from: 'crs', status: 'Closed' };
+  const a = c.src.arch.find(x => x.v.salePrice); if (a) return { date: a.v.saleDate, price: a.v.salePrice, from: 'arch', status: 'Closed' };
+  return null;
+}
+function archMatches(a, sale) { // is this archive record the same sale?
+  if (!sale) return true; if (sale.from === 'arch') return !!a.v.salePrice;
+  if (!a.v.salePrice || !a.v.saleDate) return false;
+  if (sale.price && Math.abs(a.v.salePrice - sale.price) <= 1000) return true;
+  return sale.date ? Math.abs(monthsBetween(a.v.saleDate, sale.date)) <= 1.5 : false;
+}
+function archChosen(c) {
+  if (!c.src.arch.length) return null;
+  if (c.archPick !== null && c.archPick !== undefined) { const a = c.src.arch.find(x => x.rec === c.archPick); if (a) return a; }
+  const sale = currentSale(c);
+  return c.src.arch.find(a => archMatches(a, sale)) || c.src.arch[0];
+}
+function srcVals(c) { // canonical values per source for this comp
+  const a = archChosen(c);
+  // show the CRS recorded price beside the others when its last sale is this sale
+  let crs = c.src.crs; const sale = currentSale(c);
+  if (crs && crs.lastSale && sale && sale.date && Math.abs(monthsBetween(crs.lastSale.date, sale.date)) <= 2) crs = { ...crs, salePrice: crs.lastSale.price, saleDate: crs.lastSale.date };
+  return { arch: a ? a.v : null, mls: c.src.mls, pdf: c.src.pdf, crs, cort: c.src.cort[c.cortPick || 0] || null };
+}
+function defaultOrder(c, f) {
+  const a = archChosen(c), sale = currentSale(c); const matched = a && archMatches(a, sale);
+  const recent = a && (matched || (a.v.saleDate && sale && sale.date && Math.abs(monthsBetween(a.v.saleDate, sale.date)) <= 24) || (!a.v.saleDate && a.entered && monthsBetween(a.entered, todayISO()) <= 24));
+  switch (f.kind) {
+    case 'sale': return matched ? ['arch', 'mls', 'pdf', 'cort', 'crs'] : ['mls', 'pdf', 'cort'];
+    case 'listing': return ['pdf', 'mls', ...(matched ? ['arch'] : []), ...(sale && sale.from === 'arch' ? ['arch'] : [])];
+    case 'phys': return recent ? ['arch', 'mls', 'pdf', 'crs', 'cort'] : ['mls', 'pdf', 'arch', 'crs', 'cort'];
+    case 'geo': return ['mls', 'pdf', 'crs'];
+    default: return ['arch', 'mls', 'pdf', 'crs', 'cort'];
+  }
+}
+function val(c, k) { // → { v, src, auto }
+  const f = FIELD[k] || { k, t: 'text', kind: 'id' };
+  if (c.edit && k in c.edit && !blank(c.edit[k])) return { v: c.edit[k], src: 'edit' };
+  const S = srcVals(c);
+  if (c.pick && c.pick[k] && S[c.pick[k]] && !blank(S[c.pick[k]][k])) return { v: S[c.pick[k]][k], src: c.pick[k] };
+  for (const s of defaultOrder(c, f)) if (S[s] && !blank(S[s][k])) {
+    let v = S[s][k];
+    // your archive keeps sale dates as month/year: take the exact day from another source when it is the same month
+    if (f.t === 'date' && String(v).length === 7) { const exact = SRC_ORDER.map(x => S[x] && S[x][k]).find(x => x && String(x).length === 10 && String(x).startsWith(v)); if (exact) v = exact; }
+    return { v, src: s, auto: true };
+  }
+  return { v: null, src: null };
+}
+const V = (c, k) => val(c, k).v;
+function disagree(c, k) {
+  const f = FIELD[k]; const S = srcVals(c); const vals = SRC_ORDER.map(s => S[s] && S[s][k]).filter(v => !blank(v));
+  for (let i = 1; i < vals.length; i++) if (!sameVal(f, vals[0], vals[i])) return true; return false;
+}
+function compTitle(c) { const a = V(c, 'addr') || c.label || '(no address)'; const u = V(c, 'unit'); return a + (u ? ' #' + u : ''); }
+
+/* ---------------- sale and listing history ---------------- */
+function priorSales(c) {
+  const out = []; const sale = currentSale(c);
+  const add = s => { if (!s || !s.date) return; out.push(s); };
+  (c.src.pdf ? c.src.pdf.priorSales : []).forEach(add);
+  (c.src.crs ? c.src.crs.priorSales : []).forEach(add);
+  c.src.cort.forEach(t => add({ date: t.saleDate, price: t.salePrice, src: 'CORT ' + (t.period || ''), type: t.salePrice ? 'Sale' : 'Transfer' }));
+  c.src.arch.forEach(a => {
+    // "02/25/2026 | 0 | CRS - Intrafamily" = a $0 deed transfer; "10/07/2024 | 0 | CRS - No Transfers" = the date you searched, not a sale
+    const txt = String(a.v.priorSaleText || ''); const m = txt.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})\s*\|\s*\$?([\d,]+)\s*\|?\s*(.*)$/);
+    if (m && !/no transfer/i.test(txt)) { const pr = num(m[2]); const inst = m[3].replace(/^(CRS Data|CRS|Realist|Realquest|NDC)\s*-\s*/i, '').trim(); add({ date: isoDate(m[1]), price: pr || null, inst, src: 'Your archive (' + (a.report || '') + ')', type: pr ? 'Sale' : 'Transfer' }); } if (a.v.salePrice && !archMatches(a, sale)) add({ date: a.v.saleDate, price: a.v.salePrice, src: 'Your archive (' + (a.report || '') + ')', type: 'Sale' }); });
+  // drop this sale itself and repeats of the same transfer from several sources
+  // the same transfer seen from another source (your figure can differ a little from the recorded price)
+  const isThis = s => sale && sale.date && Math.abs(monthsBetween(s.date, sale.date)) <= 2 && (!s.price || !sale.price || Math.abs(s.price - sale.price) <= sale.price * 0.05);
+  const kept = [];
+  out.filter(s => !isThis(s)).sort((a, b) => b.date.localeCompare(a.date)).forEach(s => {
+    const dup = kept.find(k => Math.abs(monthsBetween(k.date, s.date)) <= 2 && (!k.price || !s.price || Math.abs(k.price - s.price) <= Math.max(1000, k.price * 0.002)));
+    if (dup) { if (!dup.src.includes(s.src)) dup.src += '; ' + s.src; if (!dup.price && s.price) dup.price = s.price; } else kept.push({ ...s });
+  });
+  if (sale && sale.date) kept.forEach(s => { s.monthsBefore = monthsBetween(s.date, sale.date); });
+  return kept.filter(s => !sale || !sale.date || s.monthsBefore > 0 || s.date <= sale.date);
+}
+function compFlags(c, job) {
+  const F = []; const sale = currentSale(c); const yb = V(c, 'yearBuilt'); const price = V(c, 'salePrice');
+  const st = V(c, 'status') || (sale && sale.status) || '';
+  if (/Active/i.test(st)) F.push({ sev: 'info', t: 'Active listing (not a sale)' });
+  else if (/Pending|Under Contract|Contingent/i.test(st)) F.push({ sev: 'info', t: 'Pending sale – contract price may be unknown' });
+  else if (/Expired|Withdrawn|Cancel/i.test(st)) F.push({ sev: 'warn', t: st + ' listing (did not sell)' });
+  const st2 = V(c, 'saleType'); if (st2 && !/ArmLth|Listing/i.test(st2)) F.push({ sev: 'warn', t: 'Sale type: ' + (SALE_TYPE_TEXT[st2] || st2) + (c.src.mls && c.src.mls.saleTypeNote ? ' (' + c.src.mls.saleTypeNote + ')' : '') });
+  const PS = priorSales(c); const before = yb ? PS.filter(s => s.price && s.date && +s.date.slice(0, 4) < +yb) : [];
+  if (before.length) F.push({ sev: 'info', t: `Sold before the house was built (${yb}): ${before.slice(0, 3).map(s => showDate(s.date) + ' ' + money(s.price)).join(', ')}${before.length > 3 ? ' …' : ''} – land or teardown ${before.length > 1 ? 'sales, not resales' : 'sale, not a resale'}` });
+  PS.forEach(s => {
+    if (before.includes(s) || (yb && s.date && +s.date.slice(0, 4) < +yb)) return;
+    if (!s.price) { if (s.monthsBefore > 0 && s.monthsBefore <= 12) F.push({ sev: 'info', t: `Transfer within 12 months: ${showDate(s.date)} ${s.inst || 'deed'} (no price)` }); return; }
+    if (price && s.price && s.monthsBefore > 0 && s.monthsBefore <= 24 && price >= s.price * 1.25) F.push({ sev: 'warn', t: `Quick resale: sold ${showDate(s.date)} for ${money(s.price)}, ${Math.round(s.monthsBefore)} months earlier (+${Math.round((price / s.price - 1) * 100)}%) – check for a flip or remodel` });
+    else if (s.monthsBefore > 0 && s.monthsBefore <= 12) F.push({ sev: 'info', t: `Prior sale within 12 months: ${showDate(s.date)} ${money(s.price)} – report it in the prior sale history` });
+  });
+  const p = c.src.pdf;
+  if (p) {
+    if (p.fallthroughs) F.push({ sev: 'info', t: `Escrow fell through ${p.fallthroughs} time${p.fallthroughs > 1 ? 's' : ''} before this sale` });
+    const dupes = (p.listings || []).filter(h => h.mls !== p.mls && /Closed/i.test(h.status) && sale && h.date && Math.abs(monthsBetween(h.date, sale.date)) < 1);
+    if (dupes.length) F.push({ sev: 'info', t: 'Also closed under MLS ' + dupes.map(d => d.mls).join(', ') + ' (same sale listed twice)' });
+    if (/^yes/i.test(p.concessionsYN || '') && blank(V(c, 'concessions'))) F.push({ sev: 'warn', t: 'MLS says seller concessions: Yes, amount not stated – verify' });
+  }
+  // a recorded price that differs from the price being used (credits, personal property, recording errors)
+  const used = val(c, 'salePrice'); const Sv = srcVals(c);
+  ['crs', 'cort'].forEach(s => { const rp = Sv[s] && Sv[s].salePrice; if (used.v && rp && used.src !== s && Math.abs(rp - used.v) > Math.max(1000, used.v * 0.002) && (s !== 'cort' || !sale || !Sv.cort.saleDate || Math.abs(monthsBetween(Sv.cort.saleDate, sale.date)) <= 2))
+    F.push({ sev: 'warn', t: `Recorded price (${SRC[s].short}) ${money(rp)} differs from the price used, ${money(used.v)} (${SRC[used.src].short}) – explain in the report which is the effective sale price and why (credit, personal property, recording error)` }); });
+  const dom = V(c, 'dom'), cdom = V(c, 'cdom'); if (dom && cdom && cdom > dom + 30) F.push({ sev: 'info', t: `Relisted: ${dom} days on this listing, ${cdom} cumulative` });
+  const op = V(c, 'origList'); if (op && price && price < op * 0.85) F.push({ sev: 'info', t: `Sold ${Math.round((1 - price / op) * 100)}% under the original list price` });
+  c.src.cort.forEach(t => { if (t.conf !== null && t.conf < 60) F.push({ sev: 'warn', t: `CORT line read with low confidence (${t.conf}) – check it against the scan ${t.file || ''}` }); });
+  if (disagree(c, 'gla')) F.push({ sev: 'info', t: 'Square footage differs between sources' });
+  const a = archChosen(c); if (a && sale && !archMatches(a, sale) && a.v.saleDate) F.push({ sev: 'info', t: `Your archive has this property from an earlier sale (${showDate(a.v.saleDate)}); its sale facts are not used. House facts from your record ${monthsBetween(a.v.saleDate, sale.date) <= 24 ? 'are used' : 'are older than 2 years, so MLS is used first'}` });
+  if (job && job.subject && job.subject.eff && sale && sale.date && monthsBetween(sale.date, job.subject.eff) > 12) F.push({ sev: 'warn', t: 'Sale is more than 12 months before the effective date' });
+  return F;
+}
+function proximity(c, job) {
+  const s = job && job.subject; if (!s) return null;
+  const a = { lat: num(s.lat), lon: num(s.lon) }, b = { lat: num(V(c, 'lat')), lon: num(V(c, 'lon')) };
+  const mi = milesBetween(a, b); if (mi === null) return null;
+  return { mi, dir: directionOf(a, b) };
+}
+
+/* =====================================================================
+   Exports: SFREP comps file (MISMO 3.6 / UAD, following Fannie Mae's
+   Appendix D-1 sample), comps table (CSV), comp photos.
+   ===================================================================== */
+class XN { constructor(tag, attrs) { this.tag = tag; this.attrs = attrs || {}; this.kids = []; this.text = null; } }
+function X(parent, tag, attrs) { const n = new XN(tag, attrs); if (parent) parent.kids.push(n); return n; }
+function XV(parent, tag, value, attrs) { if (blank(value)) return null; const n = X(parent, tag, attrs); n.text = String(value); return n; }
+function xmlOut(n, ind = '') {
+  const a = Object.entries(n.attrs).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+  if (n.text !== null) return `${ind}<${n.tag}${a}>${esc(n.text)}</${n.tag}>\n`;
+  if (!n.kids.length) return n.selfClose ? `${ind}<${n.tag}${a}/>\n` : '';
+  const inner = n.kids.map(k => xmlOut(k, ind + '\t')).join('');
+  return inner ? `${ind}<${n.tag}${a}>\n${inner}${ind}</${n.tag}>\n` : '';
+}
+const SQFT = { AreaUnitOfMeasureType: 'SquareFeet' };
+const has = (s, re) => re.test(String(s || ''));
+
+/* ---- value maps to UAD 3.6 enumerations ---- */
+function uadStatus(s) { s = String(s || ''); return /Closed|Sold/i.test(s) ? 'SettledSale' : /Pending|Under Contract|Contingent/i.test(s) ? 'Pending' : /Active/i.test(s) ? 'Active' : s ? 'OffMarket' : ''; }
+function uadSaleType(s) { return ({ ArmLth: 'TypicallyMotivated', Listing: 'TypicallyMotivated', REO: 'REOSale', Short: 'ShortSale', Estate: 'EstateSale', CrtOrd: 'CourtOrderedNonForeclosureSale', NonArm: 'SaleBetweenRelatedParties', Relo: 'RelocationSale', Trust: 'EstateSale' })[s] || (s ? 'Other' : 'TypicallyMotivated'); }
+function uadFinancing(s) {
+  s = String(s || ''); if (!s) return {};
+  if (/cash|no loan/i.test(s)) return { none: true };
+  if (/conv/i.test(s)) return { type: 'Conventional' }; if (/FHA/i.test(s)) return { type: 'FHA' }; if (/\bVA\b/i.test(s)) return { type: 'VA' };
+  if (/USDA|rural/i.test(s)) return { type: 'USDARuralDevelopment' }; if (/private|seller/i.test(s)) return { type: 'Private' };
+  if (/loan:/i.test(s)) return { type: 'Conventional' };
+  if (/unknown/i.test(s)) return {};
+  return { type: 'Other', other: s.slice(0, 33) };
+}
+const STYLE_MAP = [[/spanish|hacienda/i, 'Spanish'], [/mediterr/i, 'Mediterranean'], [/mid.?century|modern/i, 'Modern'], [/contemp/i, 'Contemporary'], [/ranch/i, 'Ranch'], [/craftsman/i, 'Craftsman'], [/cottage/i, 'Cottage'], [/bungalow/i, 'Bungalow'], [/cape ?cod/i, 'CapeCod'], [/colonial/i, 'Colonial'], [/tudor/i, 'Tudor'], [/victorian/i, 'Victorian'], [/farm/i, 'Farmhouse'], [/traditional/i, 'Traditional'], [/french|normand/i, 'Other'], [/adobe|southwest/i, 'Southwest'], [/georgian/i, 'Georgian']];
+function uadStyle(s) { s = String(s || ''); if (!s) return null; for (const [re, t] of STYLE_MAP) if (re.test(s)) return { t, other: t === 'Other' ? s.split(';')[0].slice(0, 33) : '' }; return { t: 'Other', other: s.split(';')[0].slice(0, 33) }; }
+function uadHeat(s) {
+  s = String(s || '').split('/')[0]; const out = [];
+  if (/forced|FWA|FAU/i.test(s)) out.push('ForcedWarmAir'); if (/radiant|rdnt/i.test(s)) out.push('Radiant'); if (/baseboard|HWBB/i.test(s)) out.push('Baseboard');
+  if (/gravity|floor furnace/i.test(s)) out.push('GravityAir'); if (/ductless|mini/i.test(s)) out.push('MiniSplit'); if (/stove/i.test(s)) out.push('Stove');
+  if (/wall/i.test(s) && !out.length) out.push('Other');
+  return out;
+}
+function uadFuel(s) { return /propane/i.test(s) ? 'Propane' : /electric|elect/i.test(s) ? 'Electric' : /gas/i.test(s) ? 'NaturalGas' : ''; }
+function uadCool(s) {
+  const t = String(s || ''); const part = t.includes('/') ? t.split('/').slice(1).join('/') : t;
+  if (/no cooling|none/i.test(part) && !/central|C\/Air|A\/C/i.test(part)) return { exists: false };
+  if (/central|C\/Air|A\/C|heat pump/i.test(t)) return { exists: true, type: 'Centralized' };
+  if (/window|ductless|mini|wall unit|individual/i.test(t)) return { exists: true, type: 'Individual' };
+  return null;
+}
+const VIEW_MAP = [[/ocean|water|coast|harbor|beach|island/i, 'Ocean'], [/mountain/i, 'Mountain'], [/skyline|city(?! street)/i, 'Skyline'], [/city street/i, 'CityStreet'], [/golf/i, 'GolfCourse'], [/wood/i, 'Woods'], [/park|greenbelt/i, 'Park'], [/pastoral/i, 'Pastoral'], [/canyon|valley/i, 'Valley'], [/lake/i, 'Lake'], [/creek/i, 'Creek'], [/residential|garden|setting/i, 'Residential']];
+function uadViews(s) { const out = []; String(s || '').split(/;\s*/).filter(Boolean).forEach(p => { if (/panoramic|partial|filtered|other/i.test(p)) return; const m = VIEW_MAP.find(([re]) => re.test(p)); const t = m ? m[1] : 'Other'; if (!out.some(o => o.t === t)) out.push({ t, other: t === 'Other' ? p.slice(0, 33) : '' }); }); return out; }
+const INFL_MAP = [[/busy road|freeway/i, 'BusyRoadway'], [/^residential$/i, 'Residential'], [/waterfront|near water/i, 'BodyOfWater'], [/commercial/i, 'CommercialArea'], [/train/i, 'RailLine'], [/school/i, 'School'], [/park/i, 'Park'], [/golf/i, 'GolfCourse']];
+function uadInfluences(s) { const out = []; String(s || '').split(/;\s*/).filter(Boolean).forEach(p => { const m = INFL_MAP.find(([re]) => re.test(p)); const t = m ? m[1] : 'Other'; if (!out.some(o => o.t === t && t !== 'Other')) out.push({ t, other: t === 'Other' ? p.slice(0, 33) : '' }); }); return out; }
+const yes = v => /^(yes|y|true|1)/i.test(String(v || '')) || (typeof v === 'string' && /guest|adu/i.test(v) && !/^none|^no$/i.test(v));
+
+function photoName(c) { return safeName(compTitle(c)).replace(/[^A-Za-z0-9.()-]+/g, '_') + '.jpg'; }
+
+/* ---- one comparable ---- */
+function buildCompXML(PROPS, RELS, DSS, c, n, job) {
+  const lab = 'PROPERTY_SALESCOMP' + n;
+  const P = X(PROPS, 'PROPERTY', { ValuationUseType: 'SalesComparable', 'xlink:label': lab });
+  const g = k => V(c, k);
+  // ADDRESS
+  const ad = X(P, 'ADDRESS'); XV(ad, 'AddressLineText', g('addr')); if (g('unit')) { XV(ad, 'AddressUnitDesignatorType', 'Unit'); XV(ad, 'AddressUnitIdentifier', g('unit')); }
+  XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', g('zip')); XV(ad, 'StateCode', 'CA');
+  // CAR_STORAGES
+  const cs = X(P, 'CAR_STORAGES'); let any = false;
+  const gar = num(g('garage')); if (gar) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); const gt = String(g('garageType') || ''); XV(d, 'CarStorageAttachmentType', /built/i.test(gt) ? 'BuiltIn' : /detach/i.test(gt) ? 'Detached' : /attach/i.test(gt) ? 'Attached' : null); XV(d, 'CarStorageType', 'Garage'); XV(d, 'ParkingSpacesCount', gar); }
+  const cp = num(g('carport')); if (cp) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Carport'); XV(d, 'ParkingSpacesCount', cp); }
+  const dw = num(g('driveway')); if (dw) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Driveway'); XV(d, 'ParkingSpacesCount', dw); XV(d, 'TenOrMoreParkingSpacesIndicator', dw >= 10 ? 'true' : 'false'); }
+  if (!any && gar === 0) XV(X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'), 'CarStorageType', 'None');
+  // COMPARABLE_DETAIL (no adjustments – those are yours to make in SFREP)
+  const cd = X(X(P, 'COMPARABLE'), 'COMPARABLE_DETAIL'); const px = proximity(c, job);
+  const price = num(g('salePrice')), list = num(g('listPrice')), gla = num(g('gla')); const status = uadStatus(g('status') || (currentSale(c) || {}).status);
+  if (px) XV(cd, 'ComparableToSubjectDirectionType', px.dir);
+  if (status === 'Pending') XV(cd, 'ContractAmountUnknownIndicator', price ? 'false' : 'true');
+  XV(cd, 'ContractDateUnknownIndicator', g('contractDate') ? 'false' : 'true');
+  const fin = uadFinancing(g('financing')); if (status === 'SettledSale') { if (fin.type) { XV(cd, 'MortgageType', fin.type); if (fin.other) XV(cd, 'MortgageTypeOtherDescription', fin.other); } if (fin.none || fin.type) XV(cd, 'NoFinancingTransactionIndicator', fin.none ? 'true' : 'false'); }
+  if (price && gla) XV(cd, 'PricePerTotalStandardAboveGradeFinishedAreaAmount', Math.round(price / gla));
+  XV(cd, 'PropertyOrdinalNumber', n);
+  if (px) XV(cd, 'ProximityToSubjectDistanceLinearMeasure', px.mi.toFixed(2), { LinearUnitOfMeasureType: 'Miles' });
+  if (price && list && status !== 'SettledSale') XV(cd, 'SaleToListPriceRatioPercent', (price / list * 100).toFixed(2));
+  // ENERGY_EFFICIENCY_AND_GREEN
+  const en = String(g('energy') || ''); if (/solar|geotherm|wind/i.test(en)) { const e = X(P, 'ENERGY_EFFICIENCY_AND_GREEN'); XV(X(e, 'ENERGY_EFFICIENCY_AND_GREEN_DETAIL'), 'RenewableEnergyComponentExistsIndicator', 'true'); XV(X(X(e, 'RENEWABLE_ENERGY_COMPONENTS'), 'RENEWABLE_ENERGY_COMPONENT'), 'RenewableEnergyComponentType', /geotherm/i.test(en) ? 'Geothermal' : /wind/i.test(en) ? 'WindTurbine' : 'Solar'); }
+  // HAZARD (from CRS flood zone) goes in SITE below
+  // IMPROVEMENTS
+  const imp = X(X(P, 'IMPROVEMENTS'), 'IMPROVEMENT'); const idt = X(imp, 'IMPROVEMENT_DETAIL'); const cool = uadCool(g('heatCool'));
+  if (cool) XV(idt, 'CoolingSystemExistsIndicator', cool.exists ? 'true' : 'false');
+  XV(idt, 'ImprovementType', 'Dwelling'); XV(idt, 'PropertyStructureBuiltYear', g('yearBuilt')); if (g('yearBuilt')) XV(idt, 'PropertyStructureBuiltYearEstimatedIndicator', 'false');
+  const pu = X(X(imp, 'PROPERTY_UNITS'), 'PROPERTY_UNIT');
+  const ar = X(pu, 'PROPERTY_UNIT_AREA'); const bs = num(g('bsmtSf')), bf = num(g('bsmtFin'));
+  if (bs && bs > (bf || 0)) XV(ar, 'UnitBelowGradeUnfinishedAreaMeasure', bs - (bf || 0), SQFT);
+  XV(ar, 'UnitStandardAboveGradeFinishedAreaMeasure', gla, SQFT); XV(ar, 'UnitStandardBelowGradeFinishedAreaMeasure', bs ? (bf || 0) : (gla ? 0 : null), SQFT);
+  const ud = X(pu, 'PROPERTY_UNIT_DETAIL'); XV(ud, 'AccessoryDwellingUnitIndicator', 'false'); XV(ud, 'BedroomCount', g('beds')); XV(ud, 'FullBathroomCount', g('full')); XV(ud, 'HalfBathroomCount', g('half'));
+  const st = X(imp, 'STRUCTURE'); const sty = uadStyle(g('style')); if (sty) { const a = X(st, 'ARCHITECTURAL_DESIGN'); XV(a, 'ArchitecturalDesignCategoryType', sty.t); if (sty.other) XV(a, 'ArchitecturalDesignCategoryTypeOtherDescription', sty.other); }
+  XV(X(st, 'STRUCTURE_DETAIL'), 'LivingUnitCount', 1);
+  const heats = uadHeat(g('heatCool')); if (heats.length || cool) { const sy = X(imp, 'SYSTEM');
+    if (cool && cool.exists) XV(X(X(sy, 'COOLING_SYSTEMS'), 'COOLING_SYSTEM'), 'CoolingSystemType', cool.type);
+    if (heats.length) { const hs = X(sy, 'HEATING_SYSTEMS'); heats.forEach(h => { const e = X(hs, 'HEATING_SYSTEM'); XV(e, 'HeatingFuelType', uadFuel(g('heatCool')) || null); XV(e, 'HeatingSystemType', h); if (h === 'Other') XV(e, 'HeatingSystemTypeOtherDescription', 'Wall furnace'); }); } }
+  // INSPECTIONS (front photo)
+  if (c.front) { const im = X(X(X(X(P, 'INSPECTIONS'), 'INSPECTION'), 'IMAGES'), 'IMAGE'); XV(im, 'ImageCategoryType', 'PropertyPhoto'); XV(im, 'ImageFileLocationIdentifier', '\\\\Images\\' + photoName(c)); XV(im, 'MIMETypeIdentifier', 'image/jpeg'); }
+  // LISTING_INFORMATIONS
+  const li = X(X(X(P, 'LISTING_INFORMATIONS'), 'LISTING_INFORMATION'), 'LISTING_INFORMATION_DETAIL'); XV(li, 'DaysOnMarketCount', g('dom')); XV(li, 'FinalListPriceAmount', list); XV(li, 'ListingStatusType', status);
+  // LOCATION
+  if (!blank(g('lat')) && !blank(g('lon'))) { const gi = X(X(P, 'LOCATION_IDENTIFIER'), 'GEOSPATIAL_INFORMATION'); XV(gi, 'LatitudeIdentifier', (+g('lat')).toFixed(6)); XV(gi, 'LongitudeIdentifier', (+g('lon')).toFixed(6)); }
+  XV(X(X(P, 'NEIGHBORHOOD'), 'NEIGHBORHOOD_DETAIL'), 'NeighborhoodName', g('nbhd'));
+  // PROPERTY_AMENITY
+  const cats = {}; const addA = (cat, t) => { (cats[cat] = cats[cat] || []).push(t); };
+  if (yes(g('pool'))) addA('WaterFeatures', 'IngroundPool'); if (yes(g('spa'))) addA('WaterFeatures', 'IngroundSpa');
+  if (yes(g('tennis')) || yes(g('sport'))) addA('OutdoorAccessories', 'SportsCourt'); if (yes(g('horse'))) addA('OutdoorAccessories', 'OutdoorRidingRing');
+  const por = String(g('porch') || ''); [['Patio', /patio|terrace|loggia|lgga|trrc/i], ['Porch', /porch/i], ['Deck', /deck/i], ['Balcony', /balcon/i], ['Gazebo', /gazebo/i]].forEach(([t, re]) => { if (re.test(por)) addA('OutdoorLiving', t); });
+  const catKeys = Object.keys(cats);
+  if (catKeys.length) { const AC = X(X(P, 'PROPERTY_AMENITY'), 'AMENITY_CATEGORIES'); catKeys.forEach(k => { const cat = X(AC, 'AMENITY_CATEGORY'); const A = X(cat, 'AMENITIES'); cats[k].forEach(t => XV(X(X(A, 'AMENITY'), 'AMENITY_DETAIL'), 'AmenityType', t)); XV(X(cat, 'AMENITY_CATEGORY_DETAIL'), 'AmenityCategoryType', k); }); }
+  // PROPERTY_DETAIL
+  const pd = X(P, 'PROPERTY_DETAIL'); const aduTxt = String(g('adu') || ''); const aduN = /2 ADUs/.test(aduTxt) ? 2 : /^ADU/i.test(aduTxt) ? 1 : 0;
+  XV(pd, 'AccessoryDwellingUnitTotalCount', aduN); XV(pd, 'AttachmentType', /attach|row|semi|mid-rise|garden/i.test(g('attach') || '') && !/detach/i.test(g('attach')) ? 'Attached' : g('attach') ? 'Detached' : null);
+  XV(pd, 'DwellingCount', 1); XV(pd, 'LivingUnitExcludingADUCount', 1);
+  const cond = String(g('condition') || '').match(/C[1-6]/), qual = String(g('quality') || '').match(/Q[1-6]/);
+  XV(pd, 'OverallConditionRatingCode', cond && cond[0]); XV(pd, 'OverallQualityRatingCode', qual && qual[0]);
+  const prior = priorSales(c).filter(s => s.monthsBefore > 0 && s.monthsBefore <= 12 && s.type === 'Sale');
+  XV(pd, 'PriorSalesOrTransfersIndicator', prior.length ? 'true' : 'false'); XV(pd, 'PropertyAmenityExistsIndicator', catKeys.length ? 'true' : 'false');
+  const inProj = !blank(g('hoa')) && +g('hoa') > 0; XV(pd, 'PropertyEstateType', 'FeeSimple'); XV(pd, 'PropertyInProjectIndicator', inProj ? 'true' : 'false'); XV(pd, 'PUDIndicator', inProj && /detach/i.test(g('attach') || '') ? 'true' : 'false');
+  // SALES_CONTRACTS
+  const sc = X(X(X(P, 'SALES_CONTRACTS'), 'SALES_CONTRACT'), 'SALES_CONTRACT_DETAIL'); const conc = num(g('concessions'));
+  if (status === 'SettledSale') { if (conc !== null) { XV(sc, 'SalesConcessionAmountKnownIndicator', 'true'); XV(sc, 'SalesConcessionIndicator', conc > 0 ? 'true' : 'false'); } else if (/^yes/i.test(g('concessionsYN') || '')) { XV(sc, 'SalesConcessionAmountKnownIndicator', 'false'); XV(sc, 'SalesConcessionIndicator', 'true'); } }
+  if (status === 'Pending' && price) XV(sc, 'SalesContractAmount', price);
+  XV(sc, 'SalesContractDate', isoDate(g('contractDate')).length === 10 ? isoDate(g('contractDate')) : null);
+  if (conc) XV(sc, 'TotalSalesConcessionAmount', conc);
+  // SALES_HISTORIES: this sale, then prior sales within 12 months
+  const SH = X(P, 'SALES_HISTORIES');
+  if (status === 'SettledSale') { const h = X(SH, 'SALES_HISTORY'); XV(h, 'OwnershipTransferDate', isoDate(g('saleDate')).length === 10 ? isoDate(g('saleDate')) : null); XV(h, 'OwnershipTransferTransactionAmount', price); XV(h, 'OwnershipTransferTransactionType', 'Sale'); XV(h, 'SaleType', uadSaleType(g('saleType'))); }
+  prior.forEach(s => { const h = X(SH, 'SALES_HISTORY', { 'xlink:label': `SALES_HISTORY_SalesComp${n}_PriorSales` }); XV(h, 'OwnershipTransferDate', s.date); XV(h, 'OwnershipTransferTransactionAmount', s.price); if (!s.price) XV(h, 'OwnershipTransferAmountNotAvailableReasonType', 'NotDisclosed'); XV(h, 'OwnershipTransferTransactionType', 'Sale'); XV(h, 'SaleType', 'TypicallyMotivated'); });
+  // SITE
+  const SI = X(P, 'SITE'); const fz = String(V(c, 'fema') || '');
+  if (fz) XV(X(X(SI, 'HAZARD_ZONES'), 'HAZARD_ZONE'), 'HazardZoneType', /^(A|V)/.test(fz) ? 'FEMASpecialFloodHazardArea' : 'None');
+  XV(X(SI, 'SITE_DETAIL'), 'LandOwnedInCommonIndicator', 'false');
+  const infl = uadInfluences(g('locFactors')); if (infl.length) { const S = X(SI, 'SITE_INFLUENCES'); infl.forEach(i => { const d = X(X(S, 'SITE_INFLUENCE'), 'SITE_INFLUENCE_DETAIL'); XV(d, 'SiteInfluenceType', i.t); if (i.other) XV(d, 'SiteInfluenceTypeOtherDescription', i.other); }); }
+  const site = num(g('siteSf')); if (site) XV(X(SI, 'SITE_SIZE_LAYOUT'), 'LotSizeAreaMeasure', site >= 43560 ? (site / 43560).toFixed(2) : Math.round(site), { AreaUnitOfMeasureType: site >= 43560 ? 'Acres' : 'SquareFeet' });
+  const views = uadViews(g('viewTypes')); if (views.length) { const SV = X(SI, 'SITE_VIEWS'); const rng = /limited|partial/i.test(g('viewRange') || '') ? 'Partial' : /panoramic|full/i.test(g('viewRange') || '') ? 'Full' : null; views.forEach(v => { const e = X(SV, 'SITE_VIEW'); XV(e, 'ViewRangeType', rng); XV(e, 'ViewType', v.t); if (v.other) XV(e, 'ViewTypeOtherDescription', v.other); }); }
+  // DATA_SOURCES
+  const ds = (type, id) => { const l = `DATA_SOURCE_${type}SalesComp${n}`; const e = X(DSS, 'DATA_SOURCE', { 'xlink:label': l }); XV(e, 'DataSourceIdentifier', id); XV(e, 'DataSourceType', type); X(RELS, 'RELATIONSHIP', { 'xlink:arcrole': 'urn:fdc:mismo.org:2009:residential/DATA_SOURCE_IsDataSourceFor_PROPERTY', 'xlink:from': l, 'xlink:to': lab }).selfClose = true; };
+  if (g('mls') && (c.src.mls || c.src.pdf || /MLS/i.test(g('verification') || ''))) ds('MLS', g('mls'));
+  if (c.src.crs) ds('AssessorRecord', null);
+  if (c.src.cort.length) ds('Deed', c.src.cort[c.cortPick || 0].doc || null);
+  if (c.src.arch.length) ds('PreviousAppraisal', null);
+}
+function buildCompsMISMO(job, comps) {
+  const root = X(null, 'MESSAGE', { 'xmlns:xlink': 'http://www.w3.org/1999/xlink', xmlns: 'http://www.mismo.org/residential/2009/schemas', 'xmlns:gse': 'http://www.datamodelextension.org', MISMOReferenceModelIdentifier: '3.6.0366' });
+  const doc = X(X(X(X(root, 'DOCUMENT_SETS'), 'DOCUMENT_SET'), 'DOCUMENTS'), 'DOCUMENT');
+  XV(X(X(doc, 'ABOUT_VERSIONS'), 'ABOUT_VERSION'), 'AboutVersionIdentifier', '1');
+  const svc = X(X(X(X(X(X(doc, 'DEAL_SETS'), 'DEAL_SET'), 'DEALS'), 'DEAL'), 'SERVICES'), 'SERVICE');
+  const RELS = X(svc, 'RELATIONSHIPS');
+  const va = X(X(X(X(svc, 'VALUATION'), 'VALUATION_RESPONSE'), 'VALUATION_ANALYSES'), 'VALUATION_ANALYSIS');
+  const DSS = X(va, 'DATA_SOURCES');
+  const PROPS = X(va, 'PROPERTIES');
+  comps.forEach((c, i) => buildCompXML(PROPS, RELS, DSS, c, i + 1, job));
+  XV(X(X(X(va, 'VALUATION_REPORT'), 'VALUATION_SOFTWARE_SYSTEMS'), 'VALUATION_SOFTWARE_SYSTEM'), 'ValuationSoftwareProductName', 'Appraisal Assistant – Comp Genie');
+  const dc = X(doc, 'DOCUMENT_CLASSIFICATION'); XV(X(X(dc, 'DOCUMENT_CLASSES'), 'DOCUMENT_CLASS'), 'DocumentType', 'AppraisalReport');
+  const dcd = X(dc, 'DOCUMENT_CLASSIFICATION_DETAIL'); XV(dcd, 'DocumentFormIssuingEntityNameType', 'FNM_FRE'); XV(dcd, 'DocumentFormIssuingEntityVersionIdentifier', 'September 2024');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<!--Sales comparables exported by Comp Genie for import into Appraise-It Pro (Home > Import Forms). Adjustments are not included.-->\n' + xmlOut(root);
+}
+
+/* ---- comps table ---- */
+function compsCSV(job, comps) {
+  const cols = [['use', 'Comp #'], ['title', 'Address'], ...FIELDS.filter(f => f.k !== 'addr').map(f => [f.k, f.l]), ['prox', 'Proximity (mi)'], ['dir', 'Direction'], ['flags', 'Flags'], ['sources', 'Sources']];
+  const rows = [cols.map(c => csvCell(c[1])).join(',')];
+  comps.forEach(c => { const px = proximity(c, job); rows.push(cols.map(([k]) => {
+    if (k === 'use') return c.use || ''; if (k === 'title') return csvCell(compTitle(c)); if (k === 'prox') return px ? px.mi.toFixed(2) : ''; if (k === 'dir') return px ? px.dir : '';
+    if (k === 'flags') return csvCell(compFlags(c, job).map(f => f.t).join(' | ')); if (k === 'sources') return csvCell(sourcesOf(c).join(' '));
+    const f = FIELD[k], v = V(c, k); return csvCell(f.t === 'date' ? showDate(v) : blank(v) ? '' : v);
+  }).join(',')); });
+  return '﻿' + rows.join('\r\n');
+}
+function sourcesOf(c) { const s = []; if (c.src.arch.length) s.push('Archive×' + c.src.arch.length); if (c.src.mls) s.push('MLS'); if (c.src.pdf) s.push('Printout'); if (c.src.crs) s.push('CRS'); if (c.src.cort.length) s.push('CORT'); return s; }
+
+/* =====================================================================
+   Comp Genie – screens
+   ===================================================================== */
+const app = { job: null, jobs: [], sel: null, cort: [], cortByApn: new Map(), cortByKey: new Map(), photoCache: new Map(), busy: '', confirm: null, sugg: [], showAll: false };
+
+/* ---------------- start ---------------- */
+async function start() {
+  await DB.init();
+  const arch = await DB.get('kv', 'archive'); if (arch && arch.data) archiveIndex(arch.data);
+  const cort = await DB.get('kv', 'cort'); setCort(cort ? cort.rows : []);
+  app.jobs = (await DB.all('jobs')).sort((a, b) => b.updated - a.updated);
+  const last = await DB.get('kv', 'lastJob');
+  app.job = app.jobs.find(j => last && j.id === last.v) || app.jobs[0] || null;
+  if (!app.job) await newJob();
+  await loadPhotos();
+  render();
+}
+function setCort(rows) {
+  app.cort = rows || []; app.cortByApn = new Map(); app.cortByKey = new Map();
+  app.cort.forEach((r, i) => { const a = apnKey(r.apn); if (a) { if (!app.cortByApn.has(a)) app.cortByApn.set(a, []); app.cortByApn.get(a).push(i); }
+    if (r.addr) { const k = addrKey(r.addr); if (!app.cortByKey.has(k)) app.cortByKey.set(k, []); app.cortByKey.get(k).push(i); } });
+}
+async function newJob(name) {
+  const j = { id: uid(), name: name || 'New assignment', created: Date.now(), updated: Date.now(), subject: { addr: '', city: '', zip: '', apn: '', lat: '', lon: '', eff: todayISO() }, comps: [], files: [] };
+  app.jobs.unshift(j); app.job = j; app.sel = null; await saveNow(); return j;
+}
+let saveT = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 300); }
+async function saveNow() { if (!app.job) return; app.job.updated = Date.now(); await DB.put('jobs', app.job); await DB.put('kv', { id: 'lastJob', v: app.job.id }); }
+
+/* ---------------- photos ---------------- */
+app.photos = []; // [{id, mls, n, name}] for this job (blobs stay in storage)
+async function loadPhotos() { app.photos = app.job ? (await DB.byJob(app.job.id)).map(p => ({ id: p.id, mls: p.mls, n: p.n, name: p.name })) : []; }
+const photosOf = c => { const m = V(c, 'mls'); return m ? app.photos.filter(p => p.mls === m).sort((a, b) => a.n - b.n) : []; };
+const frontOf = c => { const ps = photosOf(c); return ps.find(p => p.id === c.front) || ps[0] || null; };
+async function photoURL(id) {
+  if (app.photoCache.has(id)) return app.photoCache.get(id);
+  const r = await DB.get('photos', id); if (!r) return ''; const u = URL.createObjectURL(r.blob); app.photoCache.set(id, u); return u;
+}
+async function fillImages(root = document) { for (const img of $$('img[data-photo]', root)) { if (!img.src) img.src = await photoURL(img.dataset.photo); } }
+
+/* ---------------- comps: find, add, attach sources ---------------- */
+function findComp({ mls, apn, key }) {
+  const J = app.job.comps;
+  return (mls && J.find(c => c.mls === mls || V(c, 'mls') === mls)) || (apn && apnKey(apn) && J.find(c => apnKey(c.apn || V(c, 'apn')) === apnKey(apn))) || (key && J.find(c => c.key === key)) || null;
+}
+function attachArchive(c) {
+  if (!ARCH.loaded) return;
+  const rows = archiveFind({ apn: c.apn || V(c, 'apn'), key: c.key });
+  c.src.arch = rows.map(r => ({ rec: r.rec_id, label: archLabel(r), report: r.from_report || '', entered: r.entered_date || '', role: r.record_role || '', photo: r.front_photo || '', v: archCanon(r) }));
+}
+function attachCort(c) {
+  const idx = new Set(); const a = apnKey(c.apn || V(c, 'apn')); if (a && app.cortByApn.has(a)) app.cortByApn.get(a).forEach(i => idx.add(i));
+  if (c.key && app.cortByKey.has(c.key)) app.cortByKey.get(c.key).forEach(i => idx.add(i));
+  c.src.cort = [...idx].map(i => app.cort[i]).sort((x, y) => String(y.saleDate).localeCompare(String(x.saleDate)));
+}
+function upsertComp(seed, srcName, rec) {
+  let c = findComp(seed); const isNew = !c;
+  if (!c) { c = newComp(seed); app.job.comps.push(c); }
+  if (seed.apn && !c.apn) c.apn = seed.apn; if (seed.mls && !c.mls) c.mls = seed.mls; if (seed.key && !c.key) c.key = seed.key; if (seed.label && !c.label) c.label = seed.label;
+  if (srcName) c.src[srcName] = rec;
+  attachArchive(c); attachCort(c);
+  return { c, isNew };
+}
+function addByAddress(text) {
+  text = String(text || '').trim(); if (!text) return;
+  const key = addrKey(text); const hit = ARCH.streets.find(s => s.k === key);
+  const { c, isNew } = upsertComp({ key, label: hit ? hit.label : titleCase(text) });
+  app.sel = c.id; save(); render();
+  toast(!isNew ? 'Already in this list' : c.src.arch.length ? `Found in your archive: ${c.src.arch.length} record${c.src.arch.length > 1 ? 's' : ''}` : (c.src.cort.length ? 'Not in your archive – found in CORT' : 'Not in your archive. Add the MLS, CRS or CORT data.'));
+}
+
+/* ---------------- files in ---------------- */
+async function ingest(files) {
+  const notes = [];
+  for (const f of files) {
+    try {
+      app.busy = 'Reading ' + f.name + '…'; renderBusy();
+      const low = f.name.toLowerCase();
+      if (low.endsWith('.zip')) notes.push(await ingestPhotos(f));
+      else if (low.endsWith('.csv')) {
+        const text = await readText(f); const head = text.slice(0, 2000).toLowerCase();
+        if (head.includes('listing number')) notes.push(ingestMls(parseMlsCsv(text), f.name));
+        else if (head.includes('grantor')) notes.push(await ingestCort(parseCortCsv(text), f.name));
+        else notes.push(f.name + ': not an MLS export or a CORT table');
+      } else if (low.endsWith('.gz') || low.endsWith('.json')) notes.push(await ingestJson(f));
+      else if (low.endsWith('.pdf')) {
+        const first = await pdfFirstText(f);
+        if (/APN\/Tax ID|CRS Data|Property Report/i.test(first.text)) { const c = crsCanon(parseCRS(await pdfLines(f))); notes.push(ingestCrs(c, f.name)); }
+        else if (/flexmls|MLS #/i.test(first.text)) { const L = await pdfLines(f, (n, t) => { if (n % 20 === 0) { app.busy = `Reading the MLS printout… page ${n} of ${t}`; renderBusy(); } }); notes.push(ingestPdf(parseMlsPdf(L), f.name)); }
+        else if (!first.text.trim()) notes.push(f.name + ': this is a scan (a picture, no text). If it is a CORT printout, send it to Claude for now to add it to your CORT table.');
+        else notes.push(f.name + ': not a PDF the genie knows (MLS printout or CRS report).');
+      } else notes.push(f.name + ': file type not used here');
+    } catch (e) { console.error(e); notes.push(f.name + ': could not read – ' + (e.message || e)); }
+  }
+  app.busy = ''; save(); render(); if (notes.length) showNotes(notes);
+}
+function logFile(name, kind, n) { app.job.files = (app.job.files || []).filter(x => x.name !== name); app.job.files.push({ name, kind, n, at: Date.now() }); }
+function ingestMls(rows, name) {
+  let made = 0, merged = 0;
+  rows.forEach(r => { const { isNew } = upsertComp({ mls: r.mls, apn: r.apn, key: r.addr ? addrKey(r.addr) : '', label: r.addr }, 'mls', r); isNew ? made++ : merged++; });
+  logFile(name, 'MLS export', rows.length);
+  return `${name}: ${rows.length} listings (${made} new, ${merged} matched to comps already here)`;
+}
+function ingestPdf(list, name) {
+  let made = 0, merged = 0;
+  list.forEach(r => { const { isNew } = upsertComp({ mls: r.mls, apn: r.apn, key: r.addr ? addrKey(r.addr) : '', label: r.addr }, 'pdf', r); isNew ? made++ : merged++; });
+  logFile(name, 'MLS printout', list.length);
+  return `${name}: ${list.length} listings with history (${merged} matched, ${made} new)`;
+}
+function ingestCrs(r, name) {
+  const s = app.job.subject; const key = addrKey(r.addr);
+  if (s.addr && addrKey(s.addr) === key) { s.crs = r; fillSubjectFrom(r); logFile(name, 'CRS (subject)', 1); return `${name}: subject's CRS report – location and APN filled in`; }
+  const { isNew } = upsertComp({ apn: r.apn, key, label: r.addr }, 'crs', r); logFile(name, 'CRS report', 1);
+  return `${name}: ${r.addr} (${isNew ? 'new comp' : 'matched'})`;
+}
+async function ingestCort(rows, name) {
+  const seen = new Set(app.cort.map(r => r.apn + '|' + r.saleDate + '|' + r.doc)); let added = 0;
+  rows.forEach(r => { const k = r.apn + '|' + r.saleDate + '|' + r.doc; if (!seen.has(k)) { seen.add(k); app.cort.push(r); added++; } });
+  setCort(app.cort); await DB.put('kv', { id: 'cort', rows: app.cort });
+  app.job.comps.forEach(attachCort);
+  return `${name}: ${added} new CORT sales saved (${app.cort.length} in your CORT table). They fill in automatically when a comp matches by APN or address.`;
+}
+async function ingestPhotos(f) {
+  const files = await readZip(f); let n = 0; const mlsSet = new Set();
+  for (const [path, data] of files) {
+    const base = path.split('/').pop(); const m = base.match(/^(\d{2}-\d+)_(\d+)\.(jpe?g|png)$/i); if (!m) continue;
+    const id = app.job.id + ':' + m[1] + '_' + m[2];
+    await DB.put('photos', { id, jobId: app.job.id, mls: m[1], n: +m[2], name: base, blob: new Blob([data], { type: /png$/i.test(m[3]) ? 'image/png' : 'image/jpeg' }) });
+    n++; mlsSet.add(m[1]);
+  }
+  await loadPhotos(); logFile(f.name, 'MLS photos', n);
+  const missing = [...mlsSet].filter(m => !app.job.comps.some(c => V(c, 'mls') === m));
+  return `${f.name}: ${n} photos for ${mlsSet.size} listings${missing.length ? ` (${missing.length} listings are not in your list yet – their photos appear when you add the MLS export)` : ''}`;
+}
+async function ingestJson(f) {
+  const data = await gunzipJSON(f);
+  if (data && data.app === 'appraisal-assistant-comp-archive') {
+    app.busy = 'Saving your archive on this computer…'; renderBusy();
+    archiveIndex(data); await DB.put('kv', { id: 'archive', data, loaded: Date.now() });
+    app.job.comps.forEach(attachArchive);
+    return `Comp archive loaded: ${data.rows.length.toLocaleString()} records, ${Object.keys(data.sales).length.toLocaleString()} sales (built ${data.built || ''}). It stays on this computer.`;
+  }
+  if (data && data.app === 'comp-genie-job') {
+    const j = data.job; j.id = uid(); j.name = j.name + ' (restored)'; app.jobs.unshift(j); app.job = j; app.sel = null; await saveNow(); await loadPhotos();
+    j.comps.forEach(c => { attachArchive(c); attachCort(c); });
+    return 'Assignment restored: ' + j.name;
+  }
+  throw new Error('not a comp archive or a Comp Genie backup');
+}
+function fillSubjectFrom(r) {
+  const s = app.job.subject; ['addr', 'city', 'zip', 'apn'].forEach(k => { if (!s[k] && r[k]) s[k] = r[k]; });
+  if (r.lat && r.lon) { s.lat = r.lat; s.lon = r.lon; }
+}
+
+/* ---------------- rendering ---------------- */
+function render() {
+  const J = app.job; const root = $('#app');
+  root.innerHTML = `
+  <header class="top"><h1>Comp Genie</h1>
+    <span class="pill ${ARCH.loaded ? 'ok' : 'warn'}">${ARCH.loaded ? `Archive: ${ARCH.rows.length.toLocaleString()} records` : 'Archive not loaded'}</span>
+    <span class="pill">${app.cort.length ? `CORT: ${app.cort.length} sales` : 'No CORT table'}</span>
+    <span class="grow"></span>
+    <label class="jobsel">Assignment <select data-act="pickjob">${app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('')}</select></label>
+    <button class="btn" data-act="newjob">New assignment</button>
+    <button class="btn" data-act="backup" title="Save this assignment to a file">Back up</button>
+    ${app.confirm === 'deljob' ? `<span class="confirm">Delete “${esc(J.name)}”? <button class="btn danger solid" data-act="deljob-yes">Delete</button><button class="btn" data-act="cancel">Keep</button></span>` : `<button class="btn danger" data-act="deljob">Delete</button>`}
+  </header>
+  ${ARCH.loaded ? '' : `<section class="card notice"><b>Load your comp archive once.</b> Drop <i>Comp Archive.json.gz</i> anywhere on this page (or <label class="link">choose it<input type="file" accept=".gz,.json" data-act="files" hidden></label>). It is saved on this computer only; nothing is uploaded.</section>`}
+  <div class="busy" id="busy" ${app.busy ? '' : 'hidden'}>${esc(app.busy)}</div>
+  <section class="card"><h2>Subject</h2>${subjectHTML(J)}</section>
+  <section class="card"><h2>Add comps</h2>
+    <div class="addrow"><div class="sugwrap"><input id="addr" class="txt big" placeholder="Type a comp address, e.g. 1181 Glenview" autocomplete="off" data-act="sugg"><div class="sugg" id="sugg"></div></div>
+      <button class="btn primary" data-act="add">Add comp</button></div>
+    <p class="help">If the address is in your archive, it fills in at once with every version you have. Then drop files to add to it.</p>
+    <label class="drop" id="drop"><input type="file" multiple data-act="files" hidden>
+      <b>Drop files here</b> or click to choose: MLS export (.csv) · MLS photos (.zip) · MLS printout (.pdf) · CRS reports (.pdf) · CORT table (.csv) · comp archive (.gz)</label>
+    ${(J.files || []).length ? `<p class="help">In this assignment: ${J.files.map(f => `${esc(f.name)} <small>(${esc(f.kind)}${f.n ? ', ' + f.n : ''})</small>`).join(' · ')}</p>` : ''}
+  </section>
+  <section class="card"><h2>Comps considered <small>${J.comps.length}</small></h2>${compsTable(J)}</section>
+  <div id="detail">${app.sel ? detailHTML(J.comps.find(c => c.id === app.sel)) : ''}</div>
+  <section class="card"><h2>Export</h2>${exportHTML(J)}</section>
+  <footer class="foot">Comp Genie · your data stays on this computer · build ${typeof BUILD !== 'undefined' ? BUILD : ''}</footer>`;
+  fillImages();
+}
+function renderBusy() { const b = $('#busy'); if (b) { b.hidden = !app.busy; b.textContent = app.busy; } }
+function subjectHTML(J) {
+  const s = J.subject; const inA = s.addr && ARCH.loaded ? ARCH.byAddr.get(addrKey(s.addr)) : null;
+  const f = (k, l, w = '') => `<label class="fld ${w}"><span>${l}</span><input class="txt" data-subj="${k}" value="${esc(s[k] ?? '')}"></label>`;
+  return `<div class="grid6">${f('addr', 'Address', 'w2')}${f('city', 'City')}${f('zip', 'ZIP')}${f('apn', 'APN')}<label class="fld"><span>Effective date</span><input class="txt" type="date" data-subj="eff" value="${esc(s.eff || '')}"></label>
+    ${f('lat', 'Latitude')}${f('lon', 'Longitude')}<label class="fld"><span>Assignment name</span><input class="txt" data-jobname="1" value="${esc(J.name)}"></label></div>
+    <p class="help">Latitude and longitude give each comp its distance and direction. Drop the subject's CRS report here to fill them: <label class="link">choose the subject's CRS PDF<input type="file" accept=".pdf" data-act="subjcrs" hidden></label>${inA ? ` · Your archive has ${inA.length} record${inA.length > 1 ? 's' : ''} for this address.` : ''}</p>`;
+}
+function compsTable(J) {
+  if (!J.comps.length) return '<p class="help">No comps yet. Type an address above, or drop your MLS export.</p>';
+  const rows = [...J.comps].sort((a, b) => (a.use || 99) - (b.use || 99) || String(V(b, 'saleDate') || V(b, 'contractDate') || '').localeCompare(String(V(a, 'saleDate') || V(a, 'contractDate') || '')));
+  const maxUse = Math.max(9, J.comps.length);
+  return `<div class="tablewrap"><table class="comps"><thead><tr><th>Use as</th><th></th><th>Address</th><th>Status</th><th class="r">Price</th><th>Date</th><th class="r">GLA</th><th class="r">Site</th><th>Q / C</th><th>View</th><th class="r">Miles</th><th>Sources</th><th>Flags</th><th></th></tr></thead><tbody>
+  ${rows.map(c => { const fr = frontOf(c); const px = proximity(c, J); const fl = compFlags(c, J); const warn = fl.filter(x => x.sev === 'warn').length;
+    const st = V(c, 'status') || ((currentSale(c) || {}).status || '');
+    return `<tr class="${c.id === app.sel ? 'sel' : ''} ${c.use ? 'used' : ''}" data-open="${c.id}">
+      <td><select data-use="${c.id}" aria-label="Use as comp number"><option value="">–</option>${Array.from({ length: maxUse }, (_, i) => `<option ${c.use === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></td>
+      <td>${fr ? `<img class="thumb" data-photo="${fr.id}" alt="">` : '<span class="nothumb"></span>'}</td>
+      <td><b>${esc(compTitle(c))}</b><br><small>${esc(V(c, 'mls') ? 'MLS ' + V(c, 'mls') : '')}</small></td>
+      <td>${esc(st)}</td><td class="r">${money(V(c, 'salePrice') || V(c, 'listPrice'))}${!V(c, 'salePrice') && V(c, 'listPrice') ? '<br><small>list</small>' : ''}</td>
+      <td>${esc(showDate(V(c, 'saleDate') || V(c, 'contractDate')))}</td><td class="r">${int(V(c, 'gla'))}</td><td class="r">${esc(fmt(FIELD.siteSf, V(c, 'siteSf')))}</td>
+      <td>${esc([V(c, 'quality'), V(c, 'condition')].filter(Boolean).join(' / '))}</td><td><small>${esc([V(c, 'viewRating'), V(c, 'viewTypes')].filter(Boolean).join(': ')).slice(0, 40)}</small></td>
+      <td class="r">${px ? px.mi.toFixed(2) + '<br><small>' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') + '</small>' : ''}</td>
+      <td>${sourcesOf(c).map(s => `<span class="src">${esc(s)}</span>`).join(' ')}</td>
+      <td>${fl.length ? `<span class="badge ${warn ? 'warn' : ''}">${fl.length}</span>` : ''}</td>
+      <td>${app.confirm === 'rm:' + c.id ? `<button class="btn danger solid sm" data-rmyes="${c.id}">Remove</button><button class="btn sm" data-act="cancel">Keep</button>` : `<button class="btn sm" data-rm="${c.id}" title="Remove from this list">✕</button>`}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function cellHTML(c, f, s, S, using) {
+  const v = S[s] ? S[s][f.k] : null; if (blank(v)) return `<td class="srccell empty"></td>`;
+  const on = using.src === s;
+  return `<td class="srccell ${on ? 'on' : ''}" data-pick="${s}" data-field="${f.k}" title="Use the ${esc(SRC[s].name)} value">${esc(fmt(f, v))}</td>`;
+}
+function detailHTML(c) {
+  if (!c) return '';
+  const J = app.job; const S = srcVals(c); const fl = compFlags(c, J); const ps = photosOf(c); const fr = frontOf(c); const prior = priorSales(c); const px = proximity(c, J);
+  const cols = SRC_ORDER.filter(s => s === 'arch' ? c.src.arch.length : s === 'cort' ? c.src.cort.length : c.src[s]);
+  let lastG = '';
+  const rows = FIELDS.map(f => {
+    const u = val(c, f.k); const any = cols.some(s => S[s] && !blank(S[s][f.k])) || !blank(c.edit[f.k]); if (!any && !app.showAll) return '';
+    const head = f.g !== lastG ? `<tr class="grp"><th colspan="${3 + cols.length}">${esc(f.g)}</th></tr>` : ''; lastG = f.g;
+    const dis = disagree(c, f.k);
+    return head + `<tr><th>${esc(f.l)}${dis ? ' <span class="diff" title="Sources disagree">≠</span>' : ''}</th>
+      <td class="using">${esc(fmt(f, u.v))}${u.src ? ` <span class="tag ${u.src}">${esc(SRC[u.src].short)}</span>` : ''}${(c.pick[f.k] || !blank(c.edit[f.k])) ? ` <button class="lnk" data-reset="${f.k}" title="Back to the automatic choice">↺</button>` : ''}</td>
+      <td><input class="txt sm" data-edit="${f.k}" value="${esc(blank(c.edit[f.k]) ? '' : (f.t === 'date' ? showDate(c.edit[f.k]) : c.edit[f.k]))}" placeholder="your value"></td>
+      ${cols.map(s => cellHTML(c, f, s, S, u)).join('')}</tr>`;
+  }).join('');
+  const archSel = c.src.arch.length ? `<select data-archpick="${c.id}">${c.src.arch.map(a => `<option value="${a.rec}" ${archChosen(c) && archChosen(c).rec === a.rec ? 'selected' : ''}>${esc(a.label)}</option>`).join('')}</select>` : '';
+  const cortSel = c.src.cort.length > 1 ? `<select data-cortpick="${c.id}">${c.src.cort.map((t, i) => `<option value="${i}" ${(c.cortPick || 0) === i ? 'selected' : ''}>${esc(showDate(t.saleDate) + ' ' + money(t.salePrice))}</option>`).join('')}</select>` : '';
+  const p = c.src.pdf, m = c.src.mls;
+  return `<section class="card detail" id="det-${c.id}">
+    <div class="dhead"><div>${fr ? `<img class="hero" data-photo="${fr.id}" alt="Front photo">` : ''}</div>
+      <div><h2>${esc(compTitle(c))} <small>${esc([V(c, 'city'), V(c, 'zip')].filter(Boolean).join(' '))}</small></h2>
+      <p class="big">${esc(V(c, 'status') || '')} · ${money(V(c, 'salePrice') || V(c, 'listPrice'))} · ${esc(showDate(V(c, 'saleDate') || V(c, 'contractDate')))}${px ? ` · ${px.mi.toFixed(2)} mi ${esc(px.dir)}` : ''}</p>
+      <p><label>Use as comp # <select data-use="${c.id}"><option value="">–</option>${Array.from({ length: Math.max(9, J.comps.length) }, (_, i) => `<option ${c.use === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>
+         <button class="btn sm" data-act="close">Close</button></p>
+      ${fl.length ? `<ul class="flags">${fl.map(x => `<li class="${x.sev}">${esc(x.t)}</li>`).join('')}</ul>` : '<p class="help">No flags.</p>'}</div></div>
+    ${ps.length ? `<div class="strip">${ps.map(ph => `<button class="ph ${fr && ph.id === fr.id ? 'on' : ''}" data-front="${ph.id}" title="Use as the front photo"><img data-photo="${ph.id}" alt="Photo ${ph.n}"></button>`).join('')}</div><p class="help">Click a photo to make it the front photo for this comp.</p>` : (V(c, 'mls') ? '<p class="help">No photos yet – drop the MLS photos zip.</p>' : '')}
+    <h3>Field by field <small>click any source value to use it, or type your own</small></h3>
+    <div class="tablewrap"><table class="cmp"><colgroup><col style="width:200px"><col style="width:190px"><col style="width:120px">${cols.map(() => '<col>').join('')}</colgroup><thead><tr><th>Field</th><th>Using</th><th>Your value</th>${cols.map(s => `<th>${esc(SRC[s].name)}${s === 'arch' ? '<br>' + archSel : s === 'cort' ? '<br>' + cortSel : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p><label><input type="checkbox" data-act="showall" ${app.showAll ? 'checked' : ''}> Show empty fields too</label></p>
+    <h3>Prior sales and transfers</h3>
+    ${prior.length ? `<table class="mini"><tr><th>Date</th><th class="r">Price</th><th>Type</th><th>Before this sale</th><th>From</th></tr>${prior.map(s => `<tr class="${s.monthsBefore > 0 && s.monthsBefore <= 12 ? 'hot' : ''}"><td>${esc(showDate(s.date))}</td><td class="r">${money(s.price)}</td><td>${esc(s.inst || s.type || '')}</td><td>${s.monthsBefore != null ? Math.round(s.monthsBefore) + ' mo' : ''}</td><td><small>${esc(s.src)}</small></td></tr>`).join('')}</table>` : '<p class="help">None found in the sources you have loaded.</p>'}
+    ${p && (p.listings || []).length ? `<h3>Listing history (MLS printout)</h3><table class="mini"><tr><th>MLS #</th><th>Status</th><th class="r">Price</th><th>Date</th><th class="r">DOM</th><th class="r">CDOM</th></tr>${p.listings.map(h => `<tr class="${h.mls === p.mls ? 'hot' : ''}"><td>${esc(h.mls)}</td><td>${esc(h.status)}</td><td class="r">${money(h.price)}</td><td>${esc(showDate(h.date))}</td><td class="r">${int(h.dom)}</td><td class="r">${int(h.cdom)}</td></tr>`).join('')}</table>
+      ${(p.priceChanges || []).length ? `<p class="help">Price changes on this listing: ${p.priceChanges.map(x => `${showDate(x.date)} → ${money(x.price)}${x.pct ? ' (' + x.pct + '%)' : ''}`).join(' · ')}</p>` : ''}` : ''}
+    ${m && (m.remarks || m.privateRemarks) ? `<details><summary>MLS remarks</summary><p>${esc(m.remarks)}</p>${m.privateRemarks ? `<p><b>Agent remarks:</b> ${esc(m.privateRemarks)}</p>` : ''}${m.aduNote ? `<p><b>ADU:</b> ${esc(m.aduNote)}</p>` : ''}</details>` : ''}
+    ${c.src.cort.length ? `<details><summary>CORT lines</summary><table class="mini"><tr><th>Week</th><th>Grantor → grantee</th><th class="r">Price</th><th>Recorded</th><th>Remarks</th><th>Financing</th><th>Doc #</th></tr>${c.src.cort.map(t => `<tr><td>${esc(t.period)}</td><td>${esc(t.grantor)} → ${esc(t.grantee)}</td><td class="r">${money(t.salePrice)}</td><td>${esc(showDate(t.saleDate))}</td><td>${esc(t.cortRemarks)}</td><td>${esc(t.financing)}</td><td>${esc(t.doc)}</td></tr>`).join('')}</table></details>` : ''}
+    <label class="fld"><span>Notes for this comp</span><textarea class="txt" rows="2" data-notes="${c.id}">${esc(c.notes || '')}</textarea></label>
+  </section>`;
+}
+function exportHTML(J) {
+  const used = J.comps.filter(c => c.use).sort((a, b) => a.use - b.use);
+  return `<p>${used.length ? `Comps chosen: ${used.map(c => `<b>${c.use}</b> ${esc(compTitle(c))}`).join(' · ')}` : 'Pick comps with “Use as” in the list. If none are picked, the table export includes every comp considered.'}</p>
+  <div class="row"><button class="btn primary" data-act="x-sfrep" ${used.length ? '' : 'disabled'}>SFREP comps file (.zip)</button>
+  <button class="btn" data-act="x-csv">Comps table (.csv)</button>
+  <button class="btn" data-act="x-photos">Front photos (.zip)</button></div>
+  <p class="help">The SFREP file has the chosen comps in grid order with their front photos, sale and listing data, site, view and house facts. Adjustments are not included – you make those in SFREP. Import it into a copy of your report first (Home › Import Forms) to see how SFREP takes it.</p>`;
+}
+function showNotes(notes) {
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  bg.innerHTML = `<div class="sheet"><h2>Files read</h2><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul><div class="row"><button class="btn primary" data-close="1">OK</button></div></div>`;
+  document.body.appendChild(bg); bg.querySelector('[data-close]').onclick = () => bg.remove(); bg.querySelector('[data-close]').focus();
+}
+
+/* ---------------- exports ---------------- */
+function jobBase() { return safeName(app.job.subject.addr || app.job.name); }
+async function exportSfrep() {
+  const used = app.job.comps.filter(c => c.use).sort((a, b) => a.use - b.use); if (!used.length) return;
+  const entries = [{ name: jobBase() + ' - Comps.xml', data: buildCompsMISMO(app.job, used) }];
+  for (const c of used) { const fr = frontOf(c); if (fr) { const r = await DB.get('photos', fr.id); if (r) entries.push({ name: 'Images/' + photoName(c), data: r.blob }); } }
+  download(await makeZip(entries), jobBase() + ' - Comps SFREP.zip'); toast('Saved to your Downloads folder');
+}
+function exportCsv() {
+  const used = app.job.comps.filter(c => c.use).sort((a, b) => a.use - b.use);
+  const list = [...used, ...app.job.comps.filter(c => !c.use)];
+  download(new Blob([compsCSV(app.job, list)], { type: 'text/csv' }), jobBase() + ' - Comps considered.csv');
+}
+async function exportPhotos() {
+  const used = app.job.comps.filter(c => c.use); const list = used.length ? used : app.job.comps; const entries = []; const names = new Set();
+  for (const c of list) { const fr = frontOf(c); if (!fr) continue; const r = await DB.get('photos', fr.id); if (!r) continue; let nm = safeName(compTitle(c)) + '.jpg'; let i = 2; while (names.has(nm)) nm = safeName(compTitle(c)) + ' (' + i++ + ').jpg'; names.add(nm); entries.push({ name: nm, data: r.blob }); }
+  if (!entries.length) { toast('No photos yet – drop the MLS photos zip first'); return; }
+  download(await makeZip(entries), jobBase() + ' - Comp photos.zip');
+}
+async function backupJob() {
+  const blob = await gzipBlob(JSON.stringify({ app: 'comp-genie-job', version: 1, job: app.job }));
+  download(blob, safeName(app.job.name) + ' - Comp Genie backup.json.gz');
+}
+
+/* ---------------- events ---------------- */
+function openComp(id) { app.sel = id; render(); const d = $('#detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act],[data-open],[data-pick],[data-reset],[data-front],[data-rm],[data-rmyes],.sug');
+  if (!t) return;
+  if (t.matches('select,input,option')) return;
+  const c = app.sel ? app.job.comps.find(x => x.id === app.sel) : null;
+  if (t.classList.contains('sug')) { $('#addr').value = t.dataset.label; addByAddress(t.dataset.label); return; }
+  if (t.dataset.open && !e.target.closest('select,button,input')) { openComp(t.dataset.open); return; }
+  if (t.dataset.pick && c) { c.pick[t.dataset.field] = t.dataset.pick; delete c.edit[t.dataset.field]; save(); render(); return; }
+  if (t.dataset.reset && c) { delete c.pick[t.dataset.reset]; delete c.edit[t.dataset.reset]; save(); render(); return; }
+  if (t.dataset.front && c) { c.front = t.dataset.front; save(); render(); return; }
+  if (t.dataset.rm) { app.confirm = 'rm:' + t.dataset.rm; render(); return; }
+  if (t.dataset.rmyes) { app.job.comps = app.job.comps.filter(x => x.id !== t.dataset.rmyes); if (app.sel === t.dataset.rmyes) app.sel = null; app.confirm = null; save(); render(); return; }
+  switch (t.dataset.act) {
+    case 'add': addByAddress($('#addr').value); break;
+    case 'newjob': await newJob(); await loadPhotos(); render(); break;
+    case 'deljob': app.confirm = 'deljob'; render(); break;
+    case 'deljob-yes': { const id = app.job.id; await DB.del('jobs', id); for (const p of await DB.byJob(id)) await DB.del('photos', p.id); app.jobs = app.jobs.filter(j => j.id !== id); app.job = app.jobs[0] || null; app.confirm = null; if (!app.job) await newJob(); await loadPhotos(); render(); break; }
+    case 'cancel': app.confirm = null; render(); break;
+    case 'close': app.sel = null; render(); break;
+    case 'backup': backupJob(); break;
+    case 'x-sfrep': exportSfrep(); break;
+    case 'x-csv': exportCsv(); break;
+    case 'x-photos': exportPhotos(); break;
+    case 'showall': app.showAll = t.checked; render(); break;
+  }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.act === 'files' && t.files.length) { await ingest([...t.files]); t.value = ''; return; }
+  if (t.dataset.act === 'subjcrs' && t.files.length) { try { const r = crsCanon(parseCRS(await pdfLines(t.files[0]))); app.job.subject.crs = r; ['addr', 'city', 'zip', 'apn'].forEach(k => { if (r[k]) app.job.subject[k] = r[k]; }); if (r.lat) { app.job.subject.lat = r.lat; app.job.subject.lon = r.lon; } if (app.job.name === 'New assignment' && r.addr) app.job.name = r.addr; logFile(t.files[0].name, 'CRS (subject)', 1); save(); render(); toast('Subject filled from the CRS report'); } catch (err) { toast('Could not read that CRS report'); } return; }
+  if (t.dataset.act === 'pickjob') { app.job = app.jobs.find(j => j.id === t.value); app.sel = null; await DB.put('kv', { id: 'lastJob', v: app.job.id }); await loadPhotos(); render(); return; }
+  if (t.dataset.act === 'showall') { app.showAll = t.checked; render(); return; }
+  if (t.dataset.use) { const c = app.job.comps.find(x => x.id === t.dataset.use); const n = t.value ? +t.value : null; if (n) app.job.comps.forEach(x => { if (x !== c && x.use === n) x.use = null; }); c.use = n; save(); render(); return; }
+  if (t.dataset.archpick) { const c = app.job.comps.find(x => x.id === t.dataset.archpick); c.archPick = +t.value; save(); render(); return; }
+  if (t.dataset.cortpick) { const c = app.job.comps.find(x => x.id === t.dataset.cortpick); c.cortPick = +t.value; save(); render(); return; }
+  if (t.dataset.edit) { const c = app.job.comps.find(x => x.id === app.sel); const f = FIELD[t.dataset.edit]; const v = parseInput(f, t.value); if (blank(v)) delete c.edit[f.k]; else c.edit[f.k] = v; save(); render(); return; }
+  if (t.dataset.subj) { app.job.subject[t.dataset.subj] = t.value.trim(); if (t.dataset.subj === 'addr' && (!app.job.name.trim() || app.job.name === 'New assignment')) app.job.name = t.value.trim() || app.job.name; save(); render(); return; }
+  if (t.dataset.jobname) { app.job.name = t.value.trim() || 'Assignment'; save(); render(); return; }
+  if (t.dataset.notes) { const c = app.job.comps.find(x => x.id === t.dataset.notes); c.notes = t.value; save(); return; }
+});
+document.addEventListener('input', e => {
+  const t = e.target; if (t.id !== 'addr') return;
+  const s = archiveSuggest(t.value); const box = $('#sugg');
+  const cortHits = t.value.trim().length > 3 ? app.cort.filter(r => r.addr && r.addr.toLowerCase().startsWith(t.value.trim().toLowerCase())).slice(0, 4) : [];
+  box.innerHTML = s.map(x => `<button class="sug" data-label="${esc(x.label)}"><b>${esc(x.label)}</b> <small>${esc(x.city)} · ${ARCH.byAddr.get(x.k).length} in archive</small></button>`).join('')
+    + cortHits.map(r => `<button class="sug" data-label="${esc(r.addr)}"><b>${esc(r.addr)}</b> <small>CORT ${esc(showDate(r.saleDate))} ${money(r.salePrice)}</small></button>`).join('');
+});
+document.addEventListener('keydown', e => {
+  if (e.target.id !== 'addr' || e.key !== 'Enter') return; e.preventDefault();
+  // a partly typed address takes the first suggestion, unless it already names a property in your archive
+  const typed = e.target.value; const first = $('#sugg .sug');
+  addByAddress(ARCH.byAddr.has(addrKey(typed)) || !first ? typed : first.dataset.label);
+});
+['dragover', 'drop'].forEach(ev => document.addEventListener(ev, async e => {
+  e.preventDefault(); const d = $('#drop'); if (ev === 'dragover') { if (d) d.classList.add('over'); return; }
+  if (d) d.classList.remove('over'); if (e.dataTransfer && e.dataTransfer.files.length) await ingest([...e.dataTransfer.files]);
+}));
+document.addEventListener('dragleave', e => { const d = $('#drop'); if (d && !e.relatedTarget) d.classList.remove('over'); });
+
+if (location.protocol === 'file:') {
+  document.getElementById('app').innerHTML = '<section class="card notice"><h2>Open Comp Genie from its web address</h2><p>This page reads PDFs with a helper that browsers only allow on a web address (https), not from a file on your computer. Open the Comp Genie link (your GitHub Pages address) in Chrome instead. Your data still stays on this computer.</p></section>';
+} else start().catch(e => { console.error(e); const b = document.getElementById('app'); b.innerHTML = '<p style="color:#c00;padding:24px">Comp Genie could not start: ' + esc(e.message || e) + '</p>'; });
+
+</script></body></html>
