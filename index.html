@@ -71,12 +71,20 @@ table.grid input.adj.auto::placeholder{color:var(--teal-d);font-style:italic;opa
 table.grid tr.tot td,table.grid tr.tot th{background:#f7fbfb}table.grid tr.big td{font-size:16px}small.over{color:var(--bad);font-weight:700}.measure{color:var(--bad);font-weight:700}
 .gsum{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.gsum>div,.gsum>label{background:var(--teal-l);border-radius:8px;padding:8px 12px;display:grid;gap:2px;min-width:160px}.gsum span{font-size:12px;color:var(--muted)}.gsum b{font-size:18px}
 input.xs{width:80px}
+/* report details */
+.rptgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px 22px}
+.rptgrid section h3{margin:4px 0 8px}
+.rptgrid .fld{display:block;margin:0 0 8px}.rptgrid .fld>span{display:block;font-size:.85em;color:var(--muted,#5b6876)}
+.rptgrid .fld input.txt,.rptgrid .fld textarea{width:100%;box-sizing:border-box}
+.rptgrid label.check{display:block;margin:2px 0}
+.rptgrid input::placeholder,.rptgrid textarea::placeholder{color:#8a96a3}
+.warnTxt{color:#e00000}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g1-1016-0656';
+const BUILD='g1-1016-1549';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -932,7 +940,7 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   if (price && list && status !== 'SettledSale') XV(cd, 'SaleToListPriceRatioPercent', (price / list * 100).toFixed(2));
   cd.kids.sort((a, b) => a.tag.localeCompare(b.tag)); // UAD order is alphabetical inside COMPARABLE_DETAIL
   // ENERGY_EFFICIENCY_AND_GREEN
-  const en = String(g('energy') || ''); if (/solar|geotherm|wind/i.test(en)) { const e = X(P, 'ENERGY_EFFICIENCY_AND_GREEN'); XV(X(e, 'ENERGY_EFFICIENCY_AND_GREEN_DETAIL'), 'RenewableEnergyComponentExistsIndicator', 'true'); XV(X(X(e, 'RENEWABLE_ENERGY_COMPONENTS'), 'RENEWABLE_ENERGY_COMPONENT'), 'RenewableEnergyComponentType', /geotherm/i.test(en) ? 'Geothermal' : /wind/i.test(en) ? 'WindTurbine' : 'Solar'); }
+  const en = String(g('energy') || ''); if (/solar|photovolt|geotherm|wind\s*(turbine|power|generator|mill)/i.test(en)) { const e = X(P, 'ENERGY_EFFICIENCY_AND_GREEN'); XV(X(e, 'ENERGY_EFFICIENCY_AND_GREEN_DETAIL'), 'RenewableEnergyComponentExistsIndicator', 'true'); XV(X(X(e, 'RENEWABLE_ENERGY_COMPONENTS'), 'RENEWABLE_ENERGY_COMPONENT'), 'RenewableEnergyComponentType', /geotherm/i.test(en) ? 'Geothermal' : /wind\s*(turbine|power|generator|mill)/i.test(en) ? 'WindTurbine' : 'Solar'); }
   // HAZARD (from CRS flood zone) goes in SITE below
   // IMPROVEMENTS
   const imp = X(X(P, 'IMPROVEMENTS'), 'IMPROVEMENT'); const idt = X(imp, 'IMPROVEMENT_DETAIL'); const cool = uadCool(g('heatCool'));
@@ -1030,7 +1038,7 @@ function sourcesOf(c) { const s = []; if (c.src.arch.length) s.push('Archive×' 
    She makes every adjustment.  The grid only does the arithmetic she asks for:
    type an amount in any cell, or type a rate once (per sq ft, per usable acre,
    per bath, per space, % per month) and the cells without your own amount use it.
-   Lot Utility / usable lot area: only from her archive or her own measurement.
+   Usable Lot Area/Utility: only from her archive or her own measurement.
    ===================================================================== */
 const ADJ_ROWS = [
   // [id, label, section, UAD adjustment line (null = no adjustment), rate key]
@@ -1044,27 +1052,27 @@ const ADJ_ROWS = [
   ['sale', 'Sale date (market conditions)', 'Sales and listing', 'SaleDate', 'timePct'],
   ['dom', 'Days on market', 'Sales and listing', null],
   ['site', 'Site size', 'Site', 'SiteSize'],
-  ['usable', 'Lot Utility/ Usable lot area', 'Site', 'OTHER', 'usableAc'],
+  ['nbhd', 'Neighborhood name', 'Site', 'NeighborhoodName'],
   ['loc', 'Site influence (location)', 'Site', 'SiteInfluence'],
   ['view', 'View', 'Site', 'View'],
+  ['usable', 'Usable Lot Area/Utility', 'Site', 'OTHER', 'usableAc'],
   ['topo', 'Topography', 'Site', 'Topography'],
-  ['nbhd', 'Neighborhood name', 'Site', 'NeighborhoodName'],
-  ['style', 'Design (style)', 'Dwelling', 'DwellingStyle'],
   ['year', 'Year built', 'Dwelling', 'YearBuilt'],
-  ['q', 'Overall quality', 'Dwelling', 'OverallQualityRating'],
-  ['c', 'Overall condition', 'Dwelling', 'OverallConditionRating'],
+  ['style', 'Design (style)', 'Dwelling', 'DwellingStyle'],
+  ['energy', 'Energy efficient features', 'Dwelling', 'EnergyEfficientAndGreenFeatures'],
   ['beds', 'Bedrooms', 'Dwelling', 'LivingUnitBedroomCount', 'bed'],
   ['baths', 'Baths (full / half)', 'Dwelling', 'LivingUnitBathroomCount', 'bath'],
   ['gla', 'Living area above grade (sq ft)', 'Dwelling', 'LivingUnitStandardFinishedAreaAboveGrade', 'gla'],
   ['bsmt', 'Below grade finished (sq ft)', 'Dwelling', 'LivingUnitStandardFinishedAreaBelowGrade'],
-  ['garage', 'Vehicle storage', 'Dwelling', 'VehicleStorage', 'space'],
-  ['energy', 'Energy efficient features', 'Dwelling', 'EnergyEfficientAndGreenFeatures'],
-  ['pool', 'Pool / spa', 'Amenities', 'WaterFeaturesAmenity'],
+  ['q', 'Overall quality', 'Dwelling', 'OverallQualityRating'],
+  ['c', 'Overall condition', 'Dwelling', 'OverallConditionRating'],
   ['porch', 'Porch / patio / deck', 'Amenities', 'OutdoorLivingAmenity'],
+  ['pool', 'Pool / spa', 'Amenities', 'WaterFeaturesAmenity'],
   ['adu', 'ADU / guest house / outbuildings', 'Amenities', 'Outbuilding'],
   ['other', 'Other amenities', 'Amenities', 'MiscellaneousAmenity'],
+  ['garage', 'Vehicle storage', 'Amenities', 'VehicleStorage', 'space'],
 ];
-const LOT_UTILITY = 'Lot Utility/ Usable lot area';      // her exact SFREP "Add Other" row name
+const LOT_UTILITY = 'Usable Lot Area/Utility';      // her exact SFREP template "Add Other" row name (must match letter for letter)
 const RATES = { gla: ['$ per sq ft', 'subject − comp sq ft × rate'], usableAc: ['$ per usable acre', 'subject − comp usable acres × rate'], bed: ['$ per bedroom', 'bedroom difference × rate'],
   bath: ['$ per full bath', 'full-bath difference × rate (half baths at half the rate)'], space: ['$ per garage space', 'space difference × rate'], timePct: ['% per month', 'months from sale to effective date × % × price'] };
 
@@ -1120,7 +1128,8 @@ function cellAmount(J, c, row) {
 }
 function compTotals(J, c) {
   const C = compFacts(c, J); let net = 0, gross = 0, lines = 0;
-  ADJ_ROWS.filter(r => r[3]).forEach(r => { const a = cellAmount(J, c, r).v; if (a) { net += a; gross += Math.abs(a); lines++; } });
+  // order as on the 3.6 grid (D-1 sample): Add Other rows first, then site, dwelling, units, quality/condition, amenities
+  ADJ_ROWS.filter(r => r[3]).sort((x, y) => (y[3] === 'OTHER') - (x[3] === 'OTHER')).forEach(r => { const a = cellAmount(J, c, r).v; if (a) { net += a; gross += Math.abs(a); lines++; } });
   const price = C.price || 0; return { price, net, gross, lines, adj: price + net, netPct: price ? net / price * 100 : 0, grossPct: price ? gross / price * 100 : 0, adjPsf: C.gla ? (price + net) / C.gla : null };
 }
 
@@ -1148,7 +1157,7 @@ function gridHTML(J) {
   const adjs = tot.map(t => t.adj).filter(Boolean); const lo = Math.min(...adjs), hi = Math.max(...adjs);
   const med = adjs.length ? [...adjs].sort((a, b) => a - b)[Math.floor((adjs.length - 1) / 2)] : null;
   return `<h2>Adjustment grid <small>UAD 3.6 lines · your amounts</small></h2>
-    <p class="help">${inspNote} Type an amount in any cell (minus for a downward adjustment). Or type a rate once beside a line; cells without your own amount then use it (shown in grey). Clear a cell to go back to the rate. Lot Utility / usable area comes only from your archive or your measurement – blank comps say <span class="measure">Measure it</span>.</p>
+    <p class="help">${inspNote} Type an amount in any cell (minus for a downward adjustment). Or type a rate once beside a line; cells without your own amount then use it (shown in grey). Clear a cell to go back to the rate. Usable Lot Area/Utility comes only from your archive or your measurement – blank comps say <span class="measure">Measure it</span>.</p>
     <div class="tablewrap"><table class="grid"><thead><tr><th></th><th>Subject<br><small>${esc(J.subject.addr || '')}</small></th>${used.map(c => `<th>Comp ${c.use}<br><small>${esc(compTitle(c))}</small></th>`).join('')}</tr></thead>
     <tbody>${rows}
     ${sumRow('Net adjustment', t => `${t.net >= 0 ? '+' : '−'}${money(Math.abs(t.net))} <small>${t.netPct.toFixed(1)}%</small>`)}
@@ -1187,14 +1196,15 @@ async function ingestInspection(files, name) {
 /* ---------------- adjustments into the SFREP file ---------------- */
 function gridAdjustXML(CMP, c, job) {
   const G = job.grid; if (!G) return null; const box = X(CMP, 'COMPARABLE_ADJUSTMENTS'); const C = compFacts(c, job); let any = false;
-  ADJ_ROWS.filter(r => r[3]).forEach(r => { const a = cellAmount(job, c, r).v;
+  // order as on the 3.6 grid (D-1 sample): Add Other rows first, then site, dwelling, units, quality/condition, amenities
+  ADJ_ROWS.filter(r => r[3]).sort((x, y) => (y[3] === 'OTHER') - (x[3] === 'OTHER')).forEach(r => { const a = cellAmount(job, c, r).v;
     if (r[3] === 'OTHER') { if (blank(C.usable) && !a) return; const e = X(box, 'COMPARABLE_ADJUSTMENT'); XV(e, 'AdditionalComparisonLineItemDescription', blank(C.usable) ? null : (+C.usable).toFixed(2) + ' ac'); XV(e, 'AdditionalComparisonLineItemIdentifier', LOT_UTILITY); XV(e, 'ComparableAdjustmentAmount', a || 0); XV(e, 'ComparableAdjustmentType', 'SalesComparableAdditionalAdjustableComparisonItem'); any = true; return; }
     if (a === null || a === undefined) return; const e = X(box, 'COMPARABLE_ADJUSTMENT'); XV(e, 'ComparableAdjustmentAmount', Math.round(a)); XV(e, 'ComparableAdjustmentType', r[3]); any = true; });
   if (!any) CMP.kids = CMP.kids.filter(k => k !== box);
   return compTotals(job, c);
 }
 
-/* full report: her iPad subject file + the comps with your grid, value and Lot Utility row; photos from both */
+/* full report: her iPad subject file + the comps with your grid, value and Usable Lot Area/Utility row; photos from both */
 async function exportFullReport() {
   const J = app.job; const used = usedComps(J); if (!used.length) { toast('Pick comps first'); return; }
   const rec = await DB.get('kv', 'insp:' + J.id); if (!rec) { toast('Drop your iPad Workfile package on this page first'); return; }
@@ -1206,7 +1216,7 @@ async function exportFullReport() {
   const ORDER = { PROPERTY: ['ADDRESS', 'CAR_STORAGES', 'COMPARABLE', 'DISASTER_MITIGATION_FEATURES', 'ENCUMBRANCES', 'ENERGY_EFFICIENCY_AND_GREEN', 'ENVIRONMENTAL_CONDITIONS', 'FUNCTIONAL_ISSUES', 'HOMEOWNERS_ASSOCIATIONS', 'IMPROVEMENTS', 'INSPECTIONS', 'LISTING_INFORMATION_SUMMARY', 'LISTING_INFORMATIONS', 'LOCATION_IDENTIFIER', 'MARKET', 'NEIGHBORHOOD', 'PARCEL_SUMMARY', 'PARCELS', 'PROJECT', 'PROPERTY_AMENITY', 'PROPERTY_DEFECT', 'PROPERTY_DETAIL', 'PROPERTY_TAXES', 'PROPERTY_USE_SUMMARY', 'PROPERTY_VALUATIONS', 'SALES_CONTRACTS', 'SITE', 'SALES_HISTORIES'],
     VALUATION_ANALYSIS: ['DATA_SOURCES', 'PROPERTIES', 'VALUATION_REPORT'], SERVICE: ['VALUATION', 'PARTIES', 'RELATIONSHIPS', 'SERVICE_DETAIL'],
     VALUATION_REPORT: ['ADDITIONAL_IDENTIFIERS', 'APPROACH_TO_VALUE', 'SCOPE_OF_WORK', 'VALUATION_COMMENTARIES', 'VALUATION_RECONCILIATION', 'VALUATION_REPORT_DETAIL', 'VALUATION_SOFTWARE_SYSTEMS'] };
-  const child = (parent, tag) => { for (const k of parent.children) if (k.localName === tag) return k; const e = sub.createElementNS(NS, tag); const seq = ORDER[parent.localName] || []; const r = seq.indexOf(tag);
+  const child = (parent, tag) => { for (const k of parent.children) if (k.localName === tag) return k; const e = sub.createElementNS(NS, tag); const seq = D1_ORDER[parent.localName] || ORDER[parent.localName] || []; const r = seq.indexOf(tag);
     const after = [...parent.children].find(k => seq.indexOf(k.localName) > r && r >= 0); parent.insertBefore(e, after || null); return e; };
   const leaf = (parent, tag, text, attrs) => { const e = sub.createElementNS(NS, tag); e.textContent = String(text); Object.entries(attrs || {}).forEach(([k, v]) => e.setAttribute(k, v)); parent.appendChild(e); return e; };
   const VA = q1(sub, 'VALUATION_ANALYSIS'), PROPS = q1(sub, 'PROPERTIES'), SUBJ = [...PROPS.children].find(p => p.getAttribute('ValuationUseType') === 'SubjectProperty'), SVC = q1(sub, 'SERVICE');
@@ -1216,7 +1226,7 @@ async function exportFullReport() {
   if (!DS.children.length) DS.remove();
   const RL = child(SVC, 'RELATIONSHIPS'); [...(q1(cmp, 'RELATIONSHIPS') || { children: [] }).children].forEach(r => RL.appendChild(sub.importNode(r, true)));
   if (!RL.children.length) RL.remove();
-  // subject's Lot Utility row
+  // subject's Usable Lot Area/Utility row
   const S = subjFacts(J);
   if (!blank(S.usable)) { const CM = child(SUBJ, 'COMPARABLE'); const AS = child(CM, 'COMPARABLE_ADJUSTMENTS'); const a = sub.createElementNS(NS, 'COMPARABLE_ADJUSTMENT'); AS.appendChild(a);
     leaf(a, 'AdditionalComparisonLineItemDescription', (+S.usable).toFixed(2) + ' ac'); leaf(a, 'AdditionalComparisonLineItemIdentifier', LOT_UTILITY); leaf(a, 'ComparableAdjustmentType', 'SalesComparableAdditionalAdjustableComparisonItem'); }
@@ -1224,11 +1234,188 @@ async function exportFullReport() {
   const G = G0(J); const VR = child(VA, 'VALUATION_REPORT');
   if (!blank(G.value) || G.note) { const sca = child(child(VR, 'APPROACH_TO_VALUE'), 'SALES_COMPARISON_APPROACH'); const det = child(sca, 'SALES_COMPARISON_APPROACH_DETAIL');
     if (G.note) leaf(det, 'SalesComparisonCommentDescription', G.note.slice(0, 5000)); if (!blank(G.value)) leaf(det, 'ValueIndicatedBySalesComparisonAmount', Math.round(num(G.value))); }
+  writeReportXML(sub, NS, J, SUBJ, VA, SVC);   // assignment, legal, zoning, H&BU, market, contract, value (report.js)
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<!--Subject from the UAD Field Inspection app, comps and adjustment grid from Comp Genie, for import into Appraise-It Pro (Home > Import Forms).-->\n' + new XMLSerializer().serializeToString(sub.documentElement);
   const entries = [{ name: jobBase() + ' - Full report.xml', data: xml }];
   for (const [k, v] of files) if (/^SFREP\/Images\//i.test(k)) entries.push({ name: k.replace(/^SFREP\//i, ''), data: v });
   for (const c of used) { const fr = frontOf(c); if (fr) { const r = await DB.get('photos', fr.id); if (r) entries.push({ name: 'Images/' + photoName(c), data: r.blob }); } }
   download(await makeZip(entries), jobBase() + ' - Full report SFREP.zip'); toast('Saved to your Downloads folder');
+}
+
+/* MISMO child order seen in Fannie Mae's D-1 sample report (for placing new elements). Generated Oct 16 2026. */
+const D1_ORDER = {"MESSAGE":["DOCUMENT_SETS"],"DOCUMENT_SETS":["DOCUMENT_SET"],"DOCUMENT_SET":["DOCUMENTS"],"DOCUMENTS":["DOCUMENT"],"DOCUMENT":["DEAL_SETS","SIGNATORIES","VIEWS","ABOUT_VERSIONS","DOCUMENT_CLASSIFICATION"],"DEAL_SETS":["DEAL_SET"],"DEAL_SET":["DEALS"],"DEALS":["DEAL"],"DEAL":["SERVICES"],"SERVICES":["SERVICE"],"SERVICE":["VALUATION","PARTIES","RELATIONSHIPS","SERVICE_DETAIL"],"VALUATION":["VALUATION_RESPONSE"],"VALUATION_RESPONSE":["VALUATION_ANALYSES"],"VALUATION_ANALYSES":["VALUATION_ANALYSIS"],"VALUATION_ANALYSIS":["DATA_SOURCES","PROPERTIES","VALUATION_REPORT"],"DATA_SOURCES":["DATA_SOURCE"],"DATA_SOURCE":["DataSourceName","DataSourceIdentifier","DataSourceType"],"PROPERTIES":["PROPERTY"],"PROPERTY":["ADDRESS","CAR_STORAGES","COMPARABLE","DISASTER_MITIGATION_FEATURES","ENERGY_EFFICIENCY_AND_GREEN","ENVIRONMENTAL_CONDITIONS","FUNCTIONAL_ISSUES","HOMEOWNERS_ASSOCIATIONS","IMPROVEMENTS","INSPECTIONS","LISTING_INFORMATION_SUMMARY","LISTING_INFORMATIONS","PROPERTY_NOT_USED","LOCATION_IDENTIFIER","MARKET","NEIGHBORHOOD","PARCEL_SUMMARY","PARCELS","PROJECT","PROPERTY_AMENITY","PROPERTY_DEFECT","PROPERTY_DETAIL","PROPERTY_TAXES","PROPERTY_USE_SUMMARY","PROPERTY_VALUATIONS","SALES_CONTRACTS","SALES_HISTORIES","SITE"],"ADDRESS":["AddressLineText","CityName","CountyName","PostalCode","StateCode"],"CAR_STORAGES":["CAR_STORAGE"],"CAR_STORAGE":["CAR_STORAGE_DETAIL","IMAGES"],"CAR_STORAGE_DETAIL":["CarStorageAreaMeasure","CarStorageAttachmentType","CarStorageType","ImprovedSurfaceMaterialType","ParkingSpacesCount","TenOrMoreParkingSpacesIndicator"],"IMAGES":["IMAGE"],"IMAGE":["ImageCategoryType","ImageCaptionCommentDescription","ImageFileLocationIdentifier","MIMETypeIdentifier"],"COMPARABLE":["COMPARABLE_ADJUSTMENTS","COMPARABLE_DETAIL"],"COMPARABLE_ADJUSTMENTS":["COMPARABLE_ADJUSTMENT"],"COMPARABLE_ADJUSTMENT":["AdditionalComparisonLineItemDescription","AdditionalComparisonLineItemIdentifier","ComparableAdjustmentAmount","ComparableAdjustmentType"],"DISASTER_MITIGATION_FEATURES":["DISASTER_MITIGATION_FEATURE"],"DISASTER_MITIGATION_FEATURE":["DisasterMitigationFeatureType"],"ENERGY_EFFICIENCY_AND_GREEN":["ENERGY_EFFICIENCY_AND_GREEN_DETAIL","GREEN_EFFICIENCY_RATINGS"],"ENERGY_EFFICIENCY_AND_GREEN_DETAIL":["EfficiencyRatingExistsIndicator","GreenCertificationExistsIndicator","RenewableEnergyComponentExistsIndicator","ValueMarketabilityImpactType"],"GREEN_EFFICIENCY_RATINGS":["GREEN_EFFICIENCY_RATING"],"GREEN_EFFICIENCY_RATING":["EfficiencyRatingName","EfficiencyRatingOrganizationName","EfficiencyRatingScoreValue"],"ENVIRONMENTAL_CONDITIONS":["ENVIRONMENTAL_CONDITION"],"ENVIRONMENTAL_CONDITION":["EnvironmentalConditionType"],"FUNCTIONAL_ISSUES":["FUNCTIONAL_ISSUE"],"FUNCTIONAL_ISSUE":["FunctionalIssueType"],"HOMEOWNERS_ASSOCIATIONS":["HOMEOWNERS_ASSOCIATION"],"HOMEOWNERS_ASSOCIATION":["ASSOCIATION_CHARGES"],"ASSOCIATION_CHARGES":["ASSOCIATION_CHARGE"],"ASSOCIATION_CHARGE":["ASSOCIATION_CHARGE_DETAIL","ASSOCIATION_CHARGE_INCLUDES_UTILITIES"],"ASSOCIATION_CHARGE_DETAIL":["AssociationChargeAmount","AssociationChargePeriodType","AssociationChargeType","AssociationSpecialAssessmentStatusType"],"ASSOCIATION_CHARGE_INCLUDES_UTILITIES":["ASSOCIATION_CHARGE_INCLUDES_UTILITY"],"ASSOCIATION_CHARGE_INCLUDES_UTILITY":["AssociationChargeIncludesUtilityType"],"IMPROVEMENTS":["IMPROVEMENT"],"IMPROVEMENT":["IMPROVEMENT_DETAIL","PROPERTY_UNITS","STRUCTURE","SYSTEM"],"IMPROVEMENT_DETAIL":["ConvertedAreaExistsIndicator","CoolingSystemExistsIndicator","DwellingExteriorDefectsExistIndicator","ImprovementType","NonContinuousFinishedAreaIndicator","PropertyStructureBuiltYear","PropertyStructureBuiltYearEstimatedIndicator"],"PROPERTY_UNITS":["PROPERTY_UNIT"],"PROPERTY_UNIT":["ACCESSIBILITY_FEATURES","INTERIOR_COMPONENTS","LEVELS","PROPERTY_UNIT_AREA","PROPERTY_UNIT_DETAIL","ROOMS"],"ACCESSIBILITY_FEATURES":["ACCESSIBILITY_FEATURE"],"ACCESSIBILITY_FEATURE":["AccessibilityFeatureType","AccessibilityModificationDescription"],"INTERIOR_COMPONENTS":["INTERIOR_COMPONENT"],"INTERIOR_COMPONENT":["FLOOR_COVERINGS","INTERIOR_COMPONENT_DETAIL","WALLS_AND_CEILING"],"FLOOR_COVERINGS":["FLOOR_COVERING"],"FLOOR_COVERING":["FlooringType","ImprovementComponentConditionDescription","ImprovementComponentConditionStatusType","ImprovementComponentQualityDescription"],"INTERIOR_COMPONENT_DETAIL":["ImprovementComponentConditionStatusType","ImprovementComponentQualityDescription","ImprovementComponentType","OverallFlooringUpdateStatusType"],"WALLS_AND_CEILING":["CEILING_HEIGHTS","CEILING_STYLES"],"CEILING_HEIGHTS":["CEILING_HEIGHT"],"CEILING_HEIGHT":["ApproximateCeilingHeightType"],"CEILING_STYLES":["CEILING_STYLE"],"CEILING_STYLE":["CeilingStyleType"],"LEVELS":["LEVEL"],"LEVEL":["AccessType","BelowGradeExteriorAccessType","GradeLevelType","LevelFinishedAreaMeasure","LevelType","LevelUnfinishedAreaMeasure"],"PROPERTY_UNIT_AREA":["UnitAboveGradeUnfinishedAreaMeasure","UnitBelowGradeUnfinishedAreaMeasure","UnitNonStandardAboveGradeFinishedAreaMeasure","UnitNonStandardBelowGradeFinishedAreaMeasure","UnitStandardAboveGradeFinishedAreaMeasure","UnitStandardBelowGradeFinishedAreaMeasure"],"PROPERTY_UNIT_DETAIL":["AccessoryDwellingUnitIndicator","BedroomCount","FullBathroomCount","HalfBathroomCount","InteriorConditionRatingCode","InteriorQualityRatingCode","LevelCount","OverallBathroomsUpdateStatusType","UnitBelowGradeFinishComparisonType","UnitInteriorDefectsExistIndicator","UnitOccupancyType","UnitValuationCommentText"],"ROOMS":["ROOM"],"ROOM":["IMAGES","ROOM_DETAIL"],"ROOM_DETAIL":["LevelType","RoomConditionAdditionalDescription","RoomConditionStatusType","RoomQualityDescription","RoomType","RoomTypeOtherDescription","RoomUpdatedTimeframeType","RoomUpdateStatusType"],"STRUCTURE":["ARCHITECTURAL_DESIGN","CONSTRUCTION_METHODS","STRUCTURE_COMPONENTS","STRUCTURE_DETAIL"],"ARCHITECTURAL_DESIGN":["ArchitecturalDesignCategoryType"],"CONSTRUCTION_METHODS":["CONSTRUCTION_METHOD"],"CONSTRUCTION_METHOD":["ConstructionMethodType"],"STRUCTURE_COMPONENTS":["STRUCTURE_COMPONENT"],"STRUCTURE_COMPONENT":["ROOF","FOUNDATIONS","EXTERIOR_WALLS","STRUCTURE_COMPONENT_DETAIL"],"EXTERIOR_WALLS":["EXTERIOR_WALL"],"EXTERIOR_WALL":["WallMaterialType"],"STRUCTURE_COMPONENT_DETAIL":["ImprovementComponentConditionDescription","ImprovementComponentConditionStatusType","ImprovementComponentQualityDescription","ImprovementComponentType","ImprovementComponentTypeAdditionalDescription"],"FOUNDATIONS":["FOUNDATION"],"FOUNDATION":["FOUNDATION_MATERIALS","FOUNDATION_STYLES"],"FOUNDATION_MATERIALS":["FOUNDATION_MATERIAL"],"FOUNDATION_MATERIAL":["FoundationMaterialType"],"FOUNDATION_STYLES":["FOUNDATION_STYLE"],"FOUNDATION_STYLE":["FoundationType"],"ROOF":["ROOF_DETAIL","ROOF_MATERIALS"],"ROOF_DETAIL":["RoofEstimatedAgeRangeType","RoofObservableIndicator"],"ROOF_MATERIALS":["ROOF_MATERIAL"],"ROOF_MATERIAL":["RoofMaterialType"],"STRUCTURE_DETAIL":["ExteriorConditionRatingCode","ExteriorQualityRatingCode","FrontDoorApproximateElevationRangeType","LivingUnitCount","StructureValuationCommentText"],"SYSTEM":["COOLING_SYSTEMS","HEATING_SYSTEMS","MECHANICAL_SYSTEMS","SYSTEM_DETAIL"],"COOLING_SYSTEMS":["COOLING_SYSTEM"],"COOLING_SYSTEM":["CoolingSystemType"],"HEATING_SYSTEMS":["HEATING_SYSTEM"],"HEATING_SYSTEM":["HeatingFuelType","HeatingSystemType"],"MECHANICAL_SYSTEMS":["MECHANICAL_SYSTEM"],"MECHANICAL_SYSTEM":["MechanicalSystemType"],"SYSTEM_DETAIL":["CoreHeatingSystemBelowGradeIndicator"],"INSPECTIONS":["INSPECTION"],"INSPECTION":["INSPECTION_DETAIL","IMAGES"],"INSPECTION_DETAIL":["InspectionDate","PropertyExteriorInspectionMethodType","PropertyInteriorInspectionMethodType"],"LISTING_INFORMATION_SUMMARY":["CumulativeDaysOnMarketCount","ListedWithinPreviousYearIndicator"],"LISTING_INFORMATIONS":["LISTING_INFORMATION"],"LISTING_INFORMATION":["LISTING_INFORMATION_DETAIL"],"LISTING_INFORMATION_DETAIL":["DaysOnMarketCount","FinalListPriceAmount","InitialListPriceAmount","ListingEndDate","ListingIdentifier","ListingStartDate","ListingStatusType","ListingType"],"LOCATION_IDENTIFIER":["GEOSPATIAL_INFORMATION"],"GEOSPATIAL_INFORMATION":["LatitudeIdentifier","LongitudeIdentifier"],"MARKET":["MARKET_DETAIL","MARKET_INVENTORIES","MARKET_TREND"],"MARKET_DETAIL":["MarketBoundariesDescription","MarketInventoryLookbackMonthsCount","MarketInventorySearchParameterDescription"],"MARKET_INVENTORIES":["MARKET_INVENTORY"],"MARKET_INVENTORY":["MarketInventoryCount","MarketInventoryHighestPriceAmount","MarketInventoryLowestPriceAmount","MarketInventoryMedianDaysOnMarketCount","MarketInventoryMedianPriceAmount","MarketInventoryType"],"MARKET_TREND":["MarketingTimeType","MarketSupplyTrendType","MarketTrendsForeclosureActivityIndicator"],"NEIGHBORHOOD":["NEIGHBORHOOD_DETAIL"],"NEIGHBORHOOD_DETAIL":["NeighborhoodName"],"PARCEL_SUMMARY":["PARCEL_SUMMARY_DETAIL"],"PARCEL_SUMMARY_DETAIL":["ParcelsLegalDescription"],"PARCELS":["PARCEL"],"PARCEL":["PARCEL_DETAIL","PARCEL_IDENTIFICATIONS"],"PARCEL_DETAIL":["ParcelAreaMeasure","ParcelDescriptionClassificationType"],"PARCEL_IDENTIFICATIONS":["PARCEL_IDENTIFICATION"],"PARCEL_IDENTIFICATION":["ParcelIdentificationType","ParcelIdentifier","ParcelIdentifierOwnerName"],"PROJECT":["PROJECT_AMENITIES","PROJECT_DETAIL","PROJECT_DEVELOPER"],"PROJECT_AMENITIES":["PROJECT_AMENITY"],"PROJECT_AMENITY":["AmenityType"],"PROJECT_DETAIL":["LegalActionIndicator"],"PROJECT_DEVELOPER":["ProjectDeveloperOrSponsorControlsProjectManagementIndicator"],"PROPERTY_AMENITY":["AMENITY_CATEGORIES"],"AMENITY_CATEGORIES":["AMENITY_CATEGORY"],"AMENITY_CATEGORY":["AMENITIES","AMENITY_CATEGORY_DETAIL"],"AMENITIES":["AMENITY"],"AMENITY":["AMENITY_DETAIL","IMAGES"],"AMENITY_DETAIL":["AmenityCount","AmenityAreaMeasure","AmenityMaterialType","AmenityType","AmenityTypeOtherDescription"],"AMENITY_CATEGORY_DETAIL":["AmenityCategoryType"],"PROPERTY_DEFECT":["DEFECTS","PROPERTY_DEFECT_SUMMARY"],"DEFECTS":["DEFECT"],"DEFECT":["DEFECT_DETAIL","IMAGES"],"DEFECT_DETAIL":["DefectComponentLabelType","DefectItemAffectsSoundnessStructuralIntegrityIndicator","DefectItemDescription","DefectItemEstimatedCostToRepairAmount","DefectItemLocationType","DefectItemLocationTypeOtherDescription","DefectItemRecommendedActionType"],"PROPERTY_DEFECT_SUMMARY":["CostToRepairType","DefectCostToRepairTotalAmount"],"PROPERTY_DETAIL":["AccessoryDwellingUnitTotalCount","AttachmentType","DwellingCount","HomeownerResponsibleForExteriorMaintenanceIndicator","LivingUnitExcludingADUCount","NativeAmericanLandsIndicator","NewConstructionIndicator","OverallConditionRatingCode","OverallQualityRatingCode","PriorSalesOrTransfersIndicator","PropertyAmenityExistsIndicator","PropertyEstateType","PropertyInProjectIndicator","PUDIndicator","SubjectPropertyAmenitiesDefectsExistIndicator","VehicleStorageDefectsExistIndicator"],"PROPERTY_TAXES":["PROPERTY_TAX"],"PROPERTY_TAX":["PROPERTY_TAX_DETAIL"],"PROPERTY_TAX_DETAIL":["PropertyTaxAbatementsOrExemptionsIndicator","SpecialTaxAssessmentsIndicator"],"PROPERTY_USE_SUMMARY":["PropertyMixedUsageIndicator"],"PROPERTY_VALUATIONS":["PROPERTY_VALUATION"],"PROPERTY_VALUATION":["PROPERTY_VALUATION_DETAIL"],"PROPERTY_VALUATION_DETAIL":["PropertyValuationMethodType"],"SALES_CONTRACTS":["SALES_CONTRACT"],"SALES_CONTRACT":["SALES_CONTRACT_DETAIL"],"SALES_CONTRACT_DETAIL":["AllPropertyRightsAppraisedIndicator","ArmsLengthIndicator","PersonalPropertyIncludedIndicator","SalesConcessionAmountKnownIndicator","SalesConcessionIndicator","SalesConcessionsTypicalToMarketIndicator","SalesContractAmount","SalesContractDate","SalesContractExistsIndicator","SalesContractReviewedIndicator","SaleType","TotalSalesConcessionAmount"],"SITE":["HAZARD_ZONES","HIGHEST_AND_BEST_USE","PROPERTY_ACCESS","SITE_DETAIL","SITE_FEATURES","SITE_INFLUENCES","SITE_SIZE_LAYOUT","SITE_UTILITIES","SITE_VIEWS","SITE_ZONING"],"HAZARD_ZONES":["HAZARD_ZONE"],"HAZARD_ZONE":["HazardZoneType"],"HIGHEST_AND_BEST_USE":["FinanciallyFeasibleIndicator","LegallyPermissibleIndicator","MaximallyProductiveIndicator","PhysicallyPossibleIndicator","SiteHighestBestUseIndicator"],"PROPERTY_ACCESS":["ACCESS_STREETS","PROPERTY_ACCESS_DETAIL"],"ACCESS_STREETS":["ACCESS_STREET"],"ACCESS_STREET":["ImprovedSurfaceMaterialType","StreetAccessType"],"PROPERTY_ACCESS_DETAIL":["PropertyAccessTypicalToMarketIndicator","PropertyPrimaryEntryExitMethodType"],"SITE_DETAIL":["BroadbandInternetAvailableIndicator","LandOwnedInCommonIndicator","SiteDefectsExistIndicator"],"SITE_FEATURES":["SITE_FEATURE"],"SITE_FEATURE":["SITE_FEATURE_DETAIL","TOPOGRAPHIES"],"SITE_FEATURE_DETAIL":["SiteFeatureDescription","SiteFeatureType","ValueMarketabilityImpactType"],"TOPOGRAPHIES":["TOPOGRAPHY"],"TOPOGRAPHY":["TopographyType"],"SITE_INFLUENCES":["SITE_INFLUENCE"],"SITE_INFLUENCE":["SITE_INFLUENCE_DETAIL"],"SITE_INFLUENCE_DETAIL":["SiteInfluenceDescription","SiteInfluenceProximityType","SiteInfluenceType","ValueMarketabilityImpactType"],"SITE_SIZE_LAYOUT":["LotSizeAreaMeasure","ParcelCount"],"SITE_UTILITIES":["SITE_UTILITY"],"SITE_UTILITY":["SITE_UTILITY_DETAIL"],"SITE_UTILITY_DETAIL":["SiteUtilityOwnershipType","UtilityType"],"SITE_VIEWS":["SITE_VIEW"],"SITE_VIEW":["ValueMarketabilityImpactType","ViewPrimaryIndicator","ViewRangeType","ViewType"],"SITE_ZONING":["SITE_ZONING_DETAIL"],"SITE_ZONING_DETAIL":["SiteZoningClassificationDescription","SiteZoningClassificationIdentifier","SiteZoningComplianceType"],"COMPARABLE_DETAIL":["AdjustedSalesPriceAmount","ComparableToSubjectDirectionType","ComparableWeightType","ContractDateUnknownIndicator","PricePerTotalStandardAboveGradeFinishedAreaAmount","PropertyOrdinalNumber","ProximityToSubjectDistanceLinearMeasure","SalePriceNetTotalAdjustmentAmount"],"SALES_HISTORIES":["SALES_HISTORY"],"SALES_HISTORY":["OwnershipTransferDate","OwnershipTransferTransactionAmount","OwnershipTransferTransactionType","SaleType"],"PROPERTY_NOT_USED":["PROPERTY_NOT_USED_DETAIL","PROPERTY_NOT_USED_REASONS"],"PROPERTY_NOT_USED_DETAIL":["AdditionalPropertyAnalyzedNotUsedText","ConsiderationRequestedIndicator"],"PROPERTY_NOT_USED_REASONS":["PROPERTY_NOT_USED_REASON"],"PROPERTY_NOT_USED_REASON":["ReasonPropertyNotUsedType"],"VALUATION_REPORT":["ADDITIONAL_IDENTIFIERS","APPROACH_TO_VALUE","SCOPE_OF_WORK","VALUATION_COMMENTARIES","VALUATION_RECONCILIATION","VALUATION_REPORT_DETAIL","VALUATION_SOFTWARE_SYSTEMS"],"ADDITIONAL_IDENTIFIERS":["ADDITIONAL_IDENTIFIER"],"ADDITIONAL_IDENTIFIER":["AdditionalValuationIdentifier","AdditionalValuationIdentifierType"],"APPROACH_TO_VALUE":["COST_APPROACH","INCOME_APPROACH","SALES_COMPARISON_APPROACH"],"COST_APPROACH":["VALUATION_APPROACH_EXCLUSION_REASONS"],"VALUATION_APPROACH_EXCLUSION_REASONS":["VALUATION_APPROACH_EXCLUSION_REASON"],"VALUATION_APPROACH_EXCLUSION_REASON":["ValuationApproachExclusionReasonType"],"INCOME_APPROACH":["VALUATION_APPROACH_EXCLUSION_REASONS"],"SALES_COMPARISON_APPROACH":["SALES_COMPARISON_APPROACH_DETAIL"],"SALES_COMPARISON_APPROACH_DETAIL":["SalesComparisonCommentDescription","ValueIndicatedBySalesComparisonAmount"],"SCOPE_OF_WORK":["SCOPE_OF_WORK_DETAIL"],"SCOPE_OF_WORK_DETAIL":["CostApproachIndicator","GovernmentAgencyAppraisalIndicator","IncomeApproachIndicator","RentScheduleIndicator","SalesComparisonApproachIndicator","SiteValueIndicator","ValuationAdditionalIntendedUserIndicator","ValuationAdditionalScopeOfWorkIndicator","ValuationAssignmentType"],"VALUATION_COMMENTARIES":["VALUATION_COMMENTARY"],"VALUATION_COMMENTARY":["ValuationAnalysisCategoryType","ValuationCommentText"],"VALUATION_RECONCILIATION":["VALUATION_RECONCILIATION_DETAIL","VALUATION_RECONCILIATION_SUMMARY"],"VALUATION_RECONCILIATION_DETAIL":["AdditionalClientRequestedConditionsIndicator","ValuationReconciliationSummaryCommentDescription"],"VALUATION_RECONCILIATION_SUMMARY":["VALUATION_CONDITIONS","VALUATION_RECONCILIATION_SUMMARY_DETAIL"],"VALUATION_CONDITIONS":["VALUATION_CONDITION"],"VALUATION_CONDITION":["PropertyValuationConditionalConclusionType"],"VALUATION_RECONCILIATION_SUMMARY_DETAIL":["AppraisalReportEffectiveDate","MarketingOrExposureHighRangeDaysCount","MarketingOrExposureLowRangeDaysCount","MarketingOrExposureTimeType","OpinionOfValueAmount","PropertyAsIsConditionRatingCode"],"VALUATION_REPORT_DETAIL":["AppraiserAdditionalCertificationIndicator","AppraiserFileIdentifier","AppraiserPriorServicesPerformedIndicator","MeasurementStandardPublisherType","PropertyDataReportIndicator","ReconsiderationOfValueIndicator","SketchExistsIndicator","ValuationReportContentIdentifier","ValuationReportInspectionCertificationType"],"VALUATION_SOFTWARE_SYSTEMS":["VALUATION_SOFTWARE_SYSTEM"],"VALUATION_SOFTWARE_SYSTEM":["ValuationSoftwareProductIdentifier","ValuationSoftwareProductName","ValuationSoftwareProductVersionIdentifier","ValuationSoftwareVendorName"],"PARTIES":["PARTY"],"PARTY":["INDIVIDUAL","LEGAL_ENTITY","ADDRESSES","ROLES"],"LEGAL_ENTITY":["LEGAL_ENTITY_DETAIL"],"LEGAL_ENTITY_DETAIL":["FullName"],"ADDRESSES":["ADDRESS"],"ROLES":["ROLE"],"ROLE":["APPRAISER","LICENSES","ROLE_DETAIL"],"ROLE_DETAIL":["PartyRoleType","PartyRoleTypeAdditionalDescription"],"INDIVIDUAL":["NAME"],"NAME":["FirstName","LastName"],"APPRAISER":["APPRAISER_DETAIL","DESIGNATIONS"],"APPRAISER_DETAIL":["AppraiserCompanyName"],"DESIGNATIONS":["DESIGNATION"],"DESIGNATION":["AppraiserDesignationType"],"LICENSES":["LICENSE"],"LICENSE":["APPRAISER_LICENSE","LICENSE_DETAIL"],"APPRAISER_LICENSE":["AppraiserLicenseType"],"LICENSE_DETAIL":["LicenseExpirationDate","LicenseIdentifier","LicenseIssuingAuthorityStateCode"],"RELATIONSHIPS":["RELATIONSHIP"],"SERVICE_DETAIL":["ServiceType"],"SIGNATORIES":["SIGNATORY"],"SIGNATORY":["EXECUTION"],"EXECUTION":["EXECUTION_DETAIL"],"EXECUTION_DETAIL":["ExecutionDate"],"VIEWS":["VIEW"],"VIEW":["VIEW_FILES"],"VIEW_FILES":["VIEW_FILE"],"VIEW_FILE":["FOREIGN_OBJECT"],"FOREIGN_OBJECT":["ObjectURL","MIMETypeIdentifier"],"ABOUT_VERSIONS":["ABOUT_VERSION"],"ABOUT_VERSION":["AboutVersionIdentifier"],"DOCUMENT_CLASSIFICATION":["DOCUMENT_CLASSES","DOCUMENT_CLASSIFICATION_DETAIL"],"DOCUMENT_CLASSES":["DOCUMENT_CLASS"],"DOCUMENT_CLASS":["DocumentType"],"DOCUMENT_CLASSIFICATION_DETAIL":["DocumentFormIssuingEntityNameType","DocumentFormIssuingEntityVersionIdentifier"]};
+
+/* =====================================================================
+   Report details for the full report (Oct 16 2026).
+   Fills the parts of the 3.6 report that are not in the iPad inspection or the grid:
+   assignment (from the order in the Appraisal Assistant), legal description, zoning,
+   number of parcels, all rights included, highest and best use, market (from the
+   hub's Market tab), contract (from the hub's document reader), value and dates.
+   She decides every answer; the card only pre-fills what the order already says.
+   ===================================================================== */
+const ASSIGN = [['Purchase', 'Purchase'], ['Refinance', 'Refinance'], ['HomeEquity', 'Home equity'], ['Construction', 'Construction'], ['LoanModification', 'Loan modification'], ['REO', 'REO'], ['ShortSale', 'Short sale'], ['DeedInLieu', 'Deed in lieu'], ['Preforeclosure', 'Pre-foreclosure'], ['PortfolioEvaluation', 'Portfolio evaluation'], ['Other', 'Other']];
+const VMETHOD = [['TraditionalAppraisal', 'Traditional appraisal'], ['HybridAppraisal', 'Hybrid appraisal'], ['DesktopAppraisal', 'Desktop appraisal']];
+const VCOND = [['AsIs', 'As is'], ['SubjectToRepair', 'Subject to repair'], ['SubjectToInspection', 'Subject to inspection'], ['SubjectToCompletionPerPlans', 'Subject to completion per plans']];
+const HBU_TESTS = [['legal', 'Legally permissible'], ['phys', 'Physically possible'], ['fin', 'Financially feasible'], ['max', 'Maximally productive']];
+const ORDER_ASSIGN = { uadPurchase: 'Purchase', uadRefi: 'Refinance', uadHeloc: 'HomeEquity', uadConstruction: 'Construction', construction: 'Construction' };
+
+const R0 = J => { J.report = J.report || { hbu: {} }; J.report.hbu = J.report.hbu || {}; return J.report; };
+const orderOf = J => (app.orders || []).find(o => o.id === J.orderId) || null;
+function zoneTable() { if (!app.zoneDesc) { app.zoneDesc = {}; DB.get('kv', 'zoneDesc').then(r => { app.zoneDesc = (r && r.v) || {}; const c = $('#reportCard'); if (c && app.job) c.innerHTML = reportHTML(app.job); }); } return app.zoneDesc; }
+
+/* what the order, the inspection and the CRS already say (shown grey until she types her own) */
+function reportFrom(J) {
+  const o = orderOf(J) || {}, I = (J.subject.insp || {}), crs = J.subject.crs || {}, oc = o.crs || {};
+  const zone = I.zoneCode || (o.permits && o.permits.zoning) || oc.zoning || crs.zoning || '';
+  const apns = String(o.apn || J.subject.apn || I.apn || '').split(/[;,&]| and /).map(x => x.trim()).filter(Boolean);
+  const c0 = (o.clients || [])[0] || {};
+  return { assign: ORDER_ASSIGN[o.type] || (o.type ? 'Other' : ''), fileNo: o.fileNo || J.fileNo || '', eff: o.effDate || o.inspDate || o.dod || J.subject.eff || '',
+    legal: o.legal || I.legal || crs.legal || '', zone, zoneDesc: I.zoneDesc || zoneTable()[zone.toUpperCase()] || '', parcels: apns.length || (I.apn ? 1 : ''),
+    client: c0.company || c0.name || '', clientAddr1: c0.addr1 || '', clientAddr2: c0.addr2 || '',
+    lender: o.lenderDiff ? (o.lenderCo || '') : '', lenderAddr1: o.lenderDiff ? o.lenderAddr1 || '' : '', lenderAddr2: o.lenderDiff ? o.lenderAddr2 || '' : '',
+    amc: o.amcUsed ? (o.amcCo || '') : '', amcAddr1: o.amcUsed ? o.amcAddr1 || '' : '', amcAddr2: o.amcUsed ? o.amcAddr2 || '' : '',
+    insp: I.inspType || 'InteriorAndExterior', market: (o.market && o.market.uad) || null, contract: o.uad || null, hasOrder: !!o.id };
+}
+const rv = (J, k) => { const R = R0(J), F = reportFrom(J); return blank(R[k]) ? F[k] : R[k]; };
+
+function reportHTML(J) {
+  const R = R0(J), F = reportFrom(J), G = G0(J), H = R.hbu;
+  const inp = (k, ph, w) => `<input class="txt" data-rpt="${k}" value="${esc(R[k] ?? '')}" placeholder="${esc(F[k] || ph || '')}"${w ? ` style="width:${w}"` : ''}>`;
+  const sel = (k, list, def, note = 'from the order') => `<select data-rpt="${k}"><option value="">${def ? esc((list.find(x => x[0] === def) || [, ''])[1]) + ' (' + note + ')' : '—'}</option>${list.map(([v, l]) => `<option value="${v}"${R[k] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+  const yn = (k, def) => `<select data-rpt="${k}"><option value="">${def === true ? 'Yes' : def === false ? 'No' : '—'}${def !== undefined ? ' (usual)' : ''}</option><option value="true"${R[k] === 'true' ? ' selected' : ''}>Yes</option><option value="false"${R[k] === 'false' ? ' selected' : ''}>No</option></select>`;
+  const M = F.market;
+  return `<h2>Report details <small>for the full report</small></h2>
+  <p class="help">${F.hasOrder ? 'Grey entries come from the order in the Appraisal Assistant, your inspection or the CRS report. Type over any of them.' : 'This assignment is not linked to an order, so nothing is filled from the Appraisal Assistant. Open it from the order (Comp genie button on the order page) to fill the assignment, client and market.'}</p>
+  <div class="rptgrid">
+    <section><h3>Assignment</h3>
+      <label class="fld"><span>Assignment reason</span>${sel('assign', ASSIGN, F.assign)}</label>
+      ${rv(J, 'assign') === 'Other' ? `<label class="fld"><span>Other reason</span>${inp('assignOther', 'e.g. Estate settlement')}</label>` : ''}
+      <label class="fld"><span>Property valuation method</span>${sel('vmethod', VMETHOD, 'TraditionalAppraisal', 'usual')}</label>
+      <label class="fld"><span>Property data report used instead of an inspection?</span>${yn('pdr', false)}</label>
+      <label class="fld"><span>Your file number</span>${inp('fileNo')}</label>
+      <label class="fld"><span>Effective date</span>${inp('eff', 'YYYY-MM-DD')}</label>
+      <label class="fld"><span>Client</span>${inp('client', 'Client name')}</label>
+      <label class="fld"><span>Client address</span>${inp('clientAddr1', 'Street')} ${inp('clientAddr2', 'City, ST ZIP')}</label>
+      <label class="fld"><span>Lender (if not the client)</span>${inp('lender')}</label>
+      <label class="fld"><span>AMC</span>${inp('amc')}</label></section>
+    <section><h3>Subject and site</h3>
+      <label class="fld"><span>Legal description</span><textarea class="txt" rows="2" data-rpt="legal" placeholder="${esc(F.legal || 'From the CRS report or the preliminary title report')}">${esc(R.legal || '')}</textarea></label>
+      <label class="fld"><span>Number of parcels</span>${inp('parcels', '1', '5em')}</label>
+      <label class="fld"><span>All rights included in the appraisal?</span>${yn('allRights', true)}</label>
+      <label class="fld"><span>Zoning code</span>${inp('zone', 'e.g. E-3', '8em')}</label>
+      <label class="fld"><span>Zoning description</span>${inp('zoneDesc', 'e.g. One-family residential, 7,000 sq. ft. minimum lot')}<small class="muted">Kept for this code, so you type it once.</small></label></section>
+    <section><h3>Highest and best use</h3>
+      ${HBU_TESTS.map(([k, l]) => `<label class="check"><input type="checkbox" data-hbu="${k}" ${H[k] ? 'checked' : ''}>${l}</label>`).join('')}
+      <label class="fld"><span>Is the highest and best use as improved the present use?</span>${yn('hbuPresent')}</label>
+      <div class="row"><button class="btn small" data-act="hbu-all">All four tests met · present use</button><button class="btn ghost small" data-act="hbu-draft">Draft the comment</button></div>
+      <label class="fld"><span>Highest and best use comment</span><textarea class="txt" rows="4" data-rpt="hbuNote" placeholder="Your comment">${esc(R.hbuNote || '')}</textarea></label></section>
+    <section><h3>Value and reconciliation</h3>
+      <label class="fld"><span>Opinion of market value</span>${inp('opinion', !blank(G.value) ? money(G.value) + ' (sales comparison)' : '$')}</label>
+      <label class="fld"><span>Market value condition</span>${sel('vcond', VCOND, 'AsIs', 'usual')}</label>
+      <label class="fld"><span>Reasonable exposure time (days)</span>${inp('expLow', 'from', '6em')} to ${inp('expHigh', 'to', '6em')}</label>
+      <label class="fld"><span>Reconciliation comment</span><textarea class="txt" rows="3" data-rpt="reconNote">${esc(R.reconNote || '')}</textarea></label></section>
+    <section><h3>Market <small>from the hub's Market tab</small></h3>
+      ${M ? `<table class="mini"><tr><th>Look back</th><td>${esc(M.L)} months</td></tr><tr><th>Actives</th><td>${esc(M.activeN)}${M.activeN ? ` · ${money(M.activeLow)} / ${money(M.activeMed)} / ${money(M.activeHigh)} · median DOM ${esc(Math.round(M.activeDom))}` : ''}</td></tr>
+        <tr><th>Pendings</th><td>${esc(M.pendingN)}</td></tr><tr><th>Sales</th><td>${esc(M.salesN)}${M.salesN ? ` · ${money(M.saleLow)} / ${money(M.saleMed)} / ${money(M.saleHigh)}` : ''}</td></tr>
+        <tr><th>Demand / supply</th><td>${esc({ Shortage: 'Shortage', InBalance: 'In balance', OverSupply: 'Oversupply' }[M.supply] || '—')}</td></tr><tr><th>Marketing time</th><td>${esc({ UnderThreeMonths: 'Under 3 months', ThreeToSixMonths: '3 to 6 months', OverSixMonths: 'Over 6 months' }[M.mktime] || '—')}</td></tr><tr><th>Distressed competition</th><td>${M.distress === 'true' ? 'Yes' : M.distress === 'false' ? 'No' : '—'}</td></tr>
+        <tr><th>Boundary</th><td>${M.boundary ? '✓' : '<b class="warnTxt">missing</b>'}</td></tr><tr><th>Search criteria</th><td>${M.criteria ? '✓' : '<b class="warnTxt">missing</b>'}</td></tr><tr><th>Price trend comment</th><td>${M.comment ? '✓ ' + M.comment.length.toLocaleString() + ' characters' : '<b class="warnTxt">missing</b>'}</td></tr></table>
+        <p class="help">These go into the Market section. To change them, open the order's Market tab in the Appraisal Assistant, then come back here.</p>`
+      : `<p class="help">${F.hasOrder ? 'Nothing yet. In the Appraisal Assistant open this order › <b>Market</b> tab: drop your SBMLS market-area search CSV (the micro market: actives, pendings and sales in the look-back period) and, once a month, the SBMLS monthly statistics PDF (the macro market). Check the boundary, criteria and price-trend comment, then come back here.' : 'Link this assignment to an order to bring in the Market section.'}</p>`}
+      ${F.contract && (F.contract.price || F.contract.cdate) ? `<p class="help">Sales contract (from the document reader): ${esc(money(num(String(F.contract.price).replace(/[$,]/g, ''))))}${F.contract.cdate ? ' · ' + esc(F.contract.cdate) : ''} – goes into the contract section.</p>` : ''}</section>
+  </div>`;
+}
+
+function hbuDraft(J) {
+  const R = R0(J), z = rv(J, 'zone'), zd = rv(J, 'zoneDesc');
+  return `The subject's present use as a single-family residence is legally permissible under its ${z ? z + ' ' : ''}zoning${zd ? ' (' + zd + ')' : ''}, physically possible given the site's size, shape, topography and access, financially feasible, and maximally productive, as supported by the market data in this report. The highest and best use of the subject as improved is its present use.`;
+}
+
+document.addEventListener('change', e => {
+  const t = e.target; if (!app.job) return; const R = R0(app.job);
+  if (t.dataset.rpt) { const k = t.dataset.rpt, v = t.value.trim(); if (v === '') delete R[k]; else R[k] = k === 'zone' ? v.toUpperCase() : t.tagName === 'TEXTAREA' ? t.value : v;
+    if (k === 'zoneDesc' && v) { const code = rv(app.job, 'zone').toUpperCase(); if (code) { zoneTable()[code] = v; DB.put('kv', { id: 'zoneDesc', v: app.zoneDesc }); } }
+    save(); if (['assign', 'zone'].includes(k)) { const c = $('#reportCard'); if (c) c.innerHTML = reportHTML(app.job); } return; }
+  if (t.dataset.hbu) { R.hbu[t.dataset.hbu] = t.checked; save(); }
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act="hbu-all"],[data-act="hbu-draft"]'); if (!b || !app.job) return; const R = R0(app.job);
+  if (b.dataset.act === 'hbu-all') { HBU_TESTS.forEach(([k]) => R.hbu[k] = true); R.hbuPresent = 'true'; }
+  if (b.dataset.act === 'hbu-draft') { if (R.hbuNote && !confirm('Replace your comment with a new draft?')) return; R.hbuNote = hbuDraft(app.job); }
+  save(); const c = $('#reportCard'); if (c) c.innerHTML = reportHTML(app.job);
+});
+
+/* ---------------- into the full report (DOM of the merged file) ---------------- */
+function writeReportXML(doc, NS, J, SUBJ, VA, SVC) {
+  const R = R0(J), F = reportFrom(J), H = R.hbu, G = G0(J);
+  const pos = (parent, tag) => { const seq = D1_ORDER[parent.localName] || []; const r = seq.indexOf(tag); const kids = [...parent.children];
+    if (r >= 0) return kids.find(k => { const i = seq.indexOf(k.localName); return i > r; }) || null;
+    return kids.find(k => seq.indexOf(k.localName) < 0 && k.localName > tag) || null; };
+  const child = (parent, tag) => { for (const k of parent.children) if (k.localName === tag) return k; const e = doc.createElementNS(NS, tag); parent.insertBefore(e, pos(parent, tag)); return e; };
+  const add = (parent, tag) => { const e = doc.createElementNS(NS, tag); const kids = [...parent.children].filter(k => k.localName === tag); const last = kids[kids.length - 1]; parent.insertBefore(e, last ? last.nextSibling : pos(parent, tag)); return e; };
+  const set = (parent, tag, v) => { if (blank(v) || v === '') return; const e = child(parent, tag); e.textContent = String(v); return e; };
+  const path = (el, ...tags) => tags.reduce((p, t) => child(p, t), el);
+  const tf = (k, def) => { const v = R[k]; return v === 'true' ? 'true' : v === 'false' ? 'false' : def; };
+  const VR = child(VA, 'VALUATION_REPORT');
+  const comment = (cat, text, max) => { if (!text) return; const VC = child(VR, 'VALUATION_COMMENTARIES');
+    for (const c of VC.children) { const ct = [...c.children].find(k => k.localName === 'ValuationAnalysisCategoryType'); if (ct && ct.textContent === cat) { const tx = [...c.children].find(k => k.localName === 'ValuationCommentText'); if (tx) tx.textContent = text.slice(0, max); return; } }
+    const c = add(VC, 'VALUATION_COMMENTARY'); set(c, 'ValuationAnalysisCategoryType', cat); set(c, 'ValuationCommentText', text.slice(0, max)); };
+
+  // assignment
+  const sow = path(VR, 'SCOPE_OF_WORK', 'SCOPE_OF_WORK_DETAIL');
+  set(sow, 'SalesComparisonApproachIndicator', 'true');
+  const asg = rv(J, 'assign'); set(sow, 'ValuationAssignmentType', asg); if (asg === 'Other') set(sow, 'ValuationAssignmentTypeOtherDescription', (R.assignOther || '').slice(0, 33) || null);
+  const rd = path(VR, 'VALUATION_REPORT_DETAIL');
+  set(rd, 'AppraiserFileIdentifier', rv(J, 'fileNo')); set(rd, 'PropertyDataReportIndicator', tf('pdr', 'false'));
+  set(rd, 'SketchExistsIndicator', 'true'); set(rd, 'ValuationReportInspectionCertificationType', F.insp);
+  set(path(SUBJ, 'PROPERTY_VALUATIONS', 'PROPERTY_VALUATION', 'PROPERTY_VALUATION_DETAIL'), 'PropertyValuationMethodType', R.vmethod || 'TraditionalAppraisal');
+  // reconciliation
+  const rs = path(VR, 'VALUATION_RECONCILIATION', 'VALUATION_RECONCILIATION_SUMMARY');
+  set(path(rs, 'VALUATION_CONDITIONS', 'VALUATION_CONDITION'), 'PropertyValuationConditionalConclusionType', R.vcond || 'AsIs');
+  const rsd = child(rs, 'VALUATION_RECONCILIATION_SUMMARY_DETAIL');
+  const eff = isoDate(rv(J, 'eff')) || rv(J, 'eff'); set(rsd, 'AppraisalReportEffectiveDate', eff);
+  if (!blank(R.expLow) || !blank(R.expHigh)) { set(rsd, 'MarketingOrExposureHighRangeDaysCount', num(R.expHigh)); set(rsd, 'MarketingOrExposureLowRangeDaysCount', num(R.expLow)); set(rsd, 'MarketingOrExposureTimeType', 'ReasonableExposureTime'); }
+  const op = num(String(R.opinion || '').replace(/[$,\s]/g, '')); set(rsd, 'OpinionOfValueAmount', op === null ? null : Math.round(op));
+  if (R.reconNote) set(path(VR, 'VALUATION_RECONCILIATION', 'VALUATION_RECONCILIATION_DETAIL'), 'ValuationReconciliationSummaryCommentDescription', R.reconNote.slice(0, 5000));
+  // subject: legal, parcels, zoning, rights, H&BU
+  const legal = rv(J, 'legal'); if (legal) set(path(SUBJ, 'PARCEL_SUMMARY', 'PARCEL_SUMMARY_DETAIL'), 'ParcelsLegalDescription', legal.slice(0, 1000));
+  const SITE = child(SUBJ, 'SITE');
+  set(child(SITE, 'SITE_SIZE_LAYOUT'), 'ParcelCount', num(rv(J, 'parcels')) || 1);
+  const zone = rv(J, 'zone'), zd = rv(J, 'zoneDesc');
+  if (zone || zd) { const z = path(SITE, 'SITE_ZONING', 'SITE_ZONING_DETAIL'); set(z, 'SiteZoningClassificationDescription', zd && zd.slice(0, 100)); set(z, 'SiteZoningClassificationIdentifier', zone); }
+  set(path(SUBJ, 'SALES_CONTRACTS', 'SALES_CONTRACT', 'SALES_CONTRACT_DETAIL'), 'AllPropertyRightsAppraisedIndicator', tf('allRights', 'true'));
+  if (HBU_TESTS.some(([k]) => H[k]) || R.hbuPresent) { const hb = child(SITE, 'HIGHEST_AND_BEST_USE');
+    set(hb, 'FinanciallyFeasibleIndicator', String(!!H.fin)); set(hb, 'LegallyPermissibleIndicator', String(!!H.legal)); set(hb, 'MaximallyProductiveIndicator', String(!!H.max)); set(hb, 'PhysicallyPossibleIndicator', String(!!H.phys)); set(hb, 'SiteHighestBestUseIndicator', R.hbuPresent || null); }
+  comment('HighestAndBestUse', R.hbuNote, 4000);
+  // usable lot area in the site comment (it cannot be a site influence)
+  const S = subjFacts(J);
+  if (!blank(S.usable)) { const VC = child(VR, 'VALUATION_COMMENTARIES'); const line = `Usable Lot Area/Utility: ${(+S.usable).toFixed(2)} ac.`;
+    let c = [...VC.children].find(c => [...c.children].some(k => k.localName === 'ValuationAnalysisCategoryType' && k.textContent === 'SiteFeatures'));
+    if (c) { const tx = [...c.children].find(k => k.localName === 'ValuationCommentText'); if (tx && !/Usable Lot Area\/Utility/.test(tx.textContent)) tx.textContent = (tx.textContent.trim() + ' ' + line).trim(); }
+    else comment('SiteFeatures', line, 4000); }
+  // market (hub Market tab)
+  const M = F.market;
+  if (M) { const MK = child(SUBJ, 'MARKET'); const md = child(MK, 'MARKET_DETAIL');
+    set(md, 'MarketBoundariesDescription', M.boundary && M.boundary.slice(0, 1250)); set(md, 'MarketInventoryLookbackMonthsCount', M.L); set(md, 'MarketInventorySearchParameterDescription', M.criteria && M.criteria.slice(0, 1250));
+    const inv = child(MK, 'MARKET_INVENTORIES'); while (inv.firstChild) inv.removeChild(inv.firstChild);
+    const mi = (n, lo, med, hi, dom, type) => { const e = add(inv, 'MARKET_INVENTORY'); set(e, 'MarketInventoryCount', n); if (n) { set(e, 'MarketInventoryHighestPriceAmount', hi); set(e, 'MarketInventoryLowestPriceAmount', lo); set(e, 'MarketInventoryMedianDaysOnMarketCount', dom == null ? null : Math.round(dom)); set(e, 'MarketInventoryMedianPriceAmount', med == null ? null : Math.round(med)); } set(e, 'MarketInventoryType', type); };
+    mi(M.activeN, M.activeLow, M.activeMed, M.activeHigh, M.activeDom, 'ActiveListings'); mi(M.pendingN, null, null, null, null, 'PendingSales'); mi(M.salesN, M.saleLow, M.saleMed, M.saleHigh, null, 'TotalSales');
+    let tr = [...MK.children].find(k => k.localName === 'MARKET_TREND'); if (!tr) { tr = child(MK, 'MARKET_TREND'); tr.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:label', 'MARKET_TREND_1'); }
+    set(tr, 'MarketingTimeType', M.mktime); set(tr, 'MarketSupplyTrendType', M.supply); set(tr, 'MarketTrendsForeclosureActivityIndicator', M.distress);
+    if (M.comment) set(tr, 'PriceTrendsAnalysisDescription', M.comment.slice(0, 2500)); }
+  // sales contract (hub document reader)
+  const K = F.contract;
+  if (K && (K.price || K.cdate || K.saleType)) { const sc = path(SUBJ, 'SALES_CONTRACTS', 'SALES_CONTRACT', 'SALES_CONTRACT_DETAIL');
+    const yn = v => v === 'true' ? 'true' : v === 'false' ? 'false' : null;
+    set(sc, 'ArmsLengthIndicator', yn(K.arms)); set(sc, 'PersonalPropertyIncludedIndicator', yn(K.pp)); set(sc, 'SalesConcessionIndicator', yn(K.conc)); set(sc, 'SalesConcessionsTypicalToMarketIndicator', yn(K.concTyp));
+    const p = num(String(K.price || '').replace(/[$,\s]/g, '')); set(sc, 'SalesContractAmount', p); set(sc, 'SalesContractDate', isoDate(K.cdate) || null); set(sc, 'SalesContractExistsIndicator', 'true'); set(sc, 'SalesContractReviewedIndicator', 'true');
+    set(sc, 'SaleType', K.saleType); const ca = num(String(K.concAmt || '').replace(/[$,\s]/g, '')); if (ca !== null) set(sc, 'TotalSalesConcessionAmount', ca);
+    comment('SalesContract', K.cmt, 5000); }
+  // parties: client, lender, AMC (the appraiser stays as your SFREP template has her)
+  const parties = [[rv(J, 'client'), rv(J, 'clientAddr1'), rv(J, 'clientAddr2'), 'Client'], [rv(J, 'lender'), F.lenderAddr1, F.lenderAddr2, 'Lender'], [rv(J, 'amc'), F.amcAddr1, F.amcAddr2, 'ManagementCompany']].filter(p => p[0]);
+  if (parties.length) { const PS = child(SVC, 'PARTIES');
+    parties.forEach(([name, a1, a2, role]) => { const P = add(PS, 'PARTY'); const le = child(P, 'LEGAL_ENTITY'); set(child(le, 'LEGAL_ENTITY_DETAIL'), 'FullName', name.slice(0, 100));
+      const m = String(a2 || '').match(/^(.*?),\s*([A-Z]{2})\s+(\d{5})/); if (a1 && m) { const ad = path(P, 'ADDRESSES', 'ADDRESS'); set(ad, 'AddressLineText', a1); set(ad, 'CityName', m[1]); set(ad, 'PostalCode', m[3]); set(ad, 'StateCode', m[2]); }
+      set(path(P, 'ROLES', 'ROLE', 'ROLE_DETAIL'), 'PartyRoleType', role); }); }
 }
 
 /* =====================================================================
@@ -1465,6 +1652,7 @@ function render() {
   <section class="card" id="compsCard">${compsCardHTML(J)}</section>
   <div id="detail">${app.sel ? detailHTML(J.comps.find(c => c.id === app.sel)) : ''}</div>
   <section class="card" id="gridCard">${gridHTML(J)}</section>
+  <section class="card" id="reportCard">${reportHTML(J)}</section>
   <section class="card" id="exportCard"><h2>Export</h2>${exportHTML(J)}</section>
   <footer class="foot">Comp Genie · your data stays on this computer · build ${typeof BUILD !== 'undefined' ? BUILD : ''}</footer>`;
   fillImages();
@@ -1579,7 +1767,7 @@ function exportHTML(J) {
   <div class="row"><button class="btn primary" data-act="x-full" ${used.length && J.subject.insp ? '' : 'disabled'} title="${J.subject.insp ? '' : 'Drop your iPad Workfile package first'}">Full report for SFREP (.zip)</button><button class="btn primary" data-act="x-sfrep" ${used.length ? '' : 'disabled'}>SFREP comps file (.zip)</button>
   <button class="btn" data-act="x-csv">Comps table (.csv)</button>
   <button class="btn" data-act="x-photos">Front photos (.zip)</button></div>
-  <p class="help"><b>Full report</b> = your iPad inspection (subject, photos, sketch) + these comps with your adjustments, your Lot Utility row, indicated value and comment, in one file. <b>Comps file</b> = the comps and your adjustments only, for a report that already has the inspection. Both carry the front photos, sale and listing data, site, view and house facts. Import into a copy of your report first (Home › Import Forms) to see how SFREP takes it.</p>`;
+  <p class="help"><b>Full report</b> = your iPad inspection (subject, photos, sketch) + these comps with your adjustments, your Usable Lot Area/Utility row, indicated value and comment, plus the Report details below, in one file. <b>Comps file</b> = the comps and your adjustments only, for a report that already has the inspection. Both carry the front photos, sale and listing data, site, view and house facts. Import into a copy of your report first (Home › Import Forms) to see how SFREP takes it.</p>`;
 }
 function useCrsAsSubject(ch) {
   return removeFile(ch.fid).then(() => { const s = app.job.subject; s.crs = ch.r; ['addr', 'city', 'zip', 'apn'].forEach(k => { if (ch.r[k]) s[k] = ch.r[k]; }); if (ch.r.lat) { s.lat = ch.r.lat; s.lon = ch.r.lon; }
