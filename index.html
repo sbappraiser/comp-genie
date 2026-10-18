@@ -117,12 +117,13 @@ header.top.pop{gap:8px}header.top.pop h1{font-size:18px}
 .cpkbox #cpkQ{min-width:320px}.cpki{border-top:1px solid #eee;padding:8px 0}.cpkt{font-size:13px;line-height:1.4;color:#333;margin-top:4px}
 .vt{padding:1px 7px;border-radius:9px;background:#eef1f4}.vt.v26{background:#fff1d6;color:#8a5a00}.vt.v36{background:#e1f2e6;color:#226b3a}.vt.vboth{background:#e6eefb;color:#2c4f8a}mark.blank{background:#fff3a8;padding:0 2px}
 .draft{margin:8px 0;padding:8px 10px;background:#f7faf7;border:1px solid #dfe9df;border-radius:8px}.draft textarea{width:100%;font-size:13px;line-height:1.45;margin:6px 0}
+.charct{font-size:12px;color:#667;margin:2px 0 6px}.charct .over{color:#b3261e}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1018-2252';
+const BUILD='g2-1018-2303';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1305,12 +1306,13 @@ function gridHTML(J) {
     </tbody></table></div>
     <div class="gsum"><div><span>Adjusted range</span><b>${adjs.length ? money(lo) + ' – ' + money(hi) : '–'}</b></div><div><span>Spread</span><b>${adjs.length > 1 ? money(hi - lo) + ' (' + ((hi - lo) / lo * 100).toFixed(1) + '%)' : '–'}</b></div><div><span>Median</span><b>${med ? money(med) : '–'}</b></div>
       <label><span>Your indicated value (sales comparison)</span><input class="txt" data-gvalue="1" value="${esc(blank(G.value) ? '' : G.value)}" placeholder="$" inputmode="decimal"></label></div>
-    <label class="fld"><span>Sales comparison comment (your words) ${cmtBtn('textarea[data-gnote]')}</span><textarea class="txt" rows="3" data-gnote="1">${esc(G.note || '')}</textarea></label>
+    <label class="fld"><span>Sales comparison comment (your words) ${cmtBtn('textarea[data-gnote]')}</span><textarea class="txt" rows="3" data-gnote="1">${esc(G.note || '')}</textarea></label><div class="charct" id="gnoteCt">${scCount(G.note)}</div>
     ${draftHTML(J)}
     <div class="row"><button class="btn sm" data-gtiers="1">Add the low / mid / high rating tiers to the comment</button><button class="btn sm" data-act="savealldb">Save these comps to my comp database (with your tiers)</button></div>
     ${reviewHTML(J)}${sensHTML(J)}`;
 }
 
+const scCount = t => { const n = String(t || '').length; return `${n.toLocaleString()} of 10,000 characters (UAD 3.6 limit)${n > 10000 ? ` – <b class="over">${(n - 10000).toLocaleString()} over</b>` : ''}`; };
 /* low / mid / high within a UAD rating – on her grid and in her comments, never in the UAD fields */
 function fineSel(who, k, J) { const v = fineOf(J, who, k); const set = ((G0(J).fine || {})[who] || {})[k], fromA = !set && fineArch(J, who, k); return ` <select class="fine${fromA ? ' arch' : ''}" data-gfine="${who}|${k}" title="${fromA ? 'From your archive note – change it if you see it differently' : 'Where it sits within the UAD rating'}">${['low', 'mid', 'high'].map(x => `<option value="${x}" ${x === v ? 'selected' : ''}>${x}</option>`).join('')}</select>`; }
 function tiersText(J) { const S = subjFacts(J); const one = (F, who) => ['q', 'c'].filter(k => F[k]).map(k => `${fineOf(J, who, k)} ${String(F[k]).match(/[QC]\d/i) ? String(F[k]).match(/[QC]\d/i)[0].toUpperCase() : F[k]}`).join(' / ');
@@ -1501,7 +1503,7 @@ async function buildFullReport(J) {
   // value and comment
   const G = G0(J); const VR = child(VA, 'VALUATION_REPORT');
   if (!blank(G.value) || G.note) { const sca = child(child(VR, 'APPROACH_TO_VALUE'), 'SALES_COMPARISON_APPROACH'); const det = child(sca, 'SALES_COMPARISON_APPROACH_DETAIL');
-    if (G.note) leaf(det, 'SalesComparisonCommentDescription', G.note.slice(0, 5000)); if (!blank(G.value)) leaf(det, 'ValueIndicatedBySalesComparisonAmount', Math.round(num(G.value))); }
+    if (G.note) leaf(det, 'SalesComparisonCommentDescription', G.note.slice(0, 10000)); if (!blank(G.value)) leaf(det, 'ValueIndicatedBySalesComparisonAmount', Math.round(num(G.value))); }
   writeReportXML(sub, NS, J, SUBJ, VA, SVC);   // assignment, legal, zoning, H&BU, market, contract, value (report.js)
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<!--Subject from the UAD Field Inspection app, comps and adjustment grid from Comp Genie, for import into Appraise-It Pro (Home > Import Forms).-->\n' + new XMLSerializer().serializeToString(sub.documentElement);
   const entries = [{ name: jobBase() + ' - Full report.xml', data: xml }];
@@ -1922,7 +1924,7 @@ function precheckGrid(J) {
   if (used.length < 3) out.push({ sev: 'Check', msg: `Only ${used.length} comp${used.length === 1 ? '' : 's'} on the grid – most clients expect at least 3 closed sales.` });
   if (blank(G.value)) out.push({ sev: 'Must fix', msg: 'No indicated value from the sales comparison approach on the grid.' });
   if (!String(G.note || '').trim()) out.push({ sev: 'Check', msg: 'The sales comparison comment is empty.' });
-  if (String(G.note || '').length > 5000) out.push({ sev: 'Must fix', msg: `The sales comparison comment is ${G.note.length} characters – only the first 5,000 are sent.` });
+  if (String(G.note || '').length > 10000) out.push({ sev: 'Must fix', msg: `The sales comparison comment is ${G.note.length.toLocaleString()} characters – UAD 3.6 allows 10,000; only the first 10,000 are sent. Move the standard rate paragraphs to a general commentary section.` });
   if (!J.subject.eff) out.push({ sev: 'Must fix', msg: 'No effective date on the assignment.' });
   const tot = used.map(c => compTotals(J, c)).filter(t => t.price); const adj = tot.map(t => t.adj);
   if (!blank(G.value) && adj.length) { const v = num(G.value), lo = Math.min(...adj), hi = Math.max(...adj); if (v < lo || v > hi) out.push({ sev: 'Check', msg: `Your value ${money(v)} is outside the adjusted range ${money(lo)} – ${money(hi)}.`, hint: 'Explain it in the comment, or look again at the adjustments.' }); }
@@ -2235,6 +2237,19 @@ function drRates(J) {   // her rate paragraphs, only for the rates set on this g
   if (set('landStep')) out.push(`Landscaping and Site Improvements. In this market segment, buyers place significant weight on landscaping and site improvements, and this adjustment reflects the overall quality, design, maturity, and extent of those improvements compared with the comparables. Landscaping includes hardscaping and covers all site improvements, such as plantings, trees, lawns, patios, porches, decking, terracing, walkways, driveways, driveway gates, site walls, fencing, pergolas, trellises, loggias, ponds, fountains, bocce courts, irrigation, drainage, and exterior lighting. Although patios, porches, and decks are reported on a separate line of the grid, no adjustment is made on that line. Market participants react to site improvements as a whole rather than item by item, and basic patios, porches, and decking are expected in this market for all but new construction, so any differences are reflected in this adjustment. Pools, spas, tennis courts, sport courts, and similar recreational amenities are adjusted separately and are not included here. This adjustment reflects the improvements themselves, not the amount of usable land available for them, which is addressed in the lot utility adjustment. Based on market reaction, an adjustment of ${money(R.landStep)} per tier of difference was derived.`);
   return out;
 }
+function drRatesShort(J) {   // one paragraph, for when the full rate paragraphs would push the comment past 10,000 characters
+  const R = G0(J).rates; const set = k => !blank(R[k]) && num(R[k]); const L = [];
+  if (set('usableAc')) L.push(`lot utility ${money(R.usableAc)} per usable acre`);
+  if (set('viewStep')) L.push(`view ${money(R.viewStep)} per tier`); else if (set('viewPct')) L.push(`view ${R.viewPct}% of the sale price per tier`);
+  if (set('qStep')) L.push(`quality ${money(R.qStep)} per UAD rating step`); else if (set('qPct')) L.push(`quality ${R.qPct}% per UAD rating step`);
+  if (set('cStep')) L.push(`condition ${money(R.cStep)} per UAD rating step`); else if (set('cPct')) L.push(`condition ${R.cPct}% per UAD rating step`);
+  if (set('bath')) L.push(`${money(R.bath)} per full bath and ${money(num(R.halfBath) || R.bath / 2)} per half bath`);
+  if (set('bed')) L.push(`${money(R.bed)} per bedroom below three`);
+  if (set('gla')) L.push(`living area ${money(R.gla)} per sq. ft.`);
+  [['space', 'garage', ' per bay'], ['pool', 'pool', ''], ['spa', 'spa', ''], ['pond', 'pond', ''], ['lake', 'lake', ''], ['tennis', 'tennis court', ''], ['sport', 'sport court', ''], ['aduSf', 'ADU / guest quarters', ' per sq. ft.'], ['landStep', 'landscaping', ' per tier']].forEach(([k, l, u]) => { if (set(k)) L.push(`${l} ${money(R[k])}${u}`); });
+  if (!L.length) return '';
+  return `Based on market reaction in the subject's market segment, the following adjustments were derived: ${L.join('; ')}. Quality and condition are analyzed in low, middle, and high tiers within each UAD rating (one third of a step each); these tiers are internal to the analysis and do not change the standardized UAD rating reported. Adjustments reflect what buyers pay for each difference, not construction cost or the average price per square foot. [Other amenities: central air, owned solar, backup power, private well …]`;
+}
 function drRecon(J) {
   const used = usedComps(J); const G = G0(J); const T = used.map(c => ({ c, t: compTotals(J, c), listing: /active|pending|contingent|coming/i.test(String(V(c, 'status') || '')) }));
   const closed = T.filter(x => !x.listing && x.t.price); if (!closed.length) return '';
@@ -2261,16 +2276,18 @@ function drBuild(J) {
   parts.push(`COMPARABLE SELECTION\n\nThis report includes ${nClosed} closed sale${nClosed === 1 ? '' : 's'}, ${nPend} pending sale${nPend === 1 ? '' : 's'}, and ${nAct} active listing${nAct === 1 ? '' : 's'}.`);
   const G = G0(J); parts.push(`MARKET CONDITIONS/TIME ADJUSTMENTS\n\n${!blank(G.rates.timePct) && num(G.rates.timePct) ? `Market conditions were analyzed from each comparable's contract date through the effective date of the appraisal. Based on the market evidence, an adjustment of ${G.rates.timePct}% per month was applied${G.rateFrom && G.rateFrom.timePct ? ` [support: ${G.rateFrom.timePct}]` : ''}.` : `Market conditions were analyzed from each comparable's contract date through the effective date of the appraisal. The available market evidence did not show a measurable change in market conditions in the subject's market segment during this period, and no market conditions adjustment was warranted for the closed sales.`}`);
   parts.push('COMPARABLE PROPERTIES\n\n' + used.map((c, i) => drComp(J, c, T[i])).join('\n\n'));
-  parts.push('COMPARABLE ADJUSTMENT ANALYSIS\n\n' + drRates(J).join('\n\n'));
+  const RATE_AT = parts.length; parts.push('COMPARABLE ADJUSTMENT ANALYSIS\n\n' + drRates(J).join('\n\n'));
   const anyLimit = gridReview(J).some(f => f.limit); if (anyLimit) parts.push('ADJUSTMENT GUIDELINES\n\nSome individual, net, or gross adjustments may exceed the common guidelines of 10%, 15%, and 25%, respectively. These percentages may draw extra attention in some lending and review settings, but they are not absolute limits. The size of an adjustment does not by itself make a comparable unacceptable.\n\nWhen large adjustments were needed, the appraiser considered two questions: whether the comparable remained relevant after adjustment, and whether a more similar alternative was reasonably available. The selected comparables are the most relevant market evidence available for this assignment. Their adjustments reflect market-supported differences from the subject. Comparable selection and weighting are based on overall similarity, relevance, data reliability, and market support.');
   parts.push('SALES COMPARISON RECONCILIATION\n\n' + drRecon(J));
+  DR.short = false;
+  if (parts.join('\n\n').length > 10000 || DR.forceShort) { const sh = drRatesShort(J); if (sh) { parts[RATE_AT] = 'COMPARABLE ADJUSTMENT ANALYSIS\n\n' + sh; DR.short = true; } }
   return parts.join('\n\n');
 }
 function draftHTML(J) {
   if (!usedComps(J).length) return '';
   return `<div class="draft"><div class="row"><button class="btn" data-act="dr-make">${DR.open ? 'Draft again from the grid' : 'Draft the comment from my grid'}</button><small>Writes the comparable paragraphs, your rate paragraphs and the start of the reconciliation in your wording. [Brackets] are for you to fill in. Nothing goes into the comment until you press a button below.</small></div>
     ${DR.open ? `<textarea class="txt" rows="18" id="drText">${esc(DR.text)}</textarea>
-    <div class="row"><button class="btn primary" data-act="dr-replace">Put it in the comment (replace)</button><button class="btn" data-act="dr-append">Add it to the end of the comment</button><button class="btn" data-act="dr-copy">Copy</button><button class="btn" data-act="dr-close">Close</button><small>${(DR.text.match(/\[[^\]]+\]/g) || []).length} [brackets] to fill in</small></div>` : ''}</div>`;
+    <div class="row"><button class="btn primary" data-act="dr-replace">Put it in the comment (replace)</button><button class="btn" data-act="dr-append">Add it to the end of the comment</button><button class="btn" data-act="dr-copy">Copy</button><button class="btn" data-act="dr-close">Close</button><label class="chk"><input type="checkbox" data-drshort="1" ${DR.short ? 'checked' : ''}> short rate paragraph</label><small>${DR.short && !DR.forceShort ? 'The full rate paragraphs would go past 10,000 characters, so your rates are listed in one short paragraph (your full paragraphs are in My comments). ' : ''}${(DR.text.match(/\[[^\]]+\]/g) || []).length} [brackets] to fill in · <span id="drCt">${scCount(DR.text)}</span></small></div>` : ''}</div>`;
 }
 
 /* MISMO child order seen in Fannie Mae's D-1 sample report (for placing new elements). Generated Oct 16 2026. */
@@ -2966,6 +2983,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('toggle', e => { if (e.target.dataset && e.target.dataset.revopen) app.revOpen = e.target.open; }, true);
 document.addEventListener('change', async e => {
+  if (e.target.dataset && e.target.dataset.drshort) { DR.forceShort = e.target.checked; DR.text = drBuild(app.job); if (!e.target.checked && DR.text.length > 10000) DR.text = drBuild(app.job); renderKeepFocus(); return; }
   if (e.target.dataset && e.target.dataset.revdone) { const J = app.job; J.revDone = J.revDone || {}; J.revDone[e.target.dataset.revdone] = e.target.checked; save(); await precheckRun(J, app.pre && app.pre.wantExport); renderKeepFocus(); return; }
   if (e.target.dataset && e.target.dataset.revon) { await revLoad(); const r = REVLOG.find(x => x.id === e.target.dataset.revon); if (r) r.on = e.target.checked; await revSave(); return; }
   const t = e.target;
@@ -3009,7 +3027,8 @@ document.addEventListener('change', async e => {
     save(); renderKeepFocus(); return; }
 });
 document.addEventListener('input', e => {
-  if (e.target.id === 'drText') { DR.text = e.target.value; return; }
+  if (e.target.id === 'drText') { DR.text = e.target.value; const c = $('#drCt'); if (c) c.innerHTML = scCount(DR.text); return; }
+  if (e.target.dataset && e.target.dataset.gnote) { const c = $('#gnoteCt'); if (c) c.innerHTML = scCount(e.target.value); }
   const t = e.target; if (t.id !== 'addr') return;
   const s = archiveSuggest(t.value); const box = $('#sugg');
   const cortHits = t.value.trim().length > 3 ? app.cort.filter(r => r.addr && r.addr.toLowerCase().startsWith(t.value.trim().toLowerCase())).slice(0, 4) : [];
