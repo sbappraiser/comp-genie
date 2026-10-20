@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
 <style>
-:root{--ink:#05090d;--muted:#2b3642;--line:#d6dce3;--bg:#eef1f4;--card:#fff;--teal:#ff8a00;--teal-d:#b35a00;--teal-l:#ffdcb5;--warn:#b35400;--warn-l:#fff2e5;--bad:#b3261e;--ok:#1e7a3c;--ok-l:#e6f4ea;--sel:#fff8d6}
+:root{--ink:#000;--muted:#1a1a1a;--line:#d6dce3;--bg:#eef1f4;--card:#fff;--teal:#ff8a00;--teal-d:#b35a00;--teal-l:#ffdcb5;--warn:#b35400;--warn-l:#fff2e5;--bad:#b3261e;--ok:#1e7a3c;--ok-l:#e6f4ea;--sel:#fff8d6}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Public Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 #app{max-width:1500px;margin:0 auto;padding:0 16px 40px}
@@ -44,7 +44,7 @@ table.comps tbody tr{cursor:pointer}table.comps tbody tr:hover{background:#fff6e
 .strip{display:flex;gap:6px;overflow-x:auto;padding:8px 0}.ph{border:2px solid transparent;padding:0;border-radius:6px;background:none;cursor:pointer;flex:0 0 auto}.ph img{width:110px;height:74px;object-fit:cover;border-radius:4px;display:block}.ph.on{border-color:var(--teal)}
 table.cmp th:first-child{width:210px}table.cmp td.using{font-weight:700;min-width:150px}
 table.cmp tr.grp th{background:var(--teal-l);color:var(--teal-d);font-size:14px}
-.srccell{cursor:pointer;color:#33504f;font-size:14px;max-width:260px}.srccell:hover{background:var(--teal-l)}.srccell.on{background:var(--ok-l);color:var(--ink);font-weight:700}.srccell.empty{cursor:default}
+.srccell{cursor:pointer;color:#000;font-size:14px;max-width:260px}.srccell:hover{background:var(--teal-l)}.srccell.on{background:var(--ok-l);color:var(--ink);font-weight:700}.srccell.empty{cursor:default}
 .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;background:#f3f5f7;color:var(--muted);vertical-align:1px}.tag.edit{background:var(--sel);color:#7a5a00}.tag.arch{background:var(--ok-l);color:var(--ok)}
 .diff{color:var(--warn);font-weight:700}
 table.mini{width:auto;min-width:50%}table.mini tr.hot td{background:var(--sel)}
@@ -77,7 +77,7 @@ input.xs{width:80px}
 .rptgrid .fld{display:block;margin:0 0 8px}.rptgrid .fld>span{display:block;font-size:.85em;color:var(--muted,#5b6876)}
 .rptgrid .fld input.txt,.rptgrid .fld textarea{width:100%;box-sizing:border-box}
 .rptgrid label.check{display:block;margin:2px 0}
-.rptgrid input::placeholder,.rptgrid textarea::placeholder{color:#3d4955}
+.rptgrid input::placeholder,.rptgrid textarea::placeholder{color:#000}
 .warnTxt{color:#e00000}
 .review{margin-top:16px;border-top:2px solid var(--line,#d6dde3);padding-top:8px}
 .rv{display:grid;grid-template-columns:110px 1fr minmax(160px,30%);gap:6px 10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line,#e6eaee)}
@@ -85,7 +85,7 @@ input.xs{width:80px}
 .rvs{font-size:12px;font-weight:700;padding:2px 6px;border-radius:4px;background:#eef1f4;text-align:center}
 .rv-Direction,.rv-Math{background:#fde2e1;color:#a51111}.rv-Limit{background:#fff1d6;color:#8a5300}.rv-Notadjusted,.rv-Consistency,.rv-Bracketing,.rv-Check{background:#e8f0fb;color:#1d4f91}
 select.fine{font-size:12px;padding:1px 2px;margin-left:4px;border-radius:4px}
-.starts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 10px;margin:6px 0 10px;background:#f3f5f7;border-radius:8px}.starts small{flex-basis:100%;color:#2b3642}
+.starts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 10px;margin:6px 0 10px;background:#f3f5f7;border-radius:8px}.starts small{flex-basis:100%;color:#000}
 .stedit{flex-basis:100%;margin-top:6px}.stedit table{border-collapse:collapse;margin:6px 0}.stedit th,.stedit td{padding:4px 8px;text-align:left;font-size:13px;vertical-align:top}
 .grate small.from{display:block;color:#0b7a5a;font-size:11px}
 .nuask{background:#fff6e0;border:1px solid #f0c060;padding:8px 10px;border-radius:8px;margin:6px 0}
@@ -114,10 +114,10 @@ header.top.pop{gap:8px}header.top.pop h1{font-size:18px}
 .cmtbtn{margin-left:8px;font-size:12px;padding:1px 8px}
 .cpk{position:fixed;inset:0;background:rgba(20,30,40,.35);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px}
 .cpkbox{background:#fff;border-radius:12px;max-width:900px;width:100%;max-height:85vh;overflow:auto;padding:14px 18px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
-.cpkbox #cpkQ{min-width:320px}.cpki{border-top:1px solid #eee;padding:8px 0}.cpkt{font-size:13px;line-height:1.4;color:#333;margin-top:4px}
+.cpkbox #cpkQ{min-width:320px}.cpki{border-top:1px solid #eee;padding:8px 0}.cpkt{font-size:13px;line-height:1.4;color:#000;margin-top:4px}
 .vt{padding:1px 7px;border-radius:9px;background:#eef1f4}.vt.v26{background:#fff1d6;color:#8a5a00}.vt.v36{background:#e1f2e6;color:#226b3a}.vt.vboth{background:#e6eefb;color:#2c4f8a}mark.blank{background:#fff3a8;padding:0 2px}
 .draft{margin:8px 0;padding:8px 10px;background:#f7faf7;border:1px solid #dfe9df;border-radius:8px}.draft textarea{width:100%;font-size:13px;line-height:1.45;margin:6px 0}
-.charct{font-size:12px;color:#2b3642;margin:2px 0 6px}.charct .over{color:#b3261e}
+.charct{font-size:12px;color:#000;margin:2px 0 6px}.charct .over{color:#b3261e}
 table.comps td.usecell{white-space:nowrap}table.comps td.usecell .btn{margin-right:4px;padding:2px 8px}
 
 /* the Appraisal Assistant's look (her request, Oct 19 2026): same colors and type as the hub */
@@ -179,20 +179,20 @@ button.nothumb{border:1px dashed #b8c2cc;cursor:pointer;padding:0}button.nothumb
 /* grid line picker */
 .glines{border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin:8px 0 12px;background:#fbfcfd}.glines summary{font-weight:700;cursor:pointer}
 .glgrid>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 18px}.glsec{display:contents}.glsec>b{grid-column:1/-1;margin-top:8px;color:#a35a00}
-label.gl{display:grid;grid-template-columns:auto 1fr;gap:0 6px;align-items:baseline;font-size:13px;padding:2px 0}label.gl .glex{grid-column:2/4;color:#2b3642;font-size:11.5px;font-style:normal}label.gl small{color:#3d4955;font-size:10.5px;grid-column:2/4}
-small.uadn{color:#34404c;font-weight:400;font-size:10.5px}
+label.gl{display:grid;grid-template-columns:auto 1fr;gap:0 6px;align-items:baseline;font-size:13px;padding:2px 0}label.gl .glex{grid-column:2/4;color:#000;font-size:11.5px;font-style:normal}label.gl small{color:#000;font-size:10.5px;grid-column:2/4}
+small.uadn{color:#000;font-weight:400;font-size:10.5px}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}.sheetbg .sheet{max-width:760px;width:94%}
 table.si td{padding:4px}table.si select{font-size:13px}
-td.subj input::placeholder{color:#2f3f4d;opacity:1}td.subj input:placeholder-shown{background:#f4f8fb}
+td.subj input::placeholder{color:#000;opacity:1}td.subj input:placeholder-shown{background:#f4f8fb}
 
 .glines #glNew{width:280px;flex:0 0 auto}
 
 .maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin:10px 0}.mapbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;background:#fff}
-.mapbox img{width:100%;height:auto;border:1px solid #ccd;border-radius:6px}.mapempty{height:160px;display:flex;align-items:center;justify-content:center;background:#f3f5f7;border-radius:6px;color:#3d4955}
+.mapbox img{width:100%;height:auto;border:1px solid #ccd;border-radius:6px}.mapempty{height:160px;display:flex;align-items:center;justify-content:center;background:#f3f5f7;border-radius:6px;color:#000}
 
 input.bad{border-color:#d00000!important;background:#fff0f0!important}
 .uadpick .pkgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}.uadpick .pkopts{max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
-.uadpick label.pk{display:block;padding:4px 6px;border-radius:6px}.uadpick label.pk:hover{background:#f3f7fb}.uadpick label.pk small{display:block;color:#2b3642;margin-left:22px}
+.uadpick label.pk{display:block;padding:4px 6px;border-radius:6px}.uadpick label.pk:hover{background:#f3f7fb}.uadpick label.pk small{display:block;color:#000;margin-left:22px}
 .uadpick .pkguide{background:#fbf6ee;border:1px solid #ecd9b8;border-radius:10px;padding:10px 12px;font-size:13px;max-height:55vh;overflow:auto}
 
 /* Classic (ACI) look for the grid – her 2.6 forms: grey boxes, thin black rules, compact rows, section bands */
@@ -207,12 +207,12 @@ body.classic table.grid input.adj{text-align:right;background:#e8e8e8}body.class
 body.classic table.grid input.bad{background:#ffc9c9!important}
 body.classic table.grid .btn.xs{padding:0 4px;font-size:10.5px;border-radius:2px}
 body.classic table.grid td.subj{background:#f4f4f4}body.classic table.grid tr.tot td,body.classic table.grid tr.tot th{background:#fff;font-weight:700}
-small.vsx{display:block;color:#1f2a35;font-size:11px}
+small.vsx{display:block;color:#000;font-size:11px}
 .req{color:#1f5fd6;font-weight:800;font-size:1.2em;margin-right:3px;cursor:help}
 
 /* her ask Oct 20 2026: the field you are in turns orange */
 input.txt:focus,input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus,textarea:focus{background:#ffd29a!important;border-color:#ff8a00!important;outline:2px solid #ff8a00!important;outline-offset:0;color:#000!important}
-input::placeholder,textarea::placeholder{color:#5a6672}
+input::placeholder,textarea::placeholder{color:#1a1a1a}
 .ccdone{color:var(--ok);font-weight:800}
 .files summary{cursor:pointer}
 .bulk{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0;padding:6px 10px;background:#f4f7fa;border:1px solid var(--line);border-radius:8px;font-size:14px}.bulk .bsel{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
@@ -220,14 +220,14 @@ table.comps th.ck,table.comps td.ck{width:26px;text-align:center;padding-left:4p
 .nutag{color:#7a3d00;font-weight:600;font-size:12px}
 /* her ask Oct 20 2026: vertical lines between Using, Your value and each source column */
 table.cmp td,table.cmp thead th{border-left:1px solid #b9c3cd}table.cmp tr>th:first-child{border-left:0}table.cmp td.mine{border-left:2px solid #6f7d8a;border-right:2px solid #6f7d8a}
-table.cmp td.mine input.txt.echo{color:#1f2a35;background:#fbfcfd}table.cmp td.mine input.txt.own{background:#fff4c2;font-weight:700}
+table.cmp td.mine input.txt.echo{color:#000;background:#fbfcfd}table.cmp td.mine input.txt.own{background:#fff4c2;font-weight:700}
 table.cmp td.srccell[data-pick]{cursor:pointer}table.cmp td.srccell[data-pick]:hover{outline:2px solid #ff8a00;outline-offset:-2px}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2020';
+const BUILD='g2-1020-2025';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -598,7 +598,7 @@ function parseCrsExport(text) {
   const H = rows[0].map(x => String(x).trim().toLowerCase()); const ix = n => H.indexOf(n.toLowerCase());
   return rows.slice(1).map(r => { const g = (...ns) => { for (const n of ns) { const i = ix(n); if (i >= 0 && String(r[i] || '').trim() !== '') return String(r[i]).trim(); } return ''; };
     const addr = titleCase(g('Property Address')); const lotSf = num(String(g('Lot Sq. Feet')).replace(/,/g, '')); const acres = num(g('Acreage'));
-    return { _src: 'crslist', apn: g('APN'), addr, city: titleCase(g('Property City')), zip: (g('Property Zip').match(/\d{5}/) || [''])[0],
+    return { _src: 'crslist', apn: g('APN'), addr, city: titleCase(g('Property City')), zip: (g('Property Zip').match(/\d{5}/) || [''])[0], zip4: (g('Property Zip').match(/\d{5}-?(\d{4})/) || ['', ''])[1],
       gla: num(g('Total Square Footage')), yearBuilt: num(g('Year Built')), lotSf: lotSf || (acres ? Math.round(acres * 43560) : null), acres,
       saleDate: isoDate(g('Last Sale Date')), salePrice: num(String(g('Last Sale Amount')).replace(/[$,]/g, '')), doc: g('Warranty Deed Document Number'),
       landUse: g('Land Use', 'Improvement Type'), subdivision: g('Subdivision') };
@@ -636,7 +636,7 @@ function mlsCanon(raw, G, g) {
   const aduN = ['ADU #1: Type', 'ADU #2: Attached'].filter(k => raw[k]).length;
   const views = G['View'] || [];
   return {
-    _src: 'mls', mls: g('Listing Number'), addr: [g('Street #'), titleCase(g('Street Name'))].filter(Boolean).join(' '), unit: g('Unit/Space #'), zip: g('Postal Code'), apn: g('Parcel Number'),
+    _src: 'mls', mls: g('Listing Number'), addr: [g('Street #'), titleCase(g('Street Name'))].filter(Boolean).join(' '), unit: g('Unit/Space #'), zip: (String(g('Postal Code')).match(/\d{5}/) || [''])[0], zip4: (String(g('Postal Code') + ' ' + g('Zip Plus 4', 'Postal Code Plus 4', 'ZIP+4')).match(/\d{5}-?(\d{4})|\b(\d{4})\b/) || [])[1] || (String(g('Zip Plus 4', 'Postal Code Plus 4', 'ZIP+4')).match(/\d{4}/) || [''])[0], apn: g('Parcel Number'),
     city: g('City') ? titleCase(g('City')) : '',
     status, listPrice: num(g('Price')), origList: num(g('Original List Price')), listDate: isoDate(g('Begin Date')), lastRed: isoDate(g('Price Change Date', 'Last Price Change Date', 'Price Change Timestamp')) || '',
     contractDate: isoDate(g('Under Contract Date')), saleDate: isoDate(g('Sold Date', 'COE')), salePrice: num(g('Sold Price')),
@@ -749,7 +749,7 @@ function pdfCanon(p) {
 function crsCanon(c) {
   const sales = (c.sales || []).map(s => ({ date: isoDate(s.recorded) || isoDate(s.date), docDate: isoDate(s.docDate || s.date), recorded: isoDate(s.recorded),   /* closing = Date Recorded (her rule) */ price: num(s.amount), src: 'CRS ' + (s.instrument || 'deed'), type: num(s.amount) ? 'Sale' : 'Transfer', inst: s.instrument || '', buyer: s.buyer || '', seller: s.seller || '', doc: s.doc || '' }));
   return {
-    _src: 'crs', addr: titleCase(c.addr || ''), city: titleCase(c.city || ''), zip: c.zip || '', apn: c.apn || '',
+    _src: 'crs', addr: titleCase(c.addr || ''), city: titleCase(c.city || ''), zip: c.zip || '', zip4: c.zip4 || '', apn: c.apn || '',
     beds: num(c.beds), bathsTotal: num(c.baths), gla: num(c.sqftAssessor), yearBuilt: num(c.yearBuilt), rooms: num(c.rooms),
     siteSf: num(c.lotSf) || (num(c.acres) ? Math.round(num(c.acres) * 43560) : null), acres: num(c.acres),
     lat: num(c.lat), lon: num(c.lng), zoning: c.zoning || '', landUse: c.landUse || '', fema: [c.fema, c.femaPanel, c.femaDate].filter(Boolean).join(' · '), owner: c.owner || '',
@@ -796,6 +796,13 @@ function remarkFinancing(code, rem) {
   return kind + ' (agent remarks: \u201c' + t.slice(Math.max(0, m.index - 25), m.index + m[0].length + 25).replace(/\s+/g, ' ').trim() + '\u201d)';
 }
 
+/* ZIP+4 (her ask Oct 20 2026): 3.6 PostalCode takes 5 or 9 digits (12345 or 12345-6789; Appendix F-1 examples show 5, so +4 is not required).
+   The comp's 5-digit ZIP decides; the +4 comes from any source with the same 5 digits (CRS report, CRS list, your database, MLS). */
+function zip9(c) { const z = String(V(c, 'zip') || '').match(/\d{5}/); if (!z) return V(c, 'zip') || ''; const S = srcVals(c); const e = String((c.edit || {}).zip4 || '').match(/\d{4}/); if (e) return z[0] + '-' + e[0];
+  for (const s of ['crs', 'arch', 'mls', 'pdf', 'cort']) { const o = S[s]; if (!o) continue; const m = String(o.zip || '').match(/^(\d{5})-?(\d{4})$/); if (m && m[1] === z[0]) return z[0] + '-' + m[2];
+    if (o.zip4 && /^\d{4}$/.test(o.zip4) && String(o.zip || '').slice(0, 5) === z[0]) return z[0] + '-' + o.zip4; }
+  return z[0]; }
+
 /* =====================================================================
    The comp model: fields, which source fills each field, flags.
    ===================================================================== */
@@ -837,6 +844,7 @@ const FIELDS = [
   { k: 'unit', l: 'Unit', g: 'Location and site', kind: 'id', t: 'text' },
   { k: 'city', l: 'City', g: 'Location and site', kind: 'id', t: 'text' },
   { k: 'zip', l: 'ZIP', g: 'Location and site', kind: 'id', t: 'text' },
+  { k: 'zip4', l: 'ZIP+4 (last 4 digits)', g: 'Location and site', kind: 'id', t: 'text' },
   { k: 'apn', l: 'APN', g: 'Location and site', kind: 'id', t: 'text' },
   { k: 'lat', l: 'Latitude', g: 'Location and site', kind: 'geo', t: 'num6' },
   { k: 'lon', l: 'Longitude', g: 'Location and site', kind: 'geo', t: 'num6' },
@@ -1160,7 +1168,7 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   const g = k => V(c, k);
   // ADDRESS
   const ad = X(P, 'ADDRESS'); XV(ad, 'AddressLineText', g('addr')); if (g('unit')) { XV(ad, 'AddressUnitDesignatorType', 'Unit'); XV(ad, 'AddressUnitIdentifier', g('unit')); }
-  XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', g('zip')); XV(ad, 'StateCode', 'CA');
+  XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', zip9(c)); XV(ad, 'StateCode', 'CA');
   // CAR_STORAGES
   const cs = X(P, 'CAR_STORAGES'); let any = false;
   const gar = num(g('garage')); if (gar) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); const gt = String(g('garageType') || ''); XV(d, 'CarStorageAttachmentType', /built/i.test(gt) ? 'BuiltIn' : /detach/i.test(gt) ? 'Detached' : /attach/i.test(gt) ? 'Attached' : null); XV(d, 'CarStorageType', 'Garage'); XV(d, 'ParkingSpacesCount', gar); }
@@ -1748,7 +1756,7 @@ function notUsedXML(PROPS, job) { let k = 0;
   job.comps.filter(c => c.notUsed && c.notUsed.report && !c.use).forEach(c => { const N = c.notUsed; const g = x => V(c, x); k++;
     const P = X(PROPS, 'PROPERTY', { ValuationUseType: 'PropertyAnalyzedNotUsed' });
     const ad = X(P, 'ADDRESS'); XV(ad, 'AddressLineText', g('addr')); if (g('unit')) { XV(ad, 'AddressUnitDesignatorType', 'Unit'); XV(ad, 'AddressUnitIdentifier', g('unit')); }
-    XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', g('zip')); XV(ad, 'StateCode', 'CA');
+    XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', zip9(c)); XV(ad, 'StateCode', 'CA');
     XV(X(X(P, 'COMPARABLE'), 'COMPARABLE_DETAIL'), 'PropertyOrdinalNumber', k);
     const s = String(g('status') || (g('salePrice') ? 'Closed' : '')); const lst = /closed|sold|settled/i.test(s) ? 'SettledSale' : /pending|escrow|contingent/i.test(s) ? 'Pending' : /active|coming/i.test(s) ? 'Active' : s ? 'OffMarket' : null;
     if (lst) XV(X(X(X(P, 'LISTING_INFORMATIONS'), 'LISTING_INFORMATION'), 'LISTING_INFORMATION_DETAIL'), 'ListingStatusType', lst);
@@ -1938,6 +1946,8 @@ async function buildFullReport(J) {
     const after = [...parent.children].find(k => seq.indexOf(k.localName) > r && r >= 0); parent.insertBefore(e, after || null); return e; };
   const leaf = (parent, tag, text, attrs) => { const e = sub.createElementNS(NS, tag); e.textContent = String(text); Object.entries(attrs || {}).forEach(([k, v]) => e.setAttribute(k, v)); parent.appendChild(e); return e; };
   const VA = q1(sub, 'VALUATION_ANALYSIS'), PROPS = q1(sub, 'PROPERTIES'), SUBJ = [...PROPS.children].find(p => p.getAttribute('ValuationUseType') === 'SubjectProperty'), SVC = q1(sub, 'SERVICE');
+  { const crs = J.subject.crs || {}; const pc = SUBJ && [...SUBJ.children].find(e => e.localName === 'ADDRESS'); const pe = pc && [...pc.children].find(e => e.localName === 'PostalCode');   // subject ZIP+4 from the subject's CRS report
+    if (pe && /^\d{4}$/.test(crs.zip4 || '') && pe.textContent.trim() === String(crs.zip || '').slice(0, 5)) pe.textContent = pe.textContent.trim() + '-' + crs.zip4; }
   // comps after the subject; their data sources and relationships
   [...q1(cmp, 'PROPERTIES').children].forEach(p => PROPS.appendChild(sub.importNode(p, true)));
   const DS = child(VA, 'DATA_SOURCES'); [...(q1(cmp, 'DATA_SOURCES') || { children: [] }).children].forEach(d => DS.appendChild(sub.importNode(d, true)));
