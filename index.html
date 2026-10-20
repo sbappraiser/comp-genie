@@ -227,7 +227,7 @@ table.cmp td.srccell[data-pick]{cursor:pointer}table.cmp td.srccell[data-pick]:h
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2016';
+const BUILD='g2-1020-2019';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -640,7 +640,7 @@ function mlsCanon(raw, G, g) {
     city: g('City') ? titleCase(g('City')) : '',
     status, listPrice: num(g('Price')), origList: num(g('Original List Price')), listDate: isoDate(g('Begin Date')), lastRed: isoDate(g('Price Change Date', 'Last Price Change Date', 'Price Change Timestamp')) || '',
     contractDate: isoDate(g('Under Contract Date')), saleDate: isoDate(g('Sold Date', 'COE')), salePrice: num(g('Sold Price')),
-    dom: num(g('Days On Market')), cdom: num(g('Cumulative DOM')), financing: g('Financing'), concessions: num(g('Seller Concessions')),
+    dom: num(g('Days On Market')), cdom: num(g('Cumulative DOM')), financing: remarkFinancing(g('Financing'), [g('Private Remarks'), g('Public Remarks')].filter(Boolean).join(' \u2022 ')), concessions: num(g('Seller Concessions')),
     saleType: saleType2, saleTypeNote: saleNote2,
     siteSf: lotSf || (acres ? Math.round(acres * 43560) : null), acres,
     topo: list('Location/Topo'), viewTypes: views.filter(v => !/^Setting$/.test(v)).join('; ') || (views.includes('Setting') ? 'Setting' : ''),
@@ -784,6 +784,16 @@ function remarkSaleType(t) {
     ['Relo', /relocation\s+(company|sale)|relo\s+(company|sale|addendum)|corporate[- ]owned/i], ['NonArm', /non[- ]arm|related\s+part(y|ies)|family\s+(sale|member|transfer)|inter[- ]?family/i]];
   for (const [type, re] of R) { const m = clean.match(re); if (m) { const i = m.index; return { type, words: (i > 30 ? '\u2026' : '') + t.slice(Math.max(0, i - 30), i + m[0].length + 30).replace(/\s+/g, ' ').trim() + '\u2026' }; } }
   return null;
+}
+
+/* her note (Oct 20 2026): the MLS Financing column is a Flexmls code number, not the terms – the MLS only knows the financing when the agent wrote it in the remarks at closing.
+   Shown in the MLS column for her reference only; the grid uses the recorded loan (CRS, CORT). */
+function remarkFinancing(code, rem) {
+  const c = String(code || '').trim(); if (c && !/^\d+$/.test(c)) return c;   // a real word from the export (e.g. "Conventional")
+  const t = String(rem || ''); const m = t.match(/\b(all[- ]cash|cash\s+(buyer|offer|sale|only|transaction)|paid\s+cash|FHA|VA\s+loan|\bVA\b(?=\s*(financ|buyer|offer))|conventional|USDA|seller\s+(carry|financ\w*|carried)|owner\s+(will\s+)?carry)\b/i);
+  if (!m) return '';
+  const w = m[0].toLowerCase(); const kind = /cash/.test(w) ? 'Cash' : /fha/.test(w) ? 'FHA' : /\bva\b/.test(w) ? 'VA' : /usda/.test(w) ? 'USDA' : /seller|owner/.test(w) ? 'Seller financing' : 'Conventional';
+  return kind + ' (agent remarks: \u201c' + t.slice(Math.max(0, m.index - 25), m.index + m[0].length + 25).replace(/\s+/g, ' ').trim() + '\u201d)';
 }
 
 /* =====================================================================
@@ -959,7 +969,7 @@ function srcVals(c) { // canonical values per source for this comp
   const crsRec = crs && crs.lastSale ? (crs.lastSale.recorded || crs.lastSale.date) : '';
   if (crs && crs.lastSale && sale && sale.date && Math.abs(monthsBetween(crsRec, sale.date)) <= 2) crs = { ...crs, salePrice: crs.lastSale.price, saleDate: crsRec };
   if (crs && crs.salePrice) { const fin = crsFinancing(crs); if (fin) crs = { ...crs, financing: fin }; }
-  const finFix = o => o && /^\s*\d+\s*$/.test(String(o.financing || '')) ? { ...o, financing: 'MLS code ' + String(o.financing).trim() + ' – what does it mean?' } : o;
+  const finFix = o =>   /* Oct 20 2026: the Flexmls Financing number is not the terms – hidden (also in comps brought in before) */ o && /^\s*\d+\s*$/.test(String(o.financing || '')) ? { ...o, financing: remarkFinancing('', [o.privateRemarks, o.remarks].filter(Boolean).join(' • ')) } : o;
   return { arch: a ? a.v : null, mls: finFix(c.src.mls), pdf: lastRedOf(finFix(c.src.pdf)), crs, cort: c.src.cort[c.cortPick || 0] || null };
 }
 /* her note (Oct 19 2026): the CRS Mortgage History shows the buyer's loan – a loan recorded near the sale's recording date with the buyer as borrower */
@@ -1969,6 +1979,7 @@ async function buildFullReport(J) {
 /* her note (Oct 20 2026): no loan recorded with the deed = cash (Santa Barbara has many cash sales); a recorded loan stays as the CRS text until she picks the type */
 function termsText(f) { f = String(f || '').trim(); if (!f) return ''; if (/no loan|\(cash\?\)|^cash\b/i.test(f)) return 'Cash';
   if (/^loan:/i.test(f)) return /\bFHA\b/i.test(f) ? 'FHA' : /\bVA\b/.test(f) ? 'VA' : /USDA|rural/i.test(f) ? 'USDA Rural Development' : 'Conventional';   // a recorded loan (CRS / CORT lender) – the deed doesn't name the type; Conventional unless the lender line says FHA / VA
+  if (/\(agent remarks/i.test(f)) return termsText(f.replace(/\s*\(agent remarks.*$/i, '').replace(/^Seller financing$/i, 'Seller'));   // she clicked the MLS remarks value
   if (/^seller/i.test(f)) return 'Private';
   const m = f.match(/^(Conv|FHA|VA|USDA|Cash|Seller)\s*;\s*\d*/i); if (m) return termsText(m[1]);   // a 2.6 archive entry like Conv;0
   return f; }
