@@ -213,7 +213,7 @@ small.vsx{display:block;color:#3b4a57;font-size:11px}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2000';
+const BUILD='g2-1020-2002';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2016,7 +2016,7 @@ function tsSales(J) {   // her archive sales in the segment, plus closed sales f
   // closed sales from this job (her MLS search, PDFs, CORT) that are not already in the archive
   const job = { n: 0, skipped: 0, site: 0 };
   (J.comps || []).forEach(c => {
-    const C = compFacts(c, J); if (!C.price || !C.sale) return; if (!/closed|sold/i.test(String(V(c, 'status') || 'Closed'))) return;
+    const C = compFacts(c, J); if (!C.price || !C.sale) return; if (!/closed|sold|settled/i.test(String(V(c, 'status') || 'Closed'))) return;
     if (!seg.test({ zip: String(V(c, 'zip') || ''), nbhd: V(c, 'nbhd') || '' })) return;
     const month = String(C.sale).slice(0, 7); const addr = (c.src.arch[0] && c.src.arch[0].v && archRowAddr(c)) || '';
     if (c.src.arch.some(a => a.v && String(a.v.saleDate || '').slice(0, 7) === month)) return;   // the archive already has this sale
@@ -4293,7 +4293,7 @@ function subjectHTML(J) {
     <p class="help">Latitude and longitude give each comp its distance and direction. Fill them from the subject's CRS report: <label class="link">choose the subject's CRS PDF<input type="file" accept=".pdf" data-act="subjcrs" hidden></label>${inA ? ` · Your archive has ${inA.length} record${inA.length > 1 ? 's' : ''} for this address.` : ''}</p>`;
 }
 /* Closed sales first (newest closing on top), then pending (newest contract), then active listings (newest list date), then everything else */
-function compGroup(c) { const st = String(V(c, 'status') || (currentSale(c) || {}).status || ''); if (/closed|sold/i.test(st) || (!st && V(c, 'saleDate'))) return 0; if (/pending|contract|contingent/i.test(st)) return 1; if (/active|coming/i.test(st)) return 2; return 3; }
+function compGroup(c) { const st = String(V(c, 'status') || (currentSale(c) || {}).status || ''); if (/closed|sold|settled/i.test(st) || (!st && V(c, 'saleDate'))) return 0; if (/pending|contract|contingent/i.test(st)) return 1; if (/active|coming/i.test(st)) return 2; return 3; }   // Oct 20 2026: her ▾ pick saves SettledSale – it dropped 604 Dara from comp 3 to comp 10
 function compOrder(a, b) {
   const ga = compGroup(a), gb = compGroup(b); if (ga !== gb) return ga - gb;
   const d = c => String((ga === 0 ? V(c, 'saleDate') : ga === 1 ? V(c, 'contractDate') || V(c, 'listDate') : V(c, 'listDate')) || V(c, 'saleDate') || '');
