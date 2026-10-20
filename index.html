@@ -227,7 +227,7 @@ table.cmp td.srccell[data-pick]{cursor:pointer}table.cmp td.srccell[data-pick]:h
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2019';
+const BUILD='g2-1020-2020';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -4264,7 +4264,7 @@ function renderPage() {
     ${crsNeedHTML(J)}${photoNeedHTML(J)}
     <label class="drop" id="drop"><input type="file" multiple data-act="files" hidden>
       <b>Drop files here</b> or click to choose: MLS export (.csv) · MLS photos (.zip) · MLS printout (.pdf) · CRS reports (.pdf) · CORT table (.csv) · comp archive (.gz) · your land sales or cost database (.xlsx)</label>
-    ${(J.files || []).length ? `<details class="files"${crsNeedHTML(J) || photoNeedHTML(J) || /^rf:/.test(app.confirm || '') ? ' open' : ''}><summary><b>Files in this assignment</b> <small>${J.files.length}${crsNeedHTML(J) || photoNeedHTML(J) ? '' : ' · <span class="ccdone">✓</span> nothing else needed'} · (✕ takes a file back out)</small></summary><ul>${J.files.map(f => `<li>${esc(f.name)} <small>${esc(f.kind)}${f.n ? ', ' + f.n : ''}</small> ${app.confirm === 'rf:' + f.id ? `<span class="confirm">Take it out? <button class="btn danger solid sm" data-rfyes="${esc(f.id)}">Remove file</button><button class="btn sm" data-act="cancel">Keep</button></span>` : `<button class="btn sm" data-rf="${esc(f.id)}" title="Remove this file and what it added">✕</button>`}</li>`).join('')}</ul></details>` : ''}
+    ${(J.files || []).length ? `<details class="files"${crsNeedHTML(J) || /^rf:/.test(app.confirm || '') ? ' open' : ''}><summary><b>Files in this assignment</b> <small>${J.files.length}${crsNeedHTML(J) ? '' : ' · <span class="ccdone">✓</span> nothing else needed'} · (✕ takes a file back out)</small></summary><ul>${J.files.map(f => `<li>${esc(f.name)} <small>${esc(f.kind)}${f.n ? ', ' + f.n : ''}</small> ${app.confirm === 'rf:' + f.id ? `<span class="confirm">Take it out? <button class="btn danger solid sm" data-rfyes="${esc(f.id)}">Remove file</button><button class="btn sm" data-act="cancel">Keep</button></span>` : `<button class="btn sm" data-rf="${esc(f.id)}" title="Remove this file and what it added">✕</button>`}</li>`).join('')}</ul></details>` : ''}
   </section>
   <section class="card" id="compsCard">${compsCardHTML(J)}</section>
   <div id="detail">${app.sel ? detailHTML(J.comps.find(c => c.id === app.sel)) : ''}</div>
