@@ -174,11 +174,13 @@ tr.landon td { background: #eefbf3; }
 
 .pill.ver{font-weight:700;color:#b00000;border-color:#e3b3b3;background:#fff}
 
+button.nothumb{border:1px dashed #b8c2cc;cursor:pointer;padding:0}button.nothumb:hover{background:#fff3e0;opacity:1}
+
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-1751';
+const BUILD='g2-1020-1802';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -498,6 +500,9 @@ function archiveSuggest(q, n = 8) {
 }
 const VIEW_UAD = { Residential: 'Residential', Water: 'Ocean', Mountain: 'Mountain', 'City Skyline': 'Skyline', Woods: 'Woods', 'Golf Course': 'GolfCourse', Canyon: 'Valley', 'City Street': 'CityStreet', Pastoral: 'Pastoral', Park: 'Park', 'Garden Setting': 'Residential', 'Power Lines': 'Other' };
 const LOC_TEXT = { Res: 'Residential', BusyRd: 'Busy road', ShrDrv: 'Shared drive', PvtLn: 'Private lane', WtrFr: 'Waterfront', InterLot: 'Interior lot', PvtRd: 'Private road', FwyNse: 'Freeway noise', Noise: 'Noise', FldZn: 'Flood zone', Rural: 'Rural', Train: 'Train', 'Debris/Fire': 'Debris flow / fire', FlagLot: 'Flag lot', AdjPrk: 'Adjacent park', Gated: 'Gated', Comm: 'Commercial', DrvEsmt: 'Driveway easement', Schl: 'School', FldWy: 'Floodway', Esmt: 'Easement', SecondRow: 'Second row', NrWtr: 'Near water', LotsToAmenity: 'Lots to amenity' };
+/* the 2.6 Design (Style) line: DT1;Ranch = detached, 1 story, ranch – AT attached, SD semi-detached, RT row, GR/MR/HR garden/mid/high-rise; the digits are the stories (DT4, RT3 …) */
+function archDesign(v) { const m = String(v || '').match(/^\s*(DT|AT|SD|RT|GR|MR|HR)\s*(\d+(?:\.\d)?)?/i); if (!m) return {};
+  return { attach: { DT: 'Detached', AT: 'Attached', SD: 'Semi-detached', RT: 'Row', GR: 'Garden', MR: 'Mid-rise', HR: 'High-rise' }[m[1].toUpperCase()], stories: m[2] ? +m[2] : null, code: (m[1] + (m[2] || '')).toUpperCase() }; }
 function archCanon(a) {
   const am = String(a.amenities || '').split(';');
   const acc = (() => { try { return JSON.parse(a.accessory_json || '[]'); } catch (e) { return []; } })();
@@ -512,7 +517,7 @@ function archCanon(a) {
     siteSf: a.site_sf, usableSf: a.usable_sf, landSplit: a.land_split || '', topo: a.topography || '',
     locRating: a.location_rating || '', locFactors: String(a.location_factors || '').split(';').filter(Boolean).map(x => LOC_TEXT[x] || x).join('; '),
     viewRating: a.view_rating || '', viewTypes: String(a.view_types || '').split(';').filter(Boolean).join('; '), viewRange: a.view_panoramic ? 'Panoramic' : a.view_limited ? 'Limited' : '',
-    attach: a.attachment || '', style: a.style || '', stories: a.stories,
+    attach: a.attachment || archDesign(a.design_raw).attach || '', style: a.style || '', stories: a.stories ?? archDesign(a.design_raw).stories, designRaw: a.design_raw || '',
     quality: a.quality ? 'Q' + a.quality + (a.quality_mod || '') : '', condition: a.condition ? 'C' + a.condition + (a.condition_mod || '') : '',
     yearBuilt: a.year_built_est || (a.actual_age != null && a.entered_date ? +String(a.entered_date).slice(0, 4) - a.actual_age : null), effAge: a.effective_age,
     rooms: a.rooms, beds: a.beds, bgBeds: a.bg_beds, full: a.baths_full, half: a.baths_half, gla: a.gla, bsmtSf: a.bsmt_sf, bsmtFin: a.bsmt_fin_sf,
@@ -1116,10 +1121,10 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   XV(ar, 'UnitStandardAboveGradeFinishedAreaMeasure', gla, SQFT); XV(ar, 'UnitStandardBelowGradeFinishedAreaMeasure', bs ? (bf || 0) : (gla ? 0 : null), SQFT);
   const ud = X(pu, 'PROPERTY_UNIT_DETAIL'); XV(ud, 'AccessoryDwellingUnitIndicator', 'false'); XV(ud, 'BedroomCount', g('beds'));
   const stru = uadStructure(CF.structure), isAtt = /attach/i.test(String(g('attach') || '')) && !/detach/i.test(String(g('attach') || ''));
-  if (mode === 'condo' && /rise/.test(stru || '') && !blank(CF.unitPos)) XV(ud, 'CornerUnitIndicator', /corner|end/i.test(CF.unitPos) ? 'true' : 'false'); if (mode === 'condo' && !blank(CF.floor)) XV(ud, 'FloorIdentifier', String(CF.floor).slice(0, 10)); XV(ud, 'FullBathroomCount', g('full')); XV(ud, 'HalfBathroomCount', g('half'));
+  if (mode === 'condo' && /rise/.test(stru || '') && !blank(CF.unitPos)) XV(ud, 'CornerUnitIndicator', /corner|end/i.test(CF.unitPos) ? 'true' : 'false'); if (mode === 'condo' && !blank(CF.floor)) XV(ud, 'FloorIdentifier', String(CF.floor).slice(0, 10)); XV(ud, 'FullBathroomCount', g('full')); XV(ud, 'HalfBathroomCount', g('half')); if (!blank(CF.levels)) XV(ud, 'LevelCount', CF.levels);
   const st = X(imp, 'STRUCTURE'); const sty = uadStyle(g('style')); if (sty) { const a = X(st, 'ARCHITECTURAL_DESIGN'); XV(a, 'ArchitecturalDesignCategoryType', sty.t); if (sty.other) XV(a, 'ArchitecturalDesignCategoryTypeOtherDescription', sty.other); }
   if (isAtt && stru) { const a = st.kids.find(k => k.tag === 'ARCHITECTURAL_DESIGN') || X(st, 'ARCHITECTURAL_DESIGN'); XV(a, 'StructuralDesignType', stru); }
-  { const sd = X(st, 'STRUCTURE_DETAIL'); XV(sd, 'LivingUnitCount', 1); if (stru === 'RowhouseTownhouse' && !blank(CF.unitPos)) XV(sd, 'RowhouseTownhouseEndUnitIndicator', /end|corner/i.test(CF.unitPos) ? 'true' : 'false'); }
+  { const sd = X(st, 'STRUCTURE_DETAIL'); XV(sd, 'LivingUnitCount', 1); if (stru === 'RowhouseTownhouse' && !blank(CF.unitPos)) XV(sd, 'RowhouseTownhouseEndUnitIndicator', /end|corner/i.test(CF.unitPos) ? 'true' : 'false'); if (!blank(CF.levels)) XV(sd, 'StoriesCount', CF.levels); }
   const heats = uadHeat(g('heatCool')); if (heats.length || cool) { const sy = X(imp, 'SYSTEM');
     if (cool && cool.exists) XV(X(X(sy, 'COOLING_SYSTEMS'), 'COOLING_SYSTEM'), 'CoolingSystemType', cool.type);
     if (heats.length) { const hs = X(sy, 'HEATING_SYSTEMS'); heats.forEach(h => { const e = X(hs, 'HEATING_SYSTEM'); XV(e, 'HeatingFuelType', uadFuel(g('heatCool')) || null); XV(e, 'HeatingSystemType', h); if (h === 'Other') XV(e, 'HeatingSystemTypeOtherDescription', 'Wall furnace'); }); } }
@@ -1242,6 +1247,7 @@ const ADJ_ROWS = [
   ['year', 'Year built', 'Dwelling', 'YearBuilt'],
   ['style', 'Design (style)', 'Dwelling', 'DwellingStyle'],
   ['attach', 'Attached / detached', 'Dwelling', 'AttachedOrDetached', 'attach'],
+  ['levels', 'Levels (stories)', 'Dwelling', 'LivingUnitLevelCount'],   // her note (Oct 20 2026): on the 3.6 grid; MLS story tag, or her 2.6 Design line (DT1, DT2, AT2 …) in the archive
   ['structure', 'Structure (low-rise, mid-rise, townhouse…)', 'Dwelling', null],
   ['unitPos', 'Unit location (interior / corner / end)', 'Dwelling', 'CornerUnit', 'unitPos'],
   ['floor', 'Floor (unit level)', 'Dwelling', 'LivingUnitFloorNumber'],
@@ -1366,7 +1372,7 @@ function subjFacts(J) {
   const I = J.subject.insp || {}, T = G0(J).subj, crs = J.subject.crs || {};
   const f = { price: '', ppsf: '', src: 'Inspection ' + (I.inspDate ? showDate(I.inspDate) : ''), prox: '', terms: '', conc: '', contract: '', sale: '', dom: '',
     site: I.siteSf || num(crs.lotSf) || null, usable: I.usableAc ?? null, loc: I.loc || '', view: I.view || '', topo: I.topo || '', nbhd: I.nbhd || '', land: I.land || '',
-    style: I.style || '', attach: I.attach || '', status: '', listPrice: '', origList: '', listDate: '', lastRed: '', redDays: '', cdom: '', project: I.project || '', hoa: I.hoa ?? null, hoaAmen: I.hoaAmen || '', landCommon: '', structure: I.structure || '', unitPos: I.unitPos || '', floor: I.floor ?? null, year: I.year || num(crs.yearBuilt) || null, q: I.q || '', c: I.c || '', rooms: I.rooms ?? null, beds: I.beds ?? null, full: I.full ?? null, half: I.half ?? null,
+    style: I.style || '', attach: I.attach || '', levels: I.levels ?? null, status: '', listPrice: '', origList: '', listDate: '', lastRed: '', redDays: '', cdom: '', project: I.project || '', hoa: I.hoa ?? null, hoaAmen: I.hoaAmen || '', landCommon: '', structure: I.structure || '', unitPos: I.unitPos || '', floor: I.floor ?? null, year: I.year || num(crs.yearBuilt) || null, q: I.q || '', c: I.c || '', rooms: I.rooms ?? null, beds: I.beds ?? null, full: I.full ?? null, half: I.half ?? null,
     gla: I.gla ?? null, bsmt: I.bsmt ?? null, garage: I.garage ?? null, energy: I.energy || '', pool: I.pool || '', courts: I.courts || '', porch: I.porch || '', adu: I.adu || '', other: I.other || '' };
   Object.entries(T).forEach(([k, v]) => { if (!blank(v)) f[k] = v; });
   f._fine = { q: fineOf(J, 'subj', 'q'), c: fineOf(J, 'subj', 'c') };
@@ -1378,7 +1384,7 @@ function compFacts(c, J) {
   const F0 = { price: num(g('salePrice')), src: g('mls') ? 'MLS ' + g('mls') : (c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : ''), prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
     terms: g('financing') || '', conc: num(g('concessions')), contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
-    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', status: g('status') || '', listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: num(g('cdom')), project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
+    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: g('status') || '', listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: num(g('cdom')), project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
     rooms: num(g('rooms')), beds: num(g('beds')), full: num(g('full')), half: num(g('half')), gla: num(g('gla')), bsmt: num(g('bsmtFin')), garage: num(g('garage')), energy: g('energy') || '',
     pool: [yes(g('pool')) ? 'Pool' : '', yes(g('spa')) ? 'Spa' : ''].filter(Boolean).join(', ') || (g('pool') && !yes(g('pool')) ? 'None' : ''), courts: [yes(g('tennis')) ? 'Tennis court' : '', yes(g('sport')) ? 'Sport court' : ''].filter(Boolean).join(', '), porch: g('porch') || '', adu: [g('adu'), g('guest'), g('accessory')].filter(Boolean).join('; '),
     other: [g('horse') ? 'Horse facilities' : ''].filter(Boolean).join(', '), _id: c.id, aduSf: g('aduSf'), aduBaths: g('aduBaths') };
@@ -1632,7 +1638,7 @@ async function ingestInspection(files, name) {
   { const TM = { Low: 'low', Middle: 'mid', High: 'high' }, g = G0(app.job); g.fine = g.fine || {}; g.fine.subj = g.fine.subj || {};   // her low / middle / high from the iPad (Oct 20 2026) – only when she has not picked one here
     const C = D.condition || {}; if (C.oqTier && !g.fine.subj.q) g.fine.subj.q = TM[C.oqTier]; if (C.ocTier && !g.fine.subj.c) g.fine.subj.c = TM[C.ocTier]; }
   s.insp = { file: name, inspDate: D.property.inspDate, gla: T.agFin || null, bsmt: T.bgFin || 0, beds: (L.bedrooms || []).length, full: (L.baths || []).filter(x => x.kind === 'FullBathroom').length,
-    half: (L.baths || []).filter(x => x.kind === 'HalfBathroom').length, year: num(D.front.yearBuilt), q: D.condition.oq || '', c: D.condition.oc || '', style: D.front.design || '',
+    half: (L.baths || []).filter(x => x.kind === 'HalfBathroom').length, year: num(D.front.yearBuilt), q: D.condition.oq || '', c: D.condition.oc || '', style: D.front.design || '', levels: (L.levels || []).filter(x => !x.grade || /Above/i.test(x.grade)).length || num(D.front.stories),
     siteSf: site, usableAc: D.site.usable === 'All Usable' && site ? acOf(site) : null, garage: D.garage.garShared ? 0 : (D.garage.hasGarage ? num(D.garage.garSpaces) : 0),
     view: [(D.site.view || []).join(', '), D.site.viewImpact].filter(Boolean).join(' – '), loc: [(D.site.influences || []).join(', '), D.site.inflImpact].filter(Boolean).join(' – '),
     topo: (D.site.topo || []).join(', '), energy: (D.systems.renew || []).filter(x => x !== 'None').join(', '),
@@ -3207,11 +3213,12 @@ async function saveNow() { if (!app.job) return; app.job.updated = Date.now(); a
 
 /* ---------------- photos ---------------- */
 app.photos = []; // [{id, mls, n, name}] for this job (blobs stay in storage)
-async function loadPhotos() { app.photos = app.job ? (await DB.byJob(app.job.id)).map(p => ({ id: p.id, mls: p.mls, arch: p.arch, n: p.n, name: p.name, file: p.file })) : []; }
+async function loadPhotos() { app.photos = app.job ? (await DB.byJob(app.job.id)).map(p => ({ id: p.id, mls: p.mls, arch: p.arch, comp: p.comp, n: p.n, name: p.name, file: p.file })) : []; }
 const archPhotoNames = c => [...new Set((c.src.arch || []).map(a => String(a.photo || '').trim()).filter(Boolean))];
 const photosOf = c => { const m = V(c, 'mls'); const mlsPs = m ? app.photos.filter(p => p.mls === m).sort((a, b) => a.n - b.n) : [];
   const an = archPhotoNames(c); const archPs = an.length ? app.photos.filter(p => p.arch && an.includes(p.arch)).sort((a, b) => an.indexOf(a.arch) - an.indexOf(b.arch)) : [];
-  return [...mlsPs, ...archPs]; };   // MLS photos first; your archive's front photo when the MLS has none (her note, Oct 20 2026)
+  const own = app.photos.filter(p => p.comp === c.id).sort((a, b) => a.n - b.n);
+  return [...mlsPs, ...own, ...archPs]; };   // MLS photos first; your archive's front photo when the MLS has none (her note, Oct 20 2026)
 /* ---- your archive's front photos: ACI keeps them in "ACI Research\Research Photos" as R…F.IMG (JPEG). She connects a copy of that folder once;
    Chrome remembers it (asks again with one click after a restart). Only the photos of this assignment's comps are copied in. ---- */
 const AP = { dir: null, state: '' };   // state: '' not connected · 'ask' connected before, needs a click · 'ok'
@@ -3501,10 +3508,13 @@ function compsTable(J) {
     const st = V(c, 'status') || ((currentSale(c) || {}).status || '');
     return `<tr class="${c.id === app.sel ? 'sel' : ''} ${c.use ? 'used' : ''}" data-open="${c.id}">
       <td class="usecell"><button class="btn small${c.use ? '' : ' primary'}" data-quse="${c.id}" title="${c.use ? 'Take it off the grid' : 'Put it on the grid as the next comp'}">${c.use ? 'Remove' : '+ Grid'}</button><select data-use="${c.id}" aria-label="Use as comp number" title="Or pick its comp number">${'<option value="">–</option>'}${Array.from({ length: maxUse }, (_, i) => `<option ${c.use === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></td>
-      <td>${fr ? `<img class="thumb" data-photo="${fr.id}" alt="">` : `<span class="nothumb" title="${c.mls || V(c, 'mls') ? 'Drop the MLS photos zip in Add comps – the first photo (the front) shows here' : 'Not in the MLS – no MLS photo'}">${c.mls || V(c, 'mls') ? '📷' : ''}</span>`}</td>
+      <td>${fr ? `<img class="thumb" data-photo="${fr.id}" alt="">` : `<button type="button" class="nothumb" data-pickphoto="${c.id}" title="${archPhotoNames(c).length && AP.state !== 'ok' ? 'Your archive has a front photo of this one – click to connect your archive photos' : 'Click to add a photo: the MLS photos zip, or a picture of the front'}">📷</button>`}</td>
       <td><b>${esc(compTitle(c))}</b><br><small>${esc(V(c, 'mls') ? 'MLS ' + V(c, 'mls') : '')}</small></td>
       <td>${esc(st)}</td><td class="r">${money(V(c, 'salePrice') || V(c, 'listPrice'))}${!V(c, 'salePrice') && V(c, 'listPrice') ? '<br><small>list</small>' : ''}</td>
-      <td>${esc(showDate(V(c, 'saleDate') || V(c, 'contractDate')))}</td><td class="r">${int(V(c, 'gla'))}</td><td>${(() => { const tg = (c.src.mls && c.src.mls.storyTags) || []; if (tg.length) return esc(tg.map(x => x.replace(/ Story$/i, '').replace(/-?Level$/i, ' level').replace(/^Tri level$/i, 'Tri-level')).join(', ')); const n = (c.src.mls && c.src.mls.stories) || (c.src.pdf && c.src.pdf.stories) || null; return n ? (n === 1 ? 'Single' : n === 2 ? 'Two' : n === 3 ? 'Three' : esc(n)) : ''; })()}</td><td class="r">${esc(fmt(FIELD.siteSf, V(c, 'siteSf')))}</td>
+      <td>${esc(showDate(V(c, 'saleDate') || V(c, 'contractDate')))}</td><td class="r">${int(V(c, 'gla'))}</td><td>${(() => { const tg = (c.src.mls && c.src.mls.storyTags) || []; if (tg.length) return esc(tg.map(x => x.replace(/ Story$/i, '').replace(/-?Level$/i, ' level').replace(/^Tri level$/i, 'Tri-level')).join(', ')); const word = n => n === 1 ? 'Single' : n === 2 ? 'Two' : n === 3 ? 'Three' : n === 4 ? 'Four' : esc(n);
+      const n = (c.src.mls && c.src.mls.stories) || (c.src.pdf && c.src.pdf.stories) || null; if (n) return word(n);
+      const a = archChosen(c) || (c.src.arch || [])[0]; const an = a && a.v && a.v.stories;   // her 2.6 Design line (DT1;Ranch) in your archive
+      return an ? `<span title="From your archive: ${esc(a.v.designRaw || '')}">${word(an)} <small class="muted">archive</small></span>` : ''; })()}</td><td class="r">${esc(fmt(FIELD.siteSf, V(c, 'siteSf')))}</td>
       <td>${esc([V(c, 'quality'), V(c, 'condition')].filter(Boolean).join(' / '))}</td><td><small>${esc([V(c, 'viewRating'), V(c, 'viewTypes')].filter(Boolean).join(': ')).slice(0, 40)}</small></td>
       <td class="r">${px ? px.mi.toFixed(2) + '<br><small>' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') + '</small>' : ''}</td>
       <td>${sourcesOf(c).map(s => `<span class="src">${esc(s)}</span>`).join(' ')}</td>
@@ -3640,6 +3650,14 @@ async function backupJob() {
 /* ---------------- events ---------------- */
 function openComp(id) { app.sel = id; render(); const d = $('#detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 document.addEventListener('click', async e => {
+  { const pp = e.target.closest('[data-pickphoto]'); if (pp) { e.stopPropagation(); const c = app.job && app.job.comps.find(x => x.id === pp.dataset.pickphoto); if (!c) return;
+      if (archPhotoNames(c).length && AP.state !== 'ok') { await archPhotoConnect(); return; }
+      const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.zip,image/*';
+      inp.onchange = async () => { const fs = [...inp.files]; if (!fs.length) return; const zips = fs.filter(f => /\.zip$/i.test(f.name)), imgs = fs.filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+        if (zips.length) await ingest(zips);
+        if (imgs.length) { let k = 0; for (const f of imgs) { const id = app.job.id + ':comp:' + c.id + ':' + Date.now() + '_' + (k++); await DB.put('photos', { id, jobId: app.job.id, mls: '', comp: c.id, n: 100 + k, name: f.name, file: 'picked', blob: f }); if (!c.front) c.front = id; }
+          await loadPhotos(); save(); render(); toast(`${imgs.length} photo${imgs.length > 1 ? 's' : ''} added to ${compTitle(c)}`); } };
+      inp.click(); return; } }
   const gt = e.target.closest('[data-gtiers]');
   if (gt) { const G = G0(app.job); const tx = tiersText(app.job); if (!tx) { toast('Enter the quality and condition ratings first'); return; }
     G.note = String(G.note || '').replace(/Within the UAD quality and condition ratings[^]*?within each rating\./, '').trim(); G.note = [G.note, tx].filter(Boolean).join(' '); save(); renderKeepFocus(); toast('Added to the sales comparison comment – read it over'); return; }
