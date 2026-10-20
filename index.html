@@ -195,11 +195,25 @@ input.bad{border-color:#d00000!important;background:#fff0f0!important}
 .uadpick label.pk{display:block;padding:4px 6px;border-radius:6px}.uadpick label.pk:hover{background:#f3f7fb}.uadpick label.pk small{display:block;color:#5d6b78;margin-left:22px}
 .uadpick .pkguide{background:#fbf6ee;border:1px solid #ecd9b8;border-radius:10px;padding:10px 12px;font-size:13px;max-height:55vh;overflow:auto}
 
+/* Classic (ACI) look for the grid – her 2.6 forms: grey boxes, thin black rules, compact rows, section bands */
+body.classic table.grid{font:12.5px Arial,Helvetica,sans-serif;border-collapse:collapse;border:1.5px solid #000}
+body.classic table.grid th,body.classic table.grid td{border:1px solid #000;padding:2px 4px;vertical-align:top}
+body.classic table.grid thead th{background:#fff;font-weight:700;text-transform:uppercase;font-size:11.5px;text-align:center}
+body.classic table.grid tbody th{background:#fff;font-weight:400;color:#000;font-size:12px}
+body.classic table.grid tbody th small.uadn,body.classic table.grid tbody th small.muted{display:none}
+body.classic table.grid tr.grp th{background:#111;color:#fff;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px}
+body.classic table.grid input.txt,body.classic table.grid select{background:#dedede;border:0;border-radius:0;font:12.5px Arial,Helvetica,sans-serif;height:22px;padding:1px 4px}
+body.classic table.grid input.adj{text-align:right;background:#e8e8e8}body.classic table.grid input.adj.own{background:#fff36b}
+body.classic table.grid input.bad{background:#ffc9c9!important}
+body.classic table.grid .btn.xs{padding:0 4px;font-size:10.5px;border-radius:2px}
+body.classic table.grid td.subj{background:#f4f4f4}body.classic table.grid tr.tot td,body.classic table.grid tr.tot th{background:#fff;font-weight:700}
+small.vsx{display:block;color:#3b4a57;font-size:11px}
+
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-1909';
+const BUILD='g2-1020-1913';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1604,6 +1618,7 @@ function compTotals(J, c) {
 }
 
 /* ---------------- the grid card ---------------- */
+const classicOn = () => { try { return localStorage.getItem('genie.classic') === '1'; } catch (e) { return false; } };
 function gridHTML(J) {
   const usedAll = usedComps(J); if (!usedAll.length) return '<h2>Adjustment grid</h2><p class="help">Pick comps with “Use as” in the list above; they line up here in grid order.</p>';
   const used = wbSlice(usedAll); const lean = wbLean();
@@ -1614,14 +1629,14 @@ function gridHTML(J) {
     const [id, label, section, type] = row; const head = section !== sec ? `<tr class="grp"><th colspan="${2 + used.length}">${esc(section)}</th></tr>` : ''; sec = section;
     const sv = id === 'baths' ? [S.full, S.half].every(blank) ? '' : `${S.full ?? '–'} / ${S.half ?? 0}` : showFact(id, S[id]);
     const subjCell = ['price', 'ppsf', 'src', 'prox', 'dom', 'terms', 'conc', 'contract', 'sale', 'status', 'listPrice', 'origList', 'listDate', 'lastRed', 'redDays', 'cdom'].includes(id) ? `<td class="subj">${esc(sv)}</td>`
-      : `<td class="subj"><input class="txt sm${(PICK[id] || id === 'view') && !blank(G.subj[id]) && !pkValid(id, G.subj[id], G.subj['pk_' + id]) ? ' bad' : ''}" data-gsubj="${id}" value="${esc(blank(G.subj[id]) ? '' : G.subj[id])}" placeholder="${esc(sv || (id === 'usable' ? 'Measure it' : id === 'adu' ? 'e.g. Guest house 450 sf 1 bath' : ''))}">${id === 'q' || id === 'c' ? fineSel('subj', id, J) + pkBtn('subj', id) : id === 'loc' ? locBtn('subj') : id === 'view' ? vtSel('subj', J, S.view) + pkBtn('subj', 'view') : PICK[id] ? pkBtn('subj', id) : ''}</td>`;
+      : `<td class="subj"><input class="txt sm${(PICK[id] || id === 'view') && !blank(G.subj[id]) && !pkValid(id, G.subj[id], G.subj['pk_' + id]) ? ' bad' : ''}" data-gsubj="${id}" value="${esc(blank(G.subj[id]) ? '' : G.subj[id])}" placeholder="${esc(sv || (id === 'usable' ? 'Measure it' : id === 'adu' ? 'e.g. Guest house 450 sf 1 bath' : ''))}">${id === 'garage' ? `${G.subj.vsText ? `<small class="vsx">${esc(G.subj.vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="subj">▾ pick</button>` : id === 'q' || id === 'c' ? fineSel('subj', id, J) + pkBtn('subj', id) : id === 'loc' ? locBtn('subj') : id === 'view' ? vtSel('subj', J, S.view) + pkBtn('subj', 'view') : PICK[id] ? pkBtn('subj', id) : ''}</td>`;
     const cells = used.map(c => { const C = compFacts(c, J);
       let shown = id === 'beds' && C.bedsBg ? `${C.beds} (${C.bedsBg} below grade)` : id === 'baths' ? ([C.full, C.half].every(blank) ? '' : `${C.full ?? '–'} / ${C.half ?? 0}`) : id === 'ppsf' ? (C.price && C.gla ? money(C.price / C.gla) : '') : showFact(id, C[id]);
       if (!WB_NOEDIT.includes(id)) { /* she can change any comp fact right on the grid (Oct 19 2026), not only in Workbook view */ const raw = id === 'usable' ? (blank(C.usable) ? '' : String(C.usable)) : wbFactText(id, C);
         shown = `<input class="txt sm fact${(PICK[id] || id === 'view') && !pkValid(id, raw, (c.edit || {})['pk_' + id]) ? ' bad' : ''}" data-gfact="${c.id}|${id}" value="${esc(raw)}" placeholder="${id === 'usable' ? 'Measure it (ac)' : ''}" title="Type the comp's entry · = copies the subject · =2 copies comp 2">`; }
       else if (id === 'usable' && blank(C.usable)) shown = '<span class="measure">Measure it</span>'; else shown = esc(shown);
       if (id === 'lastRed') { const d = redDaysOf(C); shown += d !== null ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
-      if (id === 'q' || id === 'c') shown += fineSel(c.id, id, J); if (id === 'view') shown += vtSel(c.id, J, C.view); if (id === 'loc') shown += locBtn(c.id); else shown += pkBtn(c.id, id);
+      if (id === 'q' || id === 'c') shown += fineSel(c.id, id, J); if (id === 'view') shown += vtSel(c.id, J, C.view); if (id === 'loc') shown += locBtn(c.id); else if (id === 'garage') shown += `${(c.edit || {}).grid_vsText ? `<small class="vsx">${esc(c.edit.grid_vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="${c.id}" title="Type | spaces | attachment (UAD 3.6 vehicle storage)">▾ pick</button>`; else shown += pkBtn(c.id, id);
       if (!type) return `<td>${shown}</td>`;
       const a = cellAmount(J, c, row);
       return `<td><div class="gval">${shown}</div><input class="txt sm adj ${a.own ? 'own' : a.v !== null ? 'auto' : ''}" data-gadj="${c.id}|${id}" value="${a.own ? a.v : ''}" placeholder="${a.v !== null && !a.own ? (a.v >= 0 ? '+' : '') + a.v.toLocaleString() : '$ adj'}" inputmode="decimal" title="${a.own ? 'Your amount – clear it to use the rate' : a.v !== null ? 'From your rate – type to override' : 'Type the adjustment'}"></td>`; }).join('');
@@ -1638,7 +1653,7 @@ function gridHTML(J) {
     ${sumRow('Gross adjustment', t => `${money(t.gross)} <small class="${t.grossPct > GRID_LIMITS.gross ? 'over' : ''}">${t.grossPct.toFixed(1)}%</small>`)}
     ${sumRow('Adjusted sale price', t => `<b>${money(t.adj)}</b>${t.adjPsf ? `<br><small>${money(t.adjPsf)} / sq ft</small>` : ''}`, 'big')}</tbody></table></div>
     <div class="gsum"><div><span>Adjusted range (all comps)</span><b>${adjs.length ? money(lo) + ' – ' + money(hi) : '–'}</b></div><div><span>Median</span><b>${med ? money(med) : '–'}</b></div><div><span>Your value</span><b>${blank(G.value) ? '–' : money(G.value)}</b></div></div>`;
-  return `<h2>Adjustment grid <small>UAD 3.6 lines · your amounts</small></h2>${startsBar(J)}${gridLinesHTML(J)}${wbBar(J, usedAll)}
+  return `<div class="row"><h2 style="margin:0">Adjustment grid <small>UAD 3.6 lines · your amounts</small></h2><span class="grow"></span><label class="check" title="Grey boxes, thin black lines and compact rows, like your ACI forms"><input type="checkbox" data-classic="1" ${classicOn() ? 'checked' : ''}> Classic (ACI) look</label></div>${startsBar(J)}${gridLinesHTML(J)}${wbBar(J, usedAll)}
     <p class="help">${inspNote} Type an amount in any cell (minus for a downward adjustment). Or type a rate once beside a line; cells without your own amount then use it (shown in grey). Clear a cell to go back to the rate. Usable Lot Area/Utility comes only from your archive or your measurement – blank comps say <span class="measure">Measure it</span>.</p>
     <div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><small>${esc(J.subject.addr || '')}</small></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}" title="Click to pick this comp for Ctrl+Shift+number or Ctrl+Z">Comp ${c.use}<br><small>${esc(compTitle(c))}</small>${gridMlsLink(c)}</th>`).join('')}</tr></thead>
     <tbody>${rows}
@@ -3730,9 +3745,19 @@ function vwParse(text) { const out = []; let imp = '';
 const vwText = L => L.map(x => `${x.impact}: ${x.type === 'Other' ? (x.other || 'Other') : camelWords(x.type)}${x.range ? ` (${x.range})` : ''}`).join('; ');
 /* the answer as text, and back: official labels joined by "; " (Other: her words) */
 const pkText = (spec, vals, other) => vals.map(v => v === 'Other' && other ? other : (spec.opts.find(o => o[0] === v) || [v, v])[1].replace(/ \(.*\)$/, '')).join('; ');
+/* everyday words that mean an allowed answer (MLS, her archive) – they are read as that answer, not flagged */
+const PK_ALIAS = { status: { closed: 'SettledSale', sold: 'SettledSale', settled: 'SettledSale', expired: 'OffMarket', withdrawn: 'OffMarket', cancelled: 'OffMarket', canceled: 'OffMarket', undercontract: 'Pending', contingent: 'Pending', comingsoon: 'Active' },
+  cool: { centralair: 'Centralized', central: 'Centralized', ac: 'Centralized', heatpump: 'Centralized', nocoolinglisted: 'None', nocooling: 'None', none: 'None', ductless: 'Individual', minisplit: 'Individual', wallunit: 'Individual', windowunit: 'Individual' },
+  heat: { forcedair: 'ForcedWarmAir', fau: 'ForcedWarmAir', fwa: 'ForcedWarmAir', forcedairnaturalgas: 'ForcedWarmAir', wallfurnace: 'Other', floorfurnace: 'GravityAir', gravity: 'GravityAir', ductless: 'MiniSplit', heatpump: 'Other', radiantfloor: 'Radiant', naturalgas: '', gas: '', electric: '', propane: '', energystarqualifiedequipment: '', baseboard: 'Baseboard', hwbb: 'Baseboard', woodstove: 'Stove' },
+  topo: { level: 'Flat', flat: 'Flat', gentleslope: 'Sloping', slope: 'Sloping', sloped: 'Sloping', hillside: 'Sloping' },
+  attach: { det: 'Detached', att: 'Attached', semidetached: 'SemiDetached', sd: 'SemiDetached' },
+  terms: { conv: 'Conventional', conventional: 'Conventional', cash: 'Cash', usda: 'USDARuralDevelopment', seller: 'Private', sellerfinancing: 'Private' },
+  xferTerms: { armlth: 'TypicallyMotivated', armslength: 'TypicallyMotivated', reo: 'REOSale', short: 'ShortSale', estate: 'EstateSale', trust: 'EstateSale', relo: 'RelocationSale', crtord: 'CourtOrderedNonForeclosureSale', nonarm: 'SaleBetweenRelatedParties' },
+  zoning: { legal: 'Legal', legalnonconforming: 'LegalNonConforming', nonconforming: 'LegalNonConforming' } };
 function pkParse(spec, text) { const t = String(text || '').trim(); if (!t) return { vals: [], other: '', ok: true };
   const parts = spec.multi ? t.split(/;\s*|,\s*/) : [t]; const vals = []; let other = '', ok = true;
-  parts.forEach(p => { const k = p.toLowerCase().replace(/[^a-z0-9]/g, ''); const hit = spec.opts.find(([v, l]) => v.toLowerCase() === k || l.toLowerCase().replace(/ \(.*\)$/, '').replace(/[^a-z0-9]/g, '') === k || l.toLowerCase().replace(/[^a-z0-9]/g, '') === k);
+  const al = PK_ALIAS[Object.keys(PICK).find(k => PICK[k] === spec || PICK[k].title === spec.title)] || {};
+  parts.forEach(p => { const k = p.toLowerCase().replace(/[^a-z0-9]/g, ''); if (al[k] === '') return; const hit = (al[k] && spec.opts.find(o => o[0] === al[k])) || spec.opts.find(([v, l]) => v.toLowerCase() === k || l.toLowerCase().replace(/ \(.*\)$/, '').replace(/[^a-z0-9]/g, '') === k || l.toLowerCase().replace(/[^a-z0-9]/g, '') === k);
     if (hit) vals.push(hit[0]); else if (spec.other) { vals.push('Other'); other = (other ? other + ', ' : '') + p; } else ok = false; });
   return { vals, other, ok }; }
 /* valid = empty, or every part is an allowed answer; "Other" words count only when they came from ▾ pick (marker), so a 2.6 code like DT2;Ranch turns red */
@@ -3767,6 +3792,33 @@ function uadPick(who, id) {
     else if (t.dataset.pksave) { if (vals.includes('Other') && !other) { toast('Describe “Other” first'); return; } bg.remove(); pkSave(J, who, id, pkText(S, vals, other)); } });
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-uadpick]'); if (!b || !app.job) return; e.stopPropagation(); const [who, id] = b.dataset.uadpick.split('|'); uadPick(who, id); }, true);
+/* ---- vehicle storage (ACI's Garage/Carport box, in 3.6 terms): None, or up to 5 lines of spaces + type (+ attached / detached / built-in) ---- */
+const VS_TYPES = [['Garage', 'Garage'], ['Carport', 'Carport'], ['Driveway', 'Driveway'], ['SharedDriveway', 'Shared driveway'], ['ParkingGarage', 'Parking garage'], ['CommonCarport', 'Common carport'], ['OpenLot', 'Open lot'], ['Other', 'Other']];
+function vsPick(who) {
+  const J = app.job; const c = who === 'subj' ? null : J.comps.find(x => x.id === who); const F = c ? compFacts(c, J) : subjFacts(J); const name = c ? 'Comp ' + (c.use || '') + ' ' + compTitle(c) : 'Subject';
+  const g = k => c ? V(c, k) : null; let L = [];
+  if (c && c.edit && Array.isArray(c.edit.vs)) L = c.edit.vs.map(x => ({ ...x })); else if (!c && Array.isArray(G0(J).subj.vs)) L = G0(J).subj.vs.map(x => ({ ...x }));
+  else { const gt = String((c ? g('garageType') : '') || ''); if (+F.garage > 0) L.push({ n: +F.garage, t: 'Garage', a: /built/i.test(gt) ? 'BuiltIn' : /detach/i.test(gt) ? 'Detached' : /attach/i.test(gt) ? 'Attached' : '' }); if (+F.carport > 0) L.push({ n: +F.carport, t: 'Carport', a: '' }); const dw = c ? num(g('driveway')) : null; if (dw) L.push({ n: dw, t: 'Driveway', a: '' }); }
+  let none = !L.length && (c ? (c.edit || {}).vsNone : G0(J).subj.vsNone) === true;
+  while (L.length < 5) L.push({ n: '', t: '', a: '' });
+  const bg = document.createElement('div'); bg.className = 'sheetbg';
+  const draw = () => { bg.innerHTML = `<div class="sheet uadpick"><h2>Vehicle storage – ${esc(name)}</h2><div class="pkgrid"><div>
+    <label class="check"><input type="checkbox" data-vsnone="1" ${none ? 'checked' : ''}> None</label>
+    <table class="mini">${L.map((x, i) => `<tr><td># of spaces <input class="txt xs num" data-vs="${i}|n" value="${esc(x.n ?? '')}" style="width:4em" ${none ? 'disabled' : ''}></td><td>Type <select data-vs="${i}|t" ${none ? 'disabled' : ''}><option value="">–</option>${VS_TYPES.map(([v, l]) => `<option value="${v}" ${x.t === v ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+      <td>${['Garage', 'Carport'].includes(x.t) ? `<select data-vs="${i}|a"><option value="">attachment –</option>${[['Attached', 'Attached'], ['Detached', 'Detached'], ['BuiltIn', 'Built-in']].map(([v, l]) => `<option value="${v}" ${x.a === v ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}</td></tr>`).join('')}</table></div>
+    <div class="pkguide"><b>UAD guidance</b><p>Give the type of parking and the number of spaces for each type (3.6 Vehicle Storage: Type | Spaces | Detail). A garage or carport also gets its attachment (attached, detached, built-in).</p></div></div>
+    <div class="row"><span class="grow"></span><button class="btn primary" data-vssave="1">OK</button><button class="btn" data-vsclose="1">Cancel</button></div></div>`; };
+  draw(); document.body.appendChild(bg);
+  bg.addEventListener('change', e => { const t = e.target; if (t.dataset.vsnone) { none = t.checked; draw(); return; } const d = t.dataset.vs; if (!d) return; const [i, k] = d.split('|'); L[+i][k] = k === 'n' ? (t.value.trim() === '' ? '' : Math.max(0, Math.round(+t.value) || 0)) : t.value; if (k === 't') draw(); });
+  bg.addEventListener('click', e => { const t = e.target; if (t.dataset.vsclose || t === bg) { bg.remove(); return; } if (!t.dataset.vssave) return;
+    const rows = none ? [] : L.filter(x => x.t && +x.n > 0); const sum = ty => rows.filter(x => x.t === ty).reduce((s, x) => s + +x.n, 0);
+    const gar = sum('Garage'), cpt = sum('Carport') + sum('CommonCarport'), dw = sum('Driveway') + sum('SharedDriveway'); const ga = (rows.find(x => x.t === 'Garage') || {}).a || '';
+    const txt = none ? 'None' : rows.map(x => `${x.n} ${(VS_TYPES.find(v => v[0] === x.t) || [, x.t])[1].toLowerCase()}${x.a ? ' (' + x.a.replace('BuiltIn', 'built-in').toLowerCase() + ')' : ''}`).join(', ');
+    if (c) { const E = c.edit = c.edit || {}; E.garage = none ? 0 : gar; E.carport = none ? 0 : cpt; E.driveway = none ? 0 : dw; E.garageType = ga === 'BuiltIn' ? 'Built-in' : ga; E.vs = rows; E.vsNone = none; E.grid_vsText = txt; }
+    else { const S = G0(J).subj; S.garage = none ? 0 : gar; S.carport = none ? 0 : cpt; S.vs = rows; S.vsNone = none; S.vsText = txt; }
+    bg.remove(); save(); render(); toast('Vehicle storage: ' + (txt || 'cleared')); });
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-vspick]'); if (!b || !app.job) return; e.stopPropagation(); vsPick(b.dataset.vspick); }, true);
 
 /* =====================================================================
    Comp Genie – screens
@@ -3784,7 +3836,7 @@ async function start() {
   const last = await DB.get('kv', 'lastJob');
   app.job = ((POP || CPOP) && app.jobs.find(j => j.id === (POP || CPOP).job)) || app.jobs.find(j => last && j.id === last.v) || app.jobs[0] || null;
   app.orders = await readOrders();
-  await archPhotoInit(); try { const gl = await DB.get('kv', 'gridLines'); if (gl && gl.v) GRID_DEFAULT = gl.v; } catch (e) {}
+  await archPhotoInit(); try { if (localStorage.getItem('genie.classic') === '1') document.body.classList.add('classic'); } catch (e) {} try { const gl = await DB.get('kv', 'gridLines'); if (gl && gl.v) GRID_DEFAULT = gl.v; } catch (e) {}
   const oq = new URLSearchParams(location.search).get('order');
   if (new URLSearchParams(location.search).get('embed')) document.body.classList.add('embed');   // inside the Appraisal Assistant's Comp genie tab
   if (CPOP) app.sel = CPOP.id;
@@ -4535,6 +4587,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.gvt) { const G = G0(app.job); G.viewT = G.viewT || {}; const w = t.dataset.gvt; if (t.value === '') { delete G.viewT[w]; } else { G.viewT[w] = +t.value; vtRemember(app.job, w, +t.value); } save(); renderKeepFocus(); return; }
   if (t.dataset.gfine) { const G = G0(app.job); G.fine = G.fine || {}; const [who, k] = t.dataset.gfine.split('|'); G.fine[who] = G.fine[who] || {}; G.fine[who][k] = t.value; save(); renderKeepFocus(); return; }
   if (t.dataset.gok !== undefined) { const G = G0(app.job); G.ok = G.ok || {}; const v = t.value.trim(); if (v) G.ok[t.dataset.gok] = v; else delete G.ok[t.dataset.gok]; save(); renderKeepFocus(); return; }
+  if (t.dataset.classic) { try { localStorage.setItem('genie.classic', t.checked ? '1' : '0'); } catch (e) {} document.body.classList.toggle('classic', t.checked); return; }
   if (t.dataset.gline) { const G = G0(app.job); G.lines = G.lines || {}; G.lines[t.dataset.gline] = t.checked; save(); render(); return; }
   if (t.dataset.gfact) { const [cid, row] = t.dataset.gfact.split('|'); const c = app.job.comps.find(x => x.id === cid); if (!c) return;
     if (!wbEquals(app.job, cid, row, t.value, true)) wbFactSet(app.job, c, row, t.value); save(); renderKeepFocus(); return; }
