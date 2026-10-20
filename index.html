@@ -208,7 +208,7 @@ body.classic table.grid input.bad{background:#ffc9c9!important}
 body.classic table.grid .btn.xs{padding:0 4px;font-size:10.5px;border-radius:2px}
 body.classic table.grid td.subj{background:#f4f4f4}body.classic table.grid tr.tot td,body.classic table.grid tr.tot th{background:#fff;font-weight:700}
 small.vsx{display:block;color:#000;font-size:11px}
-.req{color:#1f5fd6;font-weight:800;font-size:1.2em;margin-right:3px;cursor:help}
+.req{color:#d40000;font-weight:800;font-size:1.2em;margin-right:3px;cursor:help}
 
 /* her ask Oct 20 2026: the field you are in turns orange */
 input.txt:focus,input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus,textarea:focus{background:#ffd29a!important;border-color:#ff8a00!important;outline:2px solid #ff8a00!important;outline-offset:0;color:#000!important}
@@ -222,12 +222,26 @@ table.comps th.ck,table.comps td.ck{width:26px;text-align:center;padding-left:4p
 table.cmp td,table.cmp thead th{border-left:1px solid #b9c3cd}table.cmp tr>th:first-child{border-left:0}table.cmp td.mine{border-left:2px solid #6f7d8a;border-right:2px solid #6f7d8a}
 table.cmp td.mine input.txt.echo{color:#000;background:#fbfcfd}table.cmp td.mine input.txt.own{background:#fff4c2;font-weight:700}
 table.cmp td.srccell[data-pick]{cursor:pointer}table.cmp td.srccell[data-pick]:hover{outline:2px solid #ff8a00;outline-offset:-2px}
+/* her ask Oct 20 2026 – SFREP-style field colors on the grid (default look; Classic keeps the ACI look):
+   required / formatted = mint green, optional = baby blue, photo = lavender, warned = red, the field you are in = orange */
+body:not(.classic) table.grid tbody th:first-child{background:#e9edf2;font-size:15px;font-weight:700;color:#000}
+body:not(.classic) table.grid tbody th:first-child small{font-size:12px;font-weight:600;color:#1a1a1a}
+body:not(.classic) table.grid tr.grp th,body:not(.classic) table.grid tr.grp th:first-child{background:var(--teal-l);color:#000;font-size:14px}
+table.grid tr.grp th{color:#000}
+body:not(.classic) table.grid tr.reqrow td input.txt:not(.adj){background:#d4fcd4;border-color:#9fd89f}
+body:not(.classic) table.grid tr.optrow td input.txt:not(.adj){background:#dcefff;border-color:#a9cdee}
+body:not(.classic) table.grid td input.txt.bad,table.cmp input.bad{background:#ff8f8f!important;border-color:#d40000!important;color:#000}
+body:not(.classic) table.grid input.adj.own{background:#fff;font-weight:700}
+.nothumb,button.nothumb{background:#e6dcff!important;border-color:#b9a5ef!important}
+.gaddr{display:block;color:#0b4fc4;font-size:14.5px;font-weight:700;line-height:1.25;margin-top:2px}
+body:not(.classic) table.grid thead th{font-size:15px;color:#000}
+.req{color:#d40000}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2027';
+const BUILD='g2-1020-2037';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1702,19 +1716,19 @@ function gridHTML(J) {
     const bedAsk = id === 'beds' && blank(G.rates.bed) ? used.filter(c => { const C = compFacts(c, J); const a = capBeds(S.beds), b = capBeds(C.beds); return a !== null && b !== null && a !== b && blank((G.cells[c.id] || {}).beds); }) : [];
     const rk = row[4]; const rate = rk ? [].concat(rk === 'bath' ? ['bath', 'halfBath'] : rk).map(k => `<div class="grate"><label title="${esc(RATES[k][1])}">${esc(RATES[k][0])} <input class="txt xs" data-grate="${k}" value="${esc(blank(G.rates[k]) ? '' : G.rates[k])}" inputmode="decimal"></label>${G.rateFrom && G.rateFrom[k] && !blank(G.rates[k]) ? `<small class="from">${/ · /.test(G.rateFrom[k]) ? `from your starting points (${esc(G.rateFrom[k])})` : 'from ' + esc(G.rateFrom[k])}</small>` : ''}</div>`).join('') : '';
     const ask = bedAsk.length ? `<div class="bedask">${bedAsk.map(c => `Comp ${c.use} has ${compFacts(c, J).beds} bedroom${compFacts(c, J).beds === 1 ? '' : 's'}`).join(', ')} – what bedroom adjustment do you want? Type it per bedroom above, or in the comp's box.</div>` : '';
-    return head + `<tr${ask ? ' class="asking"' : ''}${GRID_INFO[id] ? ' class="info"' : ''}><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${type && type !== 'OTHER' && !GRID_INFO[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP">${esc(type)}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] ? `<br><small class="muted">${esc(GRID_INFO[id])}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
+    return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${type && type !== 'OTHER' && !GRID_INFO[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP">${esc(type)}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] ? `<br><small class="muted">${esc(GRID_INFO[id])}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
   }).join('');
   const sumRow = (label, fn, cls = '') => `<tr class="tot ${cls}"><th>${label}</th><td></td>${used.map((c, i) => `<td>${fn(tot[i], c)}</td>`).join('')}</tr>`;
   const adjs = totAll.map(t => t.adj).filter(Boolean); const lo = Math.min(...adjs), hi = Math.max(...adjs);
   const med = adjs.length ? [...adjs].sort((a, b) => a - b)[Math.floor((adjs.length - 1) / 2)] : null;
-  if (POP) return `<div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><small>${esc(J.subject.addr || '')}</small></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}">Comp ${c.use}<br><small>${esc(compTitle(c))}</small>${gridMlsLink(c)}</th>`).join('')}</thead><tbody>${rows}
+  if (POP) return `<div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridMlsLink(c)}</th>`).join('')}</thead><tbody>${rows}
     ${sumRow('Net adjustment', t => `${t.net >= 0 ? '+' : '−'}${money(Math.abs(t.net))} <small class="${Math.abs(t.netPct) > GRID_LIMITS.net ? 'over' : ''}">${t.netPct.toFixed(1)}%</small>`)}
     ${sumRow('Gross adjustment', t => `${money(t.gross)} <small class="${t.grossPct > GRID_LIMITS.gross ? 'over' : ''}">${t.grossPct.toFixed(1)}%</small>`)}
     ${sumRow('Adjusted sale price', t => `<b>${money(t.adj)}</b>${t.adjPsf ? `<br><small>${money(t.adjPsf)} / sq ft</small>` : ''}`, 'big')}</tbody></table></div>
     <div class="gsum"><div><span>Adjusted range (all comps)</span><b>${adjs.length ? money(lo) + ' – ' + money(hi) : '–'}</b></div><div><span>Median</span><b>${med ? money(med) : '–'}</b></div><div><span>Your value</span><b>${blank(G.value) ? '–' : money(G.value)}</b></div></div>`;
   return `<div class="row"><h2 style="margin:0">Adjustment grid <small>UAD 3.6 lines · your amounts</small></h2><span class="grow"></span><label class="check" title="Grey boxes, thin black lines and compact rows, like your ACI forms"><input type="checkbox" data-classic="1" ${classicOn() ? 'checked' : ''}> Classic (ACI) look</label></div>${startsBar(J)}${gridLinesHTML(J)}${wbBar(J, usedAll)}
     <p class="help">${inspNote} Type an amount in any cell (minus for a downward adjustment). Or type a rate once beside a line; cells without your own amount then use it (shown in grey). Clear a cell to go back to the rate. Usable Lot Area/Utility comes only from your archive or your measurement – blank comps say <span class="measure">Measure it</span>.</p>
-    <div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><small>${esc(J.subject.addr || '')}</small></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}" title="Click to pick this comp for Ctrl+Shift+number or Ctrl+Z">Comp ${c.use}<br><small>${esc(compTitle(c))}</small>${gridMlsLink(c)}</th>`).join('')}</tr></thead>
+    <div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}" title="Click to pick this comp for Ctrl+Shift+number or Ctrl+Z">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridMlsLink(c)}</th>`).join('')}</tr></thead>
     <tbody>${rows}
     ${sumRow('Net adjustment', t => `${t.net >= 0 ? '+' : '−'}${money(Math.abs(t.net))} <small class="${Math.abs(t.netPct) > GRID_LIMITS.net ? 'over' : ''}">${t.netPct.toFixed(1)}%</small>`)}
     ${sumRow('Gross adjustment', t => `${money(t.gross)} <small class="${t.grossPct > GRID_LIMITS.gross ? 'over' : ''}">${t.grossPct.toFixed(1)}%</small>`)}
