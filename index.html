@@ -256,7 +256,7 @@ table.comps thead th{position:sticky;top:0;z-index:3;background:#fff;box-shadow:
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2317';
+const BUILD='g2-1020-2318';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1248,10 +1248,14 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   XV(ad, 'CityName', g('city') || ARCH.zipCity[g('zip')] || ''); XV(ad, 'PostalCode', zip9(c)); XV(ad, 'StateCode', 'CA');
   // CAR_STORAGES
   const cs = X(P, 'CAR_STORAGES'); let any = false;
-  const gar = num(g('garage')); if (gar) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); const gt = String(g('garageType') || ''); XV(d, 'CarStorageAttachmentType', /built/i.test(gt) ? 'BuiltIn' : /detach/i.test(gt) ? 'Detached' : /attach/i.test(gt) ? 'Attached' : null); XV(d, 'CarStorageType', 'Garage'); XV(d, 'ParkingSpacesCount', gar); }
-  const cp = num(g('carport')); if (cp) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Carport'); XV(d, 'ParkingSpacesCount', cp); }
-  const dw = num(g('driveway')); if (dw) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Driveway'); XV(d, 'ParkingSpacesCount', dw); XV(d, 'TenOrMoreParkingSpacesIndicator', dw >= 10 ? 'true' : 'false'); }
-  if (!any && gar === 0) XV(X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'), 'CarStorageType', 'None');
+  const VS = c.edit && Array.isArray(c.edit.vs) && c.edit.vs.length ? c.edit.vs : null;   // her ▾ pick rows: every type, with attachment / driveway surface (Oct 20 2026)
+  if (VS) VS.forEach(x => { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); if (['Garage', 'Carport'].includes(x.t) && x.a) XV(d, 'CarStorageAttachmentType', x.a); XV(d, 'CarStorageType', x.t);
+    if (['Driveway', 'SharedDriveway'].includes(x.t)) { if (x.s) XV(d, 'ImprovedSurfaceMaterialType', x.s); XV(d, 'TenOrMoreParkingSpacesIndicator', +x.n >= 10 ? 'true' : 'false'); if (+x.n < 10) XV(d, 'ParkingSpacesCount', +x.n); } else XV(d, 'ParkingSpacesCount', +x.n); });
+  else if (c.edit && c.edit.vsNone) { any = true; XV(X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'), 'CarStorageType', 'None'); }
+  const gar = VS || (c.edit && c.edit.vsNone) ? 0 : num(g('garage')); if (gar) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); const gt = String(g('garageType') || ''); XV(d, 'CarStorageAttachmentType', /built/i.test(gt) ? 'BuiltIn' : /detach/i.test(gt) ? 'Detached' : /attach/i.test(gt) ? 'Attached' : null); XV(d, 'CarStorageType', 'Garage'); XV(d, 'ParkingSpacesCount', gar); }
+  const cp = VS || (c.edit && c.edit.vsNone) ? 0 : num(g('carport')); if (cp) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Carport'); XV(d, 'ParkingSpacesCount', cp); }
+  const dw = VS || (c.edit && c.edit.vsNone) ? 0 : num(g('driveway')); if (dw) { any = true; const d = X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'); XV(d, 'CarStorageType', 'Driveway'); XV(d, 'ParkingSpacesCount', dw); XV(d, 'TenOrMoreParkingSpacesIndicator', dw >= 10 ? 'true' : 'false'); }
+  if (!any && !VS && gar === 0) XV(X(X(cs, 'CAR_STORAGE'), 'CAR_STORAGE_DETAIL'), 'CarStorageType', 'None');
   // COMPARABLE: your adjustments from the grid (if any), then the detail
   const CMP = X(P, 'COMPARABLE'); const gt = gridAdjustXML(CMP, c, job);
   const cd = X(CMP, 'COMPARABLE_DETAIL'); const px = proximity(c, job);
@@ -4043,15 +4047,15 @@ function vsPick(who) {
   const draw = () => { bg.innerHTML = `<div class="sheet uadpick"><h2>Vehicle storage – ${esc(name)}</h2><div class="pkgrid"><div>
     <label class="check"><input type="checkbox" data-vsnone="1" ${none ? 'checked' : ''}> None</label>
     <table class="mini">${L.map((x, i) => `<tr><td># of spaces <input class="txt xs num" data-vs="${i}|n" value="${esc(x.n ?? '')}" style="width:4em" ${none ? 'disabled' : ''}></td><td>Type <select data-vs="${i}|t" ${none ? 'disabled' : ''}><option value="">–</option>${VS_TYPES.map(([v, l]) => `<option value="${v}" ${x.t === v ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
-      <td>${['Garage', 'Carport'].includes(x.t) ? `<select data-vs="${i}|a"><option value="">attachment –</option>${[['Attached', 'Attached'], ['Detached', 'Detached'], ['BuiltIn', 'Built-in']].map(([v, l]) => `<option value="${v}" ${x.a === v ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}</td></tr>`).join('')}</table></div>
-    <div class="pkguide"><b>UAD guidance</b><p>Give the type of parking and the number of spaces for each type (3.6 Vehicle Storage: Type | Spaces | Detail). A garage or carport also gets its attachment (attached, detached, built-in).</p></div></div>
+      <td>${['Driveway', 'SharedDriveway'].includes(x.t) ? `<select data-vs="${i}|s"><option value="">surface –</option>${['Asphalt', 'Brick', 'Concrete', 'Cobblestone', 'Dirt', 'Gravel', 'Other'].map(v => `<option ${x.s === v ? 'selected' : ''}>${v}</option>`).join('')}</select>` : ''}${['Garage', 'Carport'].includes(x.t) ? `<select data-vs="${i}|a"><option value="">attachment –</option>${[['Attached', 'Attached'], ['Detached', 'Detached'], ['BuiltIn', 'Built-in']].map(([v, l]) => `<option value="${v}" ${x.a === v ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}</td></tr>`).join('')}</table></div>
+    <div class="pkguide"><b>UAD guidance</b><p>Give the type of parking and the number of spaces for each type (3.6 Vehicle Storage: Type | Spaces | Detail). A garage or carport also gets its attachment (attached, detached, built-in); a driveway its surface (Asphalt, Concrete, Gravel …) and spaces (10 or more = “10 or More”). The 3.6 line is always required – list every type the property has (Fannie’s samples list the driveway with the garage).</p></div></div>
     <div class="row"><span class="grow"></span><button class="btn primary" data-vssave="1">OK</button><button class="btn" data-vsclose="1">Cancel</button></div></div>`; };
   draw(); document.body.appendChild(bg);
   bg.addEventListener('change', e => { const t = e.target; if (t.dataset.vsnone) { none = t.checked; draw(); return; } const d = t.dataset.vs; if (!d) return; const [i, k] = d.split('|'); L[+i][k] = k === 'n' ? (t.value.trim() === '' ? '' : Math.max(0, Math.round(+t.value) || 0)) : t.value; if (k === 't') draw(); });
   bg.addEventListener('click', e => { const t = e.target; if (t.dataset.vsclose || t === bg) { bg.remove(); return; } if (!t.dataset.vssave) return;
     const rows = none ? [] : L.filter(x => x.t && +x.n > 0); const sum = ty => rows.filter(x => x.t === ty).reduce((s, x) => s + +x.n, 0);
     const gar = sum('Garage'), cpt = sum('Carport') + sum('CommonCarport'), dw = sum('Driveway') + sum('SharedDriveway'); const ga = (rows.find(x => x.t === 'Garage') || {}).a || '';
-    const txt = none ? 'None' : rows.map(x => `${x.n} ${(VS_TYPES.find(v => v[0] === x.t) || [, x.t])[1].toLowerCase()}${x.a ? ' (' + x.a.replace('BuiltIn', 'built-in').toLowerCase() + ')' : ''}`).join(', ');
+    const txt = none ? 'None' : rows.map(x => `${x.n} ${(VS_TYPES.find(v => v[0] === x.t) || [, x.t])[1].toLowerCase()}${x.a ? ' (' + x.a.replace('BuiltIn', 'built-in').toLowerCase() + ')' : ''}${x.s ? ' (' + x.s.toLowerCase() + ')' : ''}`).join(', ');
     if (c) { const E = c.edit = c.edit || {}; E.garage = none ? 0 : gar; E.carport = none ? 0 : cpt; E.driveway = none ? 0 : dw; E.garageType = ga === 'BuiltIn' ? 'Built-in' : ga; E.vs = rows; E.vsNone = none; E.grid_vsText = txt; }
     else { const S = G0(J).subj; S.garage = none ? 0 : gar; S.carport = none ? 0 : cpt; S.vs = rows; S.vsNone = none; S.vsText = txt; }
     bg.remove(); save(); render(); toast('Vehicle storage: ' + (txt || 'cleared')); });
@@ -4601,7 +4605,8 @@ function detailHTML(c) {
     return head + `<tr${fk.length ? ` class="flagrow" title="${esc(fk.map(x => x.t).join(' · '))}"` : open ? ' class="disrow" title="The sources disagree – click the value to use"' : none ? ' class="disrow emptyrow" title="No source has this – type your value"' : ''}><th>${fk.length ? '<span class="flagmk">⚑</span> ' : ''}${esc(f.l)}${dis ? ' <span class="diff" title="Sources disagree">≠</span>' : ''}</th>
       <td class="using">${esc(fmt(f, u.v))}${u.src ? ` <span class="tag ${u.src}">${esc(SRC[u.src].short)}</span>` : ''}${(c.pick[f.k] || !blank(c.edit[f.k])) ? ` <button class="lnk" data-reset="${f.k}" title="Back to the automatic choice">↺</button>` : ''}</td>
       <td class="mine">${(() => { const own = !blank(c.edit[f.k]); const echo = own ? '' : (blank(u.v) ? '' : String(fmt(f, u.v)));   // her ask Oct 20 2026: the box shows the value in use (the green one); it becomes hers only when she changes it
-        return `<input class="txt sm${own ? ' own' : ' echo'}" data-edit="${f.k}" ${own ? '' : `data-echo="${esc(echo)}"`} value="${esc(own ? (f.t === 'date' ? showDate(c.edit[f.k]) : c.edit[f.k]) : echo)}" placeholder="type your value" title="${own ? 'Your value – ↺ goes back to the sources' : 'The value in use (green). Type over it to use your own.'}">` + (f.k === 'quality' || f.k === 'condition' ? fineSel(c.id, f.k === 'quality' ? 'q' : 'c', J) : '') + (() => { const id = f.k === 'saleType' ? 'xferTerms' : Object.keys(WB_EDIT).find(i => WB_EDIT[i] === f.k && PICK[i]); return id ? pkBtn(c.id, id) : ''; })(); })()}</td>
+        return `<input class="txt sm${own ? ' own' : ' echo'}" data-edit="${f.k}" ${own ? '' : `data-echo="${esc(echo)}"`} value="${esc(own ? (f.t === 'date' ? showDate(c.edit[f.k]) : c.edit[f.k]) : echo)}" placeholder="type your value" title="${own ? 'Your value – ↺ goes back to the sources' : 'The value in use (green). Type over it to use your own.'}">` + (f.k === 'quality' || f.k === 'condition' ? fineSel(c.id, f.k === 'quality' ? 'q' : 'c', J) : '') + (() => { if (f.k === 'heatCool') return ` <button type="button" class="btn xs" data-uadpick="${c.id}|heat" title="Heating – UAD 3.6 answers">▾ heating</button> <button type="button" class="btn xs" data-uadpick="${c.id}|cool" title="Cooling – UAD 3.6 answers">▾ cooling</button>${(() => { const F = compFacts(c, J); return F.heat || F.cool ? `<small class="vsx">3.6: ${esc([F.heat, F.cool].filter(Boolean).join(' / '))}</small>` : ''; })()}`; if (f.k === 'garage') return ` <button type="button" class="btn xs" data-vspick="${c.id}" title="Type | spaces | attachment / driveway surface (UAD 3.6 vehicle storage)">▾ vehicle storage</button>`;   // her ask Oct 20 2026
+      const id = f.k === 'saleType' ? 'xferTerms' : Object.keys(WB_EDIT).find(i => WB_EDIT[i] === f.k && PICK[i]); return id ? pkBtn(c.id, id) : ''; })(); })()}</td>
       ${cols.map(s => cellHTML(c, f, s, S, u)).join('')}</tr>`;
   }).join('');
   const archSel = c.src.arch.length ? `<select data-archpick="${c.id}">${c.src.arch.map(a => `<option value="${a.rec}" ${archChosen(c) && archChosen(c).rec === a.rec ? 'selected' : ''}>${esc(a.label)}</option>`).join('')}</select>` : '';
