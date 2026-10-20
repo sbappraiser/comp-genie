@@ -257,7 +257,7 @@ select.qcsel{font-weight:700;margin:2px 4px 2px 0}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2329';
+const BUILD='g2-1020-2330';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1056,7 +1056,7 @@ function defaultOrder(c, f) {
       if (f.k === 'sfSource') return ['pdf', 'mls'];
       return ['pdf', 'mls', ...(matched ? ['arch'] : []), ...(sale && sale.from === 'arch' ? ['arch'] : [])];
     case 'phys': return recent ? ['arch', 'mls', 'pdf', 'crs', 'cort'] : ['mls', 'pdf', 'arch', 'crs', 'cort'];
-    case 'geo': return ['mls', 'pdf', 'crs'];
+    case 'geo': return ['crs', 'mls', 'pdf'];   // Oct 20 2026: the public-record (parcel) location first, like the address
     default: return ['arch', 'mls', 'pdf', 'crs', 'cort'];
   }
 }
