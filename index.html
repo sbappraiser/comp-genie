@@ -253,7 +253,7 @@ table.comps tr.nextflag td{background:#ffe1a8!important;transition:background .3
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2300';
+const BUILD='g2-1020-2302';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2654,9 +2654,10 @@ const CPOP = (() => { const q = new URLSearchParams(location.search); return q.g
 let WBC = null; try { WBC = new BroadcastChannel('comp-genie'); } catch (e) {}
 function wbNotify() { if (WBC && app.job) try { WBC.postMessage({ job: app.job.id, from: WIN }); } catch (e) {} }
 if (WBC) WBC.onmessage = async e => {
-  const d = e.data || {}; if (!app.job || d.from === WIN || d.job !== app.job.id) return;
+  const d = e.data || {}; if (d.job && d.from !== WIN && !app.jobs.some(x => x.id === d.job)) { const nj = await DB.get('jobs', d.job); if (nj) app.jobs.unshift(nj); }   // an assignment started in another window
+  if (!app.job || d.from === WIN || d.job !== app.job.id) return;
   const j = await DB.get('jobs', app.job.id); if (!j) return;
-  const i = app.jobs.findIndex(x => x.id === j.id); if (i >= 0) app.jobs[i] = j; app.job = j;
+  const i = app.jobs.findIndex(x => x.id === j.id); if (i >= 0) app.jobs[i] = j; else app.jobs.unshift(j); app.job = j;
   // keep what she is typing in this window: put it back after the redraw
   const a = document.activeElement; const dirty = a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value !== a.defaultValue ? [FOCUS_KEYS.map(k => [k, a.getAttribute(k)]).find(x => x[1]), a.value] : null;
   render(); if (dirty && dirty[0]) { const el = document.querySelector(`[${dirty[0][0]}="${CSS.escape(dirty[0][1])}"]`); if (el) { el.value = dirty[1]; el.focus({ preventScroll: true }); } }
@@ -4196,6 +4197,7 @@ async function jobFromOrder(o) {
   const parts = String(o.address || '').split(',').map(x => x.trim());
   const sub = { addr: parts[0] || '', city: parts[1] || '', zip: ((parts[2] || '').match(/\d{5}/) || [''])[0], apn: o.apn || '', lat: o.lat || '', lon: o.lon || '', eff: o.effective || todayISO() };
   if (o.unit) sub.unit = o.unit;
+  if (app.job) await saveNow(); app.jobs = (await DB.all('jobs')).sort((a, b) => b.updated - a.updated);   // Oct 20 2026: a window open since yesterday did not know the assignment made in another window and started a second one – always look at what is saved
   let j = app.jobs.find(x => x.orderId === o.id);
   if (!j) {   // Oct 20 2026: never start a second assignment for a property she already has one for – an assignment with the same subject (address or APN) that is not tied to another order is this one
     const ak = addrKey(parts[0] || ''), pk = apnKey(o.apn || ''); const ids = new Set((app.orders || []).map(x => x.id));
