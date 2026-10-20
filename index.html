@@ -213,7 +213,7 @@ small.vsx{display:block;color:#3b4a57;font-size:11px}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-1954';
+const BUILD='g2-1020-1959';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -617,6 +617,8 @@ function mlsCanon(raw, G, g) {
   const typ = g('TYP'); const condoDet = has('Condo/CO-OP/PUD', /^Detached$/), condoAtt = has('Condo/CO-OP/PUD', /^Attached$/);
   const saleTypeTxt = [...(G['Pub Listing Details'] || []), ...(G['Pvt Listing Details'] || [])].filter(x => !/^(None|Standard)$/.test(x));
   const saleType = saleTypeTxt.some(x => /REO|Bank Owned|Foreclosure/i.test(x)) ? 'REO' : saleTypeTxt.some(x => /Short/i.test(x)) ? 'Short' : saleTypeTxt.some(x => /Probate|Court|Conservator/i.test(x)) ? 'CrtOrd' : saleTypeTxt.some(x => /Estate|Trust/i.test(x)) ? 'Estate' : saleTypeTxt.some(x => /Bankruptcy/i.test(x)) ? 'CrtOrd' : (status === 'Closed' ? 'ArmLth' : '');
+  let saleType2 = saleType, saleNote2 = saleTypeTxt.join('; ');
+  if (!saleType2 || saleType2 === 'ArmLth') { const R = remarkSaleType([g('Public Remarks'), g('Private Remarks')].filter(Boolean).join(' \u2022 ')); if (R) { saleType2 = R.type; saleNote2 = [saleNote2, 'Remarks: \u201c' + R.words + '\u201d'].filter(Boolean).join('; '); } }   // her note (Oct 20 2026): REO, estate, short sale, divorce … in the agent remarks
   const aduN = ['ADU #1: Type', 'ADU #2: Attached'].filter(k => raw[k]).length;
   const views = G['View'] || [];
   return {
@@ -625,7 +627,7 @@ function mlsCanon(raw, G, g) {
     status, listPrice: num(g('Price')), origList: num(g('Original List Price')), listDate: isoDate(g('Begin Date')), lastRed: isoDate(g('Price Change Date', 'Last Price Change Date', 'Price Change Timestamp')) || '',
     contractDate: isoDate(g('Under Contract Date')), saleDate: isoDate(g('Sold Date', 'COE')), salePrice: num(g('Sold Price')),
     dom: num(g('Days On Market')), cdom: num(g('Cumulative DOM')), financing: g('Financing'), concessions: num(g('Seller Concessions')),
-    saleType, saleTypeNote: saleTypeTxt.join('; '),
+    saleType: saleType2, saleTypeNote: saleNote2,
     siteSf: lotSf || (acres ? Math.round(acres * 43560) : null), acres,
     topo: list('Location/Topo'), viewTypes: views.filter(v => !/^Setting$/.test(v)).join('; ') || (views.includes('Setting') ? 'Setting' : ''),
     viewRange: views.includes('Panoramic') ? 'Panoramic' : views.includes('Partial/Filtered') ? 'Partial' : '',
@@ -759,6 +761,17 @@ function cortCanon(o) {
   };
 }
 
+/* sale type from the agent remarks (Oct 20 2026) – first match wins; "not a short sale", "real estate" etc. are ignored */
+function remarkSaleType(t) {
+  t = String(t || ''); if (!t) return null;
+  const clean = t.replace(/\b(not|no|isn'?t|never)\s+(an?\s+)?(short\s+sale|reo|probate|bank[- ]owned|foreclosure|estate\s+sale|trust\s+sale|court\s+(confirmation|approval)|divorce)/gi, x => ' '.repeat(x.length)).replace(/real\s+estate/gi, x => ' '.repeat(x.length));
+  const R = [['REO', /\bREO\b|bank[- ]owned|lender[- ]owned|foreclosure|(?<!successor\s)trustee'?s?\s+sale/i], ['Short', /short[- ]sale|short[- ]pay|lender\s+approval\s+required/i],
+    ['CrtOrd', /probate|court\s+(confirmation|approval|ordered|order)|overbid|conservator|bankruptcy|IAEA|divorce|dissolution/i], ['Estate', /estate\s+sale|estate\s+of\b|heirs|inherited|successor\s+trustee|trust\s+sale|sold\s+by\s+(the\s+)?trust/i],
+    ['Relo', /relocation\s+(company|sale)|relo\s+(company|sale|addendum)|corporate[- ]owned/i], ['NonArm', /non[- ]arm|related\s+part(y|ies)|family\s+(sale|member|transfer)|inter[- ]?family/i]];
+  for (const [type, re] of R) { const m = clean.match(re); if (m) { const i = m.index; return { type, words: (i > 30 ? '\u2026' : '') + t.slice(Math.max(0, i - 30), i + m[0].length + 30).replace(/\s+/g, ' ').trim() + '\u2026' }; } }
+  return null;
+}
+
 /* =====================================================================
    The comp model: fields, which source fills each field, flags.
    ===================================================================== */
@@ -860,7 +873,7 @@ const FIELDS = [
 ];
 const FIELD = Object.fromEntries(FIELDS.map(f => [f.k, f]));
 
-const SALE_TYPE_TEXT = { ArmLth: "Arm's length", Listing: 'Listing', REO: 'REO (bank owned)', Short: 'Short sale', Estate: 'Estate sale', CrtOrd: 'Court ordered (probate)', NonArm: "Non-arm's length", Relo: 'Relocation', Trust: 'Trust sale' };
+const SALE_TYPE_TEXT = { ArmLth: "Arm's length", Listing: 'Listing', REO: 'REO (bank owned)', Short: 'Short sale', Estate: 'Estate sale', CrtOrd: 'Court ordered (probate, divorce, bankruptcy)', NonArm: "Non-arm's length", Relo: 'Relocation', Trust: 'Trust sale' };
 function fmt(f, v) {
   if (blank(v)) return '';
   if (f.k === 'saleType') return SALE_TYPE_TEXT[v] || String(v);
@@ -1077,7 +1090,7 @@ function uadProjAmen(s) { const out = []; const add = (t, other) => { if (!out.s
 function uadSaleType(s) { return ({ ArmLth: 'TypicallyMotivated', Listing: 'TypicallyMotivated', REO: 'REOSale', Short: 'ShortSale', Estate: 'EstateSale', CrtOrd: 'CourtOrderedNonForeclosureSale', NonArm: 'SaleBetweenRelatedParties', Relo: 'RelocationSale', Trust: 'EstateSale' })[s] || (s ? 'Other' : 'TypicallyMotivated'); }
 function uadFinancing(s) {
   s = String(s || ''); if (!s) return {};
-  if (/\(cash\?\)|^MLS code/i.test(s)) return {};   // not confirmed – she types what it was
+  if (/^MLS code/i.test(s)) return {};   // (cash?) = no loan near the sale in the CRS mortgage history – cash (her note Oct 20 2026)   // not confirmed – she types what it was
   if (/cash|no loan/i.test(s)) return { none: true };
   if (/conv/i.test(s)) return { type: 'Conventional' }; if (/FHA/i.test(s)) return { type: 'FHA' }; if (/\bVA\b/i.test(s)) return { type: 'VA' };
   if (/USDA|rural/i.test(s)) return { type: 'USDARuralDevelopment' }; if (/private|seller/i.test(s)) return { type: 'Private' };
@@ -1527,6 +1540,7 @@ function adjRows(J) { return J ? ADJ_ROWS.concat(customRows(J)) : ADJ_ROWS; }
 function lineOn(id, J) { const G = G0(J); if (GRID_KEEP.has(id)) return true; if (G.lines && id in G.lines) return !!G.lines[id];
   if (GRID_DEFAULT && GRID_DEFAULT.on && id in GRID_DEFAULT.on) return !!GRID_DEFAULT.on[id];
   if (/^cx_/.test(id)) return true;
+  if (id === 'xferTerms') return usedComps(J).some(c => { const t = compFacts(c, J).xferTerms; return t && !/typically/i.test(t); });   // shows itself when a comp is REO, estate, short sale …
   if (id === 'carport') return [subjFacts(J), ...usedComps(J).map(c => compFacts(c, J))].some(F => +F.carport > 0);
   if (id === 'bsmtUnf') return [subjFacts(J), ...usedComps(J).map(c => compFacts(c, J))].some(F => +F.bsmtUnf > 0);
   return GRID_BASE.has(id); }
@@ -1561,7 +1575,7 @@ function subjFacts(J) {
 function compFacts(c, J) {
   const g = k => V(c, k); const px = proximity(c, J);
   const F0 = { price: num(g('salePrice')), src: g('mls') ? 'MLS ' + g('mls') : (c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : ''), prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
-    terms: g('financing') || '', conc: num(g('concessions')), contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
+    terms: termsText(g('financing')), xferTerms: g('saleType') && typeof PICK !== 'undefined' ? ((PICK.xferTerms.opts.find(o => o[0] === uadSaleType(g('saleType'))) || [])[1] || '') : '', conc: num(g('concessions')), contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
     topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: g('status') || '', listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: num(g('cdom')), project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
     rooms: num(g('rooms')), beds: num(g('beds')), full: num(g('full')), half: num(g('half')), gla: num(g('gla')), bsmt: num(g('bsmtFin')), garage: num(g('garage')), energy: g('energy') || '',
@@ -1936,6 +1950,9 @@ async function buildFullReport(J) {
   const fit = await fitReportSize(entries);
   return { xml, entries, charts: chartFiles.length, maps: mapFiles.length, fit };
 }
+
+/* her note (Oct 20 2026): no loan recorded with the deed = cash (Santa Barbara has many cash sales); a recorded loan stays as the CRS text until she picks the type */
+function termsText(f) { f = String(f || ''); if (/no loan|\(cash\?\)/i.test(f)) return 'Cash'; return f; }
 
 /* =====================================================================
    Market conditions (time) support, Oct 2026 – her comparability groups.
