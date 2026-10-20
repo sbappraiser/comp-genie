@@ -246,12 +246,13 @@ table.cmp tr.flagrow th,table.cmp tr.flagrow td.using{background:#ffd6d6}.flagmk
 small.rdays{display:block}
 .badge.flagok{background:var(--ok-l);color:var(--ok)}
 .flagbox .flags li .btn{margin-left:6px;color:#000;font-weight:600}.flagdone{font-size:13px;margin:4px 0}.flagdone li{color:#1a1a1a}
+table.cmp tr.disrow th,table.cmp tr.disrow td{background:#fff36b}table.cmp tr.disrow td.srccell.on{background:#d4fcd4}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2207';
+const BUILD='g2-1020-2209';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1120,7 +1121,7 @@ function compFlags(c, job) {
   { const ps = priorSales(c), cs = currentSale(c); const other = [...ps, ...(cs ? [{ date: cs.date, price: cs.price, src: cs.from }] : [])];   // a CORT line that another source agrees with (same date and price) is confirmed (Oct 20 2026)
     c.src.cort.forEach(t => { if (t.conf === null || t.conf >= 60) return; const ok = other.some(s => String(s.src || '').split('; ').some(x => !/^CORT/.test(x) && x !== 'cort') && s.date && t.saleDate && Math.abs(monthsBetween(s.date, t.saleDate)) <= 1 && (!t.salePrice || !s.price || Math.abs(s.price - t.salePrice) <= Math.max(1000, s.price * 0.01)));
       if (!ok) F.push({ sev: 'warn', t: `CORT line read with low confidence (${t.conf}) – check it against the scan ${t.file || ''}` }); }); }
-  if (disagree(c, 'gla')) F.push({ sev: 'info', t: 'Square footage differs between sources' });
+  if (disagree(c, 'gla') && !(c.pick && c.pick.gla) && blank((c.edit || {}).gla)) F.push({ sev: 'info', t: 'Square footage differs between sources – click the one to use' });   // resolved once she picks a source or types hers
   const a = archChosen(c); if (a && sale && !archMatches(a, sale) && a.v.saleDate) F.push({ sev: 'info', t: `Your archive has this property from an earlier sale (${showDate(a.v.saleDate)}); its sale facts are not used. House facts from your record ${monthsBetween(a.v.saleDate, sale.date) <= 24 ? 'are used' : 'are older than 2 years, so MLS is used first'}` });
   if (job && job.subject && job.subject.eff && sale && sale.date && monthsBetween(sale.date, job.subject.eff) > 12) F.push({ sev: 'warn', t: 'Sale is more than 12 months before the effective date' });
   return F;
@@ -4552,7 +4553,8 @@ function detailHTML(c) {
     if (!any && !app.showAll && !DETAIL_ALWAYS.includes(f.k)) return '';   // her own Q and C ratings always have a row
     const head = f.g !== lastG ? `<tr class="grp"><th colspan="${3 + cols.length}">${esc(f.g)}</th></tr>` : ''; lastG = f.g;
     const dis = disagree(c, f.k); const fk = c.use ? fl.filter(x => FLAG_KEY(x.t) === f.k) : [];
-    return head + `<tr${fk.length ? ` class="flagrow" title="${esc(fk.map(x => x.t).join(' · '))}"` : ''}><th>${fk.length ? '<span class="flagmk">⚑</span> ' : ''}${esc(f.l)}${dis ? ' <span class="diff" title="Sources disagree">≠</span>' : ''}</th>
+    const open = dis && !c.pick[f.k] && blank(c.edit[f.k]);   // her ask Oct 20 2026: sources disagree and she has not chosen yet → yellow until she clicks one (or types her own)
+    return head + `<tr${fk.length ? ` class="flagrow" title="${esc(fk.map(x => x.t).join(' · '))}"` : open ? ' class="disrow" title="The sources disagree – click the value to use"' : ''}><th>${fk.length ? '<span class="flagmk">⚑</span> ' : ''}${esc(f.l)}${dis ? ' <span class="diff" title="Sources disagree">≠</span>' : ''}</th>
       <td class="using">${esc(fmt(f, u.v))}${u.src ? ` <span class="tag ${u.src}">${esc(SRC[u.src].short)}</span>` : ''}${(c.pick[f.k] || !blank(c.edit[f.k])) ? ` <button class="lnk" data-reset="${f.k}" title="Back to the automatic choice">↺</button>` : ''}</td>
       <td class="mine">${(() => { const own = !blank(c.edit[f.k]); const echo = own ? '' : (blank(u.v) ? '' : String(fmt(f, u.v)));   // her ask Oct 20 2026: the box shows the value in use (the green one); it becomes hers only when she changes it
         return `<input class="txt sm${own ? ' own' : ' echo'}" data-edit="${f.k}" ${own ? '' : `data-echo="${esc(echo)}"`} value="${esc(own ? (f.t === 'date' ? showDate(c.edit[f.k]) : c.edit[f.k]) : echo)}" placeholder="type your value" title="${own ? 'Your value – ↺ goes back to the sources' : 'The value in use (green). Type over it to use your own.'}">` + (f.k === 'quality' || f.k === 'condition' ? fineSel(c.id, f.k === 'quality' ? 'q' : 'c', J) : ''); })()}</td>
