@@ -355,11 +355,24 @@ table.tbl.cost input::placeholder{color:#9aa4ae;font-style:italic}
 .rv.rvgo{cursor:pointer}.rv.rvgo:hover{background:#fff6e8}.rvlink{color:#b35a00;font-weight:600;white-space:nowrap}
 .goflash{outline:3px solid #ff8a00!important;outline-offset:3px;border-radius:4px;transition:outline-color .4s}
 
+/* her ask (Oct 21 2026): Report details – bigger type; her own entries black on white, suggestions (from the order, CRS, inspection) grey italic on cream */
+#reportCard{font-size:15.5px}#reportCard h2{font-size:22px}#reportCard h3{font-size:18px;color:#b35a00}
+#reportCard .rptgrid .fld>span{font-size:14px;color:#1a1a1a;font-weight:600;margin-bottom:2px}
+#reportCard .rptgrid input.txt,#reportCard .rptgrid textarea,#reportCard .rptgrid select{font-size:15.5px;padding:6px 8px;color:#000}
+#reportCard .rptgrid input.txt:placeholder-shown,#reportCard .rptgrid textarea:placeholder-shown{background:#fff8e1;border-color:#e6cf8a}
+#reportCard .rptgrid input::placeholder,#reportCard .rptgrid textarea::placeholder{color:#6b6250!important;font-style:italic}
+#reportCard .rptgrid input.txt:not(:placeholder-shown),#reportCard .rptgrid textarea:not(:placeholder-shown){font-weight:600;background:#fff}
+#reportCard .rptgrid label.check{font-size:15px}
+.rptneed{border-radius:10px;padding:10px 14px;margin:6px 0 12px;font-size:15.5px}.rptneed.warn{background:#ffe9d1;border:2px solid #ff8a00}.rptneed.done{background:#e6f4ea;border:1px solid #9ccfaa}
+.rptneed ul{margin:6px 0 4px 20px;padding:0}.rptneed li{margin:2px 0}
+.rptkey{display:block;margin-top:6px;font-size:13px}.rptkey .k{display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid #cfd6de;margin-right:6px}.rptkey .own{background:#fff;font-weight:600}.rptkey .sug{background:#fff8e1;border-color:#e6cf8a;color:#6b6250;font-style:italic}
+.rptneed .rptkey .k{display:inline-block!important;width:auto!important}
+
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0856';
+const BUILD='g2-1021-1600';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -3703,7 +3716,11 @@ function reportHTML(J) {
   const sel = (k, list, def, note = 'from the order') => `<select data-rpt="${k}"><option value="">${def ? esc((list.find(x => x[0] === def) || [, ''])[1]) + ' (' + note + ')' : '—'}</option>${list.map(([v, l]) => `<option value="${v}"${R[k] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const yn = (k, def) => `<select data-rpt="${k}"><option value="">${def === true ? 'Yes' : def === false ? 'No' : '—'}${def !== undefined ? ' (usual)' : ''}</option><option value="true"${R[k] === 'true' ? ' selected' : ''}>Yes</option><option value="false"${R[k] === 'false' ? ' selected' : ''}>No</option></select>`;
   const M = F.market;
-  return `<h2>Report details <small>for the full report</small></h2>
+  /* her ask (Oct 21 2026): she did not see this was hers to fill in – a clear banner with what is still missing (from the pre-check), bigger type */
+  const need = typeof precheckGrid === 'function' ? precheckGrid(J).filter(x => x.sev === 'Must fix' && typeof preGo === 'function' && (preGo(J, x) || {}).label === 'Report details') : [];
+  return `<h2>Report details <small>– yours to fill in before you export</small></h2>
+  <div class="rptneed ${need.length ? 'warn' : 'done'}">${need.length ? `<b>${need.length} answer${need.length > 1 ? 's' : ''} still needed here:</b><ul>${need.map(x => `<li>${esc(x.msg.replace(/\s*\(Report details[^)]*\)\.?/, '').replace(/ – it is the value on page 1 of the report\./, ' – the value on page 1 of the report.'))}</li>`).join('')}</ul>` : '<b>✓ Everything the report needs here is answered.</b>'}
+    <span class="rptkey"><span class="k own">your entry</span> <span class="k sug">suggested – type over it or leave it</span></span></div>
   <p class="help">${F.hasOrder ? 'Grey entries come from the order in the Appraisal Assistant, your inspection or the CRS report. Type over any of them.' : 'This assignment is not linked to an order, so nothing is filled from the Appraisal Assistant. Open it from the order (Comp genie button on the order page) to fill the assignment, client and market.'}</p>
   <div class="rptgrid">
     <section><h3>Assignment</h3>
@@ -3773,7 +3790,9 @@ document.addEventListener('change', e => {
   const t = e.target; if (!app.job) return; const R = R0(app.job);
   if (t.dataset.rpt) { const k = t.dataset.rpt, v = t.value.trim(); if (v === '') delete R[k]; else R[k] = k === 'zone' ? v.toUpperCase() : t.tagName === 'TEXTAREA' ? t.value : v;
     if (k === 'zoneDesc' && v) { const code = rv(app.job, 'zone').toUpperCase(); if (code) { zoneTable()[code] = v; DB.put('kv', { id: 'zoneDesc', v: app.zoneDesc }); } }
-    save(); if (['assign', 'zone', 'allRights', 'rightsType', 'sowGov', 'addlCond'].includes(k)) { const c = $('#reportCard'); if (c) c.innerHTML = reportHTML(app.job); } return; }
+    save(); if (['assign', 'zone', 'allRights', 'rightsType', 'sowGov', 'addlCond'].includes(k)) { const c = $('#reportCard'); if (c) c.innerHTML = reportHTML(app.job); }
+    else { const b = document.querySelector('#reportCard .rptneed'); if (b) { const d = document.createElement('div'); d.innerHTML = reportHTML(app.job); const nb = d.querySelector('.rptneed'); if (nb) b.replaceWith(nb); } }   /* the 'still needed' list follows her answers */
+    return; }
   if (t.dataset.hbu) { R.hbu[t.dataset.hbu] = t.checked; save(); }
 });
 document.addEventListener('click', e => {
