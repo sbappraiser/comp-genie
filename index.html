@@ -311,18 +311,24 @@ table.grid thead th .ghsale{display:block;font-size:12.5px;font-weight:600;color
 .mebody{display:flex;gap:14px;min-height:0;flex:1}.mecv{position:relative;flex:0 0 auto;height:calc(100vh - 200px)}.mecv canvas{height:100%;width:auto;border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:grab}
 .mebusy{position:absolute;top:10px;left:10px;background:#fff;padding:4px 10px;border-radius:6px;border:1px solid var(--line);font-weight:600}
 .meside{flex:1;overflow:auto;min-width:220px}.meside textarea{width:100%;font:14px/1.35 Arial;resize:vertical}
-/* her ask (Oct 20 2026): like her 2.6 grid – each comp's $ adjustment in its own column beside the entry */
-body.sbs table.grid:not(.final) tbody td:not(.subj){min-width:280px;padding-right:0}
-body.sbs table.grid:not(.final) tbody td:not(.subj) > .gval{display:inline-block;width:calc(100% - 112px);vertical-align:top;margin:0;padding-right:8px;box-sizing:border-box}
-body.sbs table.grid:not(.final) tbody td:not(.subj) > input.adj{display:inline-block;width:100px;vertical-align:top;margin:0 0 0 4px;box-shadow:-9px 0 0 -8px #b8c2cc}
-body.sbs table.grid:not(.final) tbody td.hasadj > input.adj{background:#fff1de;font-weight:600;border-color:#e0a050}
-body.sbs table.grid:not(.final) tbody td.hasadj > input.adj::placeholder{color:#8a4a00;font-weight:700;font-style:normal;opacity:1}
+/* her ask (Oct 20 2026): like her 2.6 grid – Description | +(−) $ Adjustment, two columns per comp; the description cell is
+   filled with the line's colour (mint = required, baby blue = optional), the adjustment column is white with a dividing line */
+body.sbs table.grid td.dsc{min-width:190px;padding:4px 6px;vertical-align:top}
+body.sbs:not(.classic) table.grid tr.reqrow td.dsc{background:#dcf7e1}body.sbs:not(.classic) table.grid tr.optrow td.dsc{background:#e3f0fd}
+body.sbs table.grid td.dsc input.txt.fact{width:100%;box-sizing:border-box;background:transparent!important;border:1px solid transparent!important;border-bottom:1px solid rgba(0,0,0,.18)!important;border-radius:3px;font-size:14px;padding:3px 4px}
+body.sbs table.grid td.dsc input.txt.fact.bad{background:#ffe1df!important;border-color:#d33!important}
+body.sbs table.grid td.dsc input.txt.fact:focus{background:#ff8a00!important}
+body.sbs table.grid td.adjc{width:108px;min-width:108px;background:#fff;border-left:2px solid #8995a1!important;padding:4px 5px;vertical-align:top}
+body.sbs table.grid td.adjc.none{background:#f1f3f5}
+body.sbs table.grid td.adjc input.adj{width:100%;box-sizing:border-box}
+body.sbs table.grid td.adjc.hasadj{background:#fff1de}body.sbs table.grid td.adjc.hasadj input.adj{font-weight:700;border-color:#e0a050}body.sbs table.grid td.adjc.hasadj input.adj::placeholder{color:#8a4a00;font-weight:700;font-style:normal;opacity:1}
+table.grid thead th .ghsub{display:flex;margin-top:6px;font-size:11px;font-weight:700;text-transform:uppercase;color:#3a4552;letter-spacing:.02em}table.grid thead th .ghsub span:first-child{flex:1}table.grid thead th .ghsub span:last-child{width:104px;text-align:center;border-left:2px solid #8995a1}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0553';
+const BUILD='g2-1021-0559';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1913,12 +1919,12 @@ function compTotals(J, c) {
 const classicOn = () => { try { return localStorage.getItem('genie.classic') === '1'; } catch (e) { return false; } };
 function gridHTML(J) {
   const usedAll = usedComps(J); if (!usedAll.length) return '<h2>Adjustment grid</h2><p class="help">Pick comps with “Use as” in the list above; they line up here in grid order.</p>';
-  const used = wbSlice(usedAll); const lean = wbLean();
+  const used = wbSlice(usedAll); const lean = wbLean(); const SBS = document.body.classList.contains('sbs');   // her 2.6 layout: Description | +(−) $ Adjustment columns
   const G = G0(J), S = subjFacts(J); const tot = used.map(c => compTotals(J, c)); const totAll = usedAll.map(c => compTotals(J, c));
   const inspNote = J.subject.insp ? `Subject from your inspection (${esc(J.subject.insp.file || 'workfile')}).` : 'Subject: drop your iPad <b>Workfile package</b> (.zip) on this page to fill the subject column from your inspection, or type the subject values in the grid.';
   let sec = '';
   const rows = adjRows(J).filter(WB_ROWS).filter(r => rowShown(r, J)).map(row => {
-    const [id, label, section, type] = row; const head = section !== sec ? `<tr class="grp"><th colspan="${2 + used.length}">${esc(section)}</th></tr>` : ''; sec = section;
+    const [id, label, section, type] = row; const head = section !== sec ? `<tr class="grp"><th colspan="${2 + used.length * (SBS ? 2 : 1)}">${esc(section)}</th></tr>` : ''; sec = section;
     const sv = id === 'baths' ? [S.full, S.half].every(blank) ? '' : `${S.full ?? '–'} / ${S.half ?? 0}` : showFact(id, S[id]);
     const subjCell = ['price', 'ppsf', 'src', 'prox', 'dom', 'terms', 'conc', 'contract', 'sale', 'status', 'listPrice', 'origList', 'listDate', 'lastRed', 'redDays', 'cdom', 'overList', 'xferTerms', 'stl'].includes(id) ? `<td class="subj">${blank(sv) || sv === '' ? '<span class="na" title="Nothing to enter for the subject here – on the 3.6 grid this line is for the comparables (the subject’s own sale or listing, if any, comes from the Sales Contract and Subject Listing sections). Leave it blank; no N/A or dash.">—</span>' : esc(sv)}</td>`
       : `<td class="subj"><input class="txt sm${(PICK[id] || id === 'view') && !blank(G.subj[id]) && !pkValid(id, G.subj[id], G.subj['pk_' + id]) ? ' bad' : ''}" data-gsubj="${id}" value="${esc(blank(G.subj[id]) ? '' : id === 'usable' && typeof G.subj[id] === 'number' ? G.subj[id] + ' ac' : G.subj[id])}" placeholder="${esc(sv || (id === 'usable' ? 'Measure it' : id === 'adu' ? 'e.g. Guest house 450 sf 1 bath' : ''))}">${id === 'garage' ? `${G.subj.vsText ? `<small class="vsx">${esc(G.subj.vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="subj">▾ pick</button>` : id === 'q' || id === 'c' ? qcSel('subj', id, S[id]) + fineSel('subj', id, J) : id === 'loc' ? locBtn('subj') : id === 'view' ? vtSel('subj', J, S.view) + pkBtn('subj', 'view') : id === 'land' ? landSel('subj', S.land) : id === 'adu' ? obBtn('subj') : PICK[id] ? pkBtn('subj', id) : ''}</td>`;
@@ -1936,25 +1942,28 @@ function gridHTML(J) {
       if (id === 'contract' || id === 'cdom') shown += unkSel(c.id, id, C);
       if (id === 'nbhd' && typeof saSel === 'function') shown += saSel(J, c, C);
       if (id === 'q' || id === 'c') shown += qcSel(c.id, id, C[id]) + fineSel(c.id, id, J); if (id === 'view') shown += vtSel(c.id, J, C.view); if (id === 'loc') shown += locBtn(c.id); else if (id === 'q' || id === 'c') {} else if (id === 'garage') shown += `${C.tandem ? `<small class="vsx" title="From your 2.6 Functional utility line – 3.6 has no tandem field; mention it in your comment">${esc(C.tandem)}</small>` : ''}${(c.edit || {}).grid_vsText ? `<small class="vsx">${esc(c.edit.grid_vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="${c.id}" title="Type | spaces | attachment (UAD 3.6 vehicle storage)">▾ pick</button>`; else shown += pkBtn(c.id, id);
-      if (!type) return `<td>${shown}</td>`;
+      if (!type) return SBS ? `<td class="dsc" data-cc="${c.id}">${shown}</td><td class="adjc none" data-cc="${c.id}"></td>` : `<td data-cc="${c.id}">${shown}</td>`;
       const a = cellAmount(J, c, row);
-      return `<td class="${a.v ? 'hasadj' : ''}"><div class="gval">${shown}</div><input class="txt sm adj ${a.own ? 'own' : a.v !== null ? 'auto' : ''}" data-gadj="${c.id}|${id}" value="${a.own ? (a.v > 0 ? '+' : a.v < 0 ? '-' : '') + Math.abs(a.v).toLocaleString() : ''}" placeholder="${a.v !== null && !a.own ? (a.v >= 0 ? '+' : '') + a.v.toLocaleString() : '$ adj'}" inputmode="decimal" title="${a.own ? 'Your amount – clear it to use the rate' : a.v !== null ? 'From your rate – type to override' : 'Type the adjustment'}"></td>`; }).join('');
+      const inp = `<input class="txt sm adj ${a.own ? 'own' : a.v !== null ? 'auto' : ''}" data-gadj="${c.id}|${id}" value="${a.own ? (a.v > 0 ? '+' : a.v < 0 ? '-' : '') + Math.abs(a.v).toLocaleString() : ''}" placeholder="${a.v !== null && !a.own ? (a.v >= 0 ? '+' : '') + a.v.toLocaleString() : '$ adj'}" inputmode="decimal" title="${a.own ? 'Your amount – clear it to use the rate' : a.v !== null ? 'From your rate – type to override' : 'Type the adjustment'}">`;
+      if (SBS) return `<td class="dsc" data-cc="${c.id}">${shown}</td><td class="adjc${a.v ? ' hasadj' : ''}" data-cc="${c.id}">${inp}</td>`;
+      return `<td class="${a.v ? 'hasadj' : ''}" data-cc="${c.id}"><div class="gval">${shown}</div><input class="txt sm adj ${a.own ? 'own' : a.v !== null ? 'auto' : ''}" data-gadj="${c.id}|${id}" value="${a.own ? (a.v > 0 ? '+' : a.v < 0 ? '-' : '') + Math.abs(a.v).toLocaleString() : ''}" placeholder="${a.v !== null && !a.own ? (a.v >= 0 ? '+' : '') + a.v.toLocaleString() : '$ adj'}" inputmode="decimal" title="${a.own ? 'Your amount – clear it to use the rate' : a.v !== null ? 'From your rate – type to override' : 'Type the adjustment'}"></td>`; }).join('');
     const bedAsk = id === 'beds' && blank(G.rates.bed) ? used.filter(c => { const C = compFacts(c, J); const a = capBeds(S.beds), b = capBeds(C.beds); return a !== null && b !== null && a !== b && blank((G.cells[c.id] || {}).beds); }) : [];
     const rk = row[4]; const rate = rk ? [].concat(rk === 'bath' ? ['bath', 'halfBath'] : rk).map(k => `<div class="grate"><label title="${esc(RATES[k][1])}">${esc(RATES[k][0])} <input class="txt xs" data-grate="${k}" value="${esc(blank(G.rates[k]) ? '' : G.rates[k])}" inputmode="decimal"></label>${G.rateFrom && G.rateFrom[k] && !blank(G.rates[k]) ? `<small class="from">${/ · /.test(G.rateFrom[k]) ? `from your starting points (${esc(G.rateFrom[k])})` : 'from ' + esc(G.rateFrom[k])}</small>` : ''}</div>`).join('') : '';
     const ask = bedAsk.length ? `<div class="bedask">${bedAsk.map(c => `Comp ${c.use} has ${compFacts(c, J).beds} bedroom${compFacts(c, J).beds === 1 ? '' : 's'}`).join(', ')} – what bedroom adjustment do you want? Type it per bedroom above, or in the comp's box.</div>` : '';
     return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${GUIDE[id] || PICK[id] ? `<button type="button" class="ginfo" data-ginfo="${id}" title="UAD 3.6 guidance for this line">i</button>` : ''}${type && type !== 'OTHER' && !GRID_INFO[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP: ${esc(type)}">${esc(LINE_EG[id] || type)}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] ? `<br><small class="muted">${esc(GRID_INFO[id])}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
   }).join('');
-  const sumRow = (label, fn, cls = '') => `<tr class="tot ${cls}"><th>${label}</th><td></td>${used.map((c, i) => `<td>${fn(tot[i], c)}</td>`).join('')}</tr>`;
+  const sumRow = (label, fn, cls = '') => `<tr class="tot ${cls}"><th>${label}</th><td></td>${used.map((c, i) => `<td${SBS ? ' colspan="2"' : ''} data-cc="${c.id}">${fn(tot[i], c)}</td>`).join('')}</tr>`;
+  const thSub = SBS ? '<span class="ghsub"><span>Description</span><span>+(−) $ Adjustment</span></span>' : '';
   const adjs = totAll.map(t => t.adj).filter(Boolean); const lo = Math.min(...adjs), hi = Math.max(...adjs);
   const med = adjs.length ? [...adjs].sort((a, b) => a - b)[Math.floor((adjs.length - 1) / 2)] : null;
-  if (POP) return `<div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridHeadSale(c, J)}${gridMlsLink(c)}</th>`).join('')}</thead><tbody>${rows}
+  if (POP) return `<div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}"${SBS ? ' colspan="2"' : ''} class="${WB.cur === c.id ? 'cur' : ''}">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridHeadSale(c, J)}${gridMlsLink(c)}${thSub}</th>`).join('')}</thead><tbody>${rows}
     ${sumRow('Net adjustment', t => `${t.net >= 0 ? '+' : '−'}${money(Math.abs(t.net))} <small class="${Math.abs(t.netPct) > GRID_LIMITS.net ? 'over' : ''}">${t.netPct.toFixed(1)}%</small>`)}
     ${sumRow('Gross adjustment', t => `${money(t.gross)} <small class="${t.grossPct > GRID_LIMITS.gross ? 'over' : ''}">${t.grossPct.toFixed(1)}%</small>`)}
     ${sumRow('Adjusted sale price', t => `<b>${money(t.adj)}</b>${t.adjPsf ? `<br><small>${money(t.adjPsf)} / sq ft</small>` : ''}`, 'big')}</tbody></table></div>
     <div class="gsum"><div><span>Adjusted range (all comps)</span><b>${adjs.length ? money(lo) + ' – ' + money(hi) : '–'}</b></div><div><span>Median</span><b>${med ? money(med) : '–'}</b></div><div><span>Your value</span><b>${blank(G.value) ? '–' : money(G.value)}</b></div></div>`;
   return `<div class="row"><h2 style="margin:0">Adjustment grid <small>UAD 3.6 lines · your amounts</small></h2><span class="grow"></span><label class="check" title="Grey boxes, thin black lines and compact rows, like your ACI forms"><input type="checkbox" data-classic="1" ${classicOn() ? 'checked' : ''}> Classic (ACI) look</label></div>${startsBar(J)}${gridLinesHTML(J)}${wbBar(J, usedAll)}
     <p class="help">${inspNote} Type an amount in any cell (minus for a downward adjustment). Or type a rate once beside a line; cells without your own amount then use it (shown in grey). Clear a cell to go back to the rate. Usable Lot Area/Utility comes only from your archive or your measurement – blank comps say <span class="measure">Measure it</span>.</p>
-    <div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}" class="${WB.cur === c.id ? 'cur' : ''}" title="Click to pick this comp for Ctrl+Shift+number or Ctrl+Z">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridHeadSale(c, J)}${gridMlsLink(c)}</th>`).join('')}</tr></thead>
+    <div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}"${SBS ? ' colspan="2"' : ''} class="${WB.cur === c.id ? 'cur' : ''}" title="Click to pick this comp for Ctrl+Shift+number or Ctrl+Z">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridHeadSale(c, J)}${gridMlsLink(c)}${thSub}</th>`).join('')}</tr></thead>
     <tbody>${rows}
     ${sumRow('Net adjustment', t => `${t.net >= 0 ? '+' : '−'}${money(Math.abs(t.net))} <small class="${Math.abs(t.netPct) > GRID_LIMITS.net ? 'over' : ''}">${t.netPct.toFixed(1)}%</small>`)}
     ${sumRow('Gross adjustment', t => `${money(t.gross)} <small class="${t.grossPct > GRID_LIMITS.gross ? 'over' : ''}">${t.grossPct.toFixed(1)}%</small>`)}
@@ -3048,7 +3057,7 @@ function wbMark(el) { const k = FOCUS_KEYS.map(k => [k, el.getAttribute && el.ge
   document.querySelectorAll('.lastcell').forEach(x => x.classList.remove('lastcell')); el.classList.add('lastcell'); }
 function wbColTint() { let st = document.getElementById('curcolcss'); if (!st) { st = document.createElement('style'); st.id = 'curcolcss'; document.head.appendChild(st); }
   const ths = [...document.querySelectorAll('#gridCard table.grid thead th')]; const i = WB.cur ? ths.findIndex(h => h.dataset.wbcol === WB.cur) : -1; ths.forEach(h => { if (h.dataset.wbcol) h.classList.toggle('cur', h.dataset.wbcol === WB.cur); });
-  st.textContent = i < 0 ? '' : `#gridCard table.grid tbody tr:not(.grp) > :nth-child(${i + 1}){background:#fff1de!important} #gridCard table.grid thead th:nth-child(${i + 1}){background:#ffd29a!important;box-shadow:inset 0 -3px 0 #ff8a00}`;
+  st.textContent = i < 0 ? '' : `#gridCard table.grid tbody td[data-cc="${WB.cur}"]:not(.dsc){background:#fff1de!important} #gridCard table.grid tbody td.dsc[data-cc="${WB.cur}"]{box-shadow:inset 0 0 0 2px #ff8a00} #gridCard table.grid thead th[data-wbcol="${WB.cur}"]{background:#ffd29a!important;box-shadow:inset 0 -3px 0 #ff8a00}`;
   if (WB_LAST) { const el = document.querySelector(`[${WB_LAST[0]}="${CSS.escape(WB_LAST[1])}"]`); if (el && !el.classList.contains('lastcell')) { document.querySelectorAll('.lastcell').forEach(x => x.classList.remove('lastcell')); el.classList.add('lastcell'); } } }
 let WB_EQ = null, WB_ZAP = false;
 document.addEventListener('keydown', async e => {
