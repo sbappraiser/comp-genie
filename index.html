@@ -240,7 +240,7 @@ body:not(.classic) table.grid thead th{font-size:15px;color:#000}
 .badge.flagred{background:#d40000;color:#fff;cursor:help}
 .flagbox{border:2px solid #d40000;background:#fff0f0;border-radius:8px;padding:8px 12px;margin:6px 0;color:#000}.flagbox>b{color:#b00000}
 .flagbox .flags li,.flagbox .flags li.warn{color:#b00000;font-weight:700}.flagbox .flags li.info{color:#b00000;font-weight:600}
-table.cmp tr.flagrow th,table.cmp tr.flagrow td.using{background:#ffd6d6}.flagmk{color:#d40000;font-weight:800}
+table.cmp tr.flagrow th,table.cmp tr.flagrow td.using,table.cmp tr.flagrow th{background:#ffb8b8}.flagmk{color:#d40000;font-weight:800}
 #detail,.detail{scroll-margin-top:var(--toph,120px)}
 .overcall{display:block;color:#d40000;font-weight:800;font-size:12px}
 small.rdays{display:block}
@@ -252,12 +252,15 @@ table.comps tr.nextflag td{background:#ffe1a8!important;transition:background .3
 #compsCard .tablewrap{max-height:calc(100vh - var(--toph,64px) - 24px);overflow:auto;border-top:1px solid var(--line)}
 table.comps thead th{position:sticky;top:0;z-index:3;background:#fff;box-shadow:0 1px 0 #9aa6b2}
 select.qcsel{font-weight:700;margin:2px 4px 2px 0}
+/* her ask Oct 20 2026: the Using column in light pink, easy to run down (yellow / red rows still show over it) */
+table.cmp td.using,table.cmp th.using{background:#ffe3ec}
+table.cmp tr.disrow td.using{background:#fff36b}table.cmp tr.flagrow td.using,table.cmp tr.flagrow th{background:#ffb8b8}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1020-2357';
+const BUILD='g2-1021-0008';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -4653,7 +4656,7 @@ function detailHTML(c) {
       ${flDone.length ? `<details class="flagdone"><summary>${flDone.length} checked flag${flDone.length === 1 ? '' : 's'}</summary><ul>${flDone.map(x => `<li>${esc(x.t)} <button class="lnk" data-flagundo="${esc(c.id)}" data-ft="${esc(x.t)}">undo</button></li>`).join('')}</ul></details>` : ''}</div>
     ${ps.length ? `<div class="dphotos">${fr ? `<img class="hero" data-photo="${fr.id}" data-view="${fr.id}" alt="Front photo" title="Click to look at the photos full size">` : ''}<div class="strip">${ps.map(ph => `<button class="ph ${fr && ph.id === fr.id ? 'on' : ''}" data-view="${ph.id}" title="Click to look at it full size"><img data-photo="${ph.id}" alt="Photo ${ph.n}"></button>`).join('')}</div><p class="help">Click a photo to see it full size and page through them. The outlined one is the front photo; change it in the viewer.</p></div>` : (V(c, 'mls') ? '<p class="help">No photos yet – drop the MLS photos zip.</p>' : '')}</div>
     <h3>Field by field <small>click any source value to use it, or type your own</small></h3>
-    <div class="tablewrap"><table class="cmp"><colgroup><col style="width:200px"><col style="width:190px"><col style="width:120px">${cols.map(() => '<col>').join('')}</colgroup><thead><tr><th>Field</th><th>Using</th><th>Your value</th>${cols.map(s => `<th>${esc(SRC[s].name)}${s === 'arch' ? '<br>' + (c.src.arch.length ? archSel : '<small class="muted">not in your database</small>') : s === 'cort' ? '<br>' + cortSel : s === 'mls' && !c.src.mls ? '<br><small class="muted">drop the MLS export</small>' : s === 'crs' ? (c.src.crs ? '' : '<br><small class="muted">no CRS PDF yet – public-record figures from the MLS show here</small>') : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="tablewrap"><table class="cmp"><colgroup><col style="width:200px"><col style="width:190px"><col style="width:120px">${cols.map(() => '<col>').join('')}</colgroup><thead><tr><th>Field</th><th class="using">Using</th><th>Your value</th>${cols.map(s => `<th>${esc(SRC[s].name)}${s === 'arch' ? '<br>' + (c.src.arch.length ? archSel : '<small class="muted">not in your database</small>') : s === 'cort' ? '<br>' + cortSel : s === 'mls' && !c.src.mls ? '<br><small class="muted">drop the MLS export</small>' : s === 'crs' ? (c.src.crs ? '' : '<br><small class="muted">no CRS PDF yet – public-record figures from the MLS show here</small>') : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
     <p><label><input type="checkbox" data-act="showall" ${app.showAll ? 'checked' : ''}> Show empty fields too</label></p>
     <h3>Prior sales and transfers</h3>
     ${prior.length ? `<table class="mini"><tr><th>Date</th><th class="r">Price</th><th>Type</th><th>Before this sale</th><th>From</th></tr>${prior.map(s => `<tr class="${s.monthsBefore > 0 && s.monthsBefore <= 12 ? 'hot' : ''}"><td>${esc(showDate(s.date))}</td><td class="r">${money(s.price)}</td><td>${esc(s.inst || s.type || '')}</td><td>${s.monthsBefore != null ? Math.round(s.monthsBefore) + ' mo' : ''}</td><td><small>${esc(s.src)}</small></td></tr>`).join('')}</table>` : '<p class="help">None found in the sources you have loaded.</p>'}
