@@ -272,7 +272,7 @@ button.wbtick:hover{border-color:#1e7a3c;background:#eef8f1}button.wbtick.on{bac
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0046';
+const BUILD='g2-1021-0050';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1200,8 +1200,13 @@ function offMlsSale(c) { const s = currentSale(c); if (!s || !/crs|cort/.test(s.
 
 /* the recorded document number of THIS sale (her ask Oct 20 2026) – the CRS sale or the CORT line whose date matches the sale (±2 months); CRS first */
 function docNoOf(c) { const cs = currentSale(c); if (!cs || !cs.date) return null; const near = d => d && Math.abs(monthsBetween(d, cs.date)) <= 2;
-  const L = c.src.crs && c.src.crs.lastSale; if (L && L.doc && near(L.recorded || L.date)) return { doc: L.doc, from: 'crs' };
-  const t = (c.src.cort || []).find(x => x.doc && near(x.saleDate)); if (t) return { doc: t.doc, from: 'cort' }; return null; }
+  const L = c.src.crs && c.src.crs.lastSale; if (L && L.doc && near(L.recorded || L.date)) return { doc: L.doc, from: 'crs', date: L.recorded || L.date };
+  const t = (c.src.cort || []).find(x => x.doc && near(x.saleDate)); if (t) return { doc: t.doc, from: 'cort', date: t.saleDate };
+  for (const a of (c.src.arch || [])) { const m = String((a.v || {}).verification || '').match(/#\s?(\d{3,7})\s+(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (m && near(isoDate(m[2]))) return { doc: m[1], from: 'arch', date: isoDate(m[2]) }; }   // her 2.6 verification line: "Doc. #06575 03/04/26"
+  return null; }
+/* her format (Oct 20 2026): the last 5 digits of the recording number, then the closing (recording) date – "Doc #06575 03/04/2026" */
+const docShort = d => { const m = String(d || '').match(/(\d+)\D*$/); if (!m) return String(d || ''); const n = m[1]; return n.length > 5 ? n.slice(-5) : n; };
+function docText(c) { const D = docNoOf(c); if (!D) return ''; const cs = currentSale(c); const dt = D.date || (cs && cs.date) || ''; return 'Doc #' + docShort(D.doc) + (dt ? ' ' + showDate(dt) : ''); }
 
 /* =====================================================================
    Exports: SFREP comps file (MISMO 3.6 / UAD, following Fannie Mae's
@@ -1385,7 +1390,7 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   const ds = (type, id) => { const l = `DATA_SOURCE_${type}SalesComp${n}`; const e = X(DSS, 'DATA_SOURCE', { 'xlink:label': l }); XV(e, 'DataSourceName', DS_NAME[type] || type); XV(e, 'DataSourceIdentifier', id); XV(e, 'DataSourceType', type); X(RELS, 'RELATIONSHIP', { 'xlink:arcrole': 'urn:fdc:mismo.org:2009:residential/DATA_SOURCE_IsDataSourceFor_PROPERTY', 'xlink:from': l, 'xlink:to': lab }).selfClose = true; };
   if (g('mls') && (c.src.mls || c.src.pdf || /MLS/i.test(g('verification') || ''))) ds('MLS', g('mls'));
   if (c.src.crs) ds('AssessorRecord', null);
-  { const DN = docNoOf(c); if (DN) ds('Deed', DN.doc); else if (c.src.cort.length) ds('Deed', c.src.cort[c.cortPick || 0].doc || null); }   // the recorded document number of the sale (CRS or CORT)
+  { const DN = docNoOf(c); if (DN) ds('Deed', '#' + docShort(DN.doc) + ' ' + (DN.date ? showDate(DN.date) : '')); else if (c.src.cort.length) ds('Deed', c.src.cort[c.cortPick || 0].doc || null); }   // the recorded document number of the sale (CRS or CORT)
   if (c.src.arch.length) ds('PreviousAppraisalFile', null);
 }
 /* A-1: DataSourceName is required (33 characters) */
@@ -1730,7 +1735,7 @@ function subjFacts0(J) {
 function compFacts(c, J) { return rcMemo('compFacts', c.id, () => compFacts0(c, J)); }
 function compFacts0(c, J) {
   const g = k => V(c, k); const px = proximity(c, J);
-  const DN = docNoOf(c); const F0 = { price: num(g('salePrice')), src: [g('mls') ? 'MLS ' + g('mls') : '', DN ? 'Doc # ' + DN.doc : '', !g('mls') && !DN ? (c.src.crs ? 'CRS Data' : c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : '') : ''].filter(Boolean).join(' · '), prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
+  const DN = docNoOf(c); const F0 = { price: num(g('salePrice')), src: [g('mls') ? 'MLS ' + g('mls') : '', DN ? docText(c) : '', !g('mls') && !DN ? (c.src.crs ? 'CRS Data' : c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : '') : ''].filter(Boolean).join(' · '), prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
     terms: termsText(g('financing')), xferTerms: g('saleType') && typeof PICK !== 'undefined' ? (/^Other:/.test(String(g('saleType'))) ? String(g('saleType')) : ((PICK.xferTerms.opts.find(o => o[0] === uadSaleType(g('saleType'))) || [])[1] || '')) : '', conc: num(g('concessions')), contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
     topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: num(g('cdom')), project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
