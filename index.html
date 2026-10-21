@@ -438,12 +438,16 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 .hmtile.primary { color: #fff !important; } .hmtile.primary small, .hmtile.primary b { color: #fff !important; }
 .hmtile.primary .hmicon { background: #fff !important; color: var(--look-navy) !important; }
 .btn.primary, button.primary { color: #fff !important; }
+/* the client's letter asks for … (Report details) */
+.cneeds { margin: 8px 0 10px; padding: 8px 12px; border: 2px solid var(--look-navy); border-radius: 10px; background: #f4f8fd; font-size: 15px; }
+.cneed { display: inline-block; margin: 3px 4px 0 0; padding: 2px 10px; border-radius: 999px; background: var(--look-pink); border: 1px solid var(--look-pink-b); font-weight: 600; }
+.cneed.warn { background: #ffecec; border-color: var(--look-warn); color: var(--look-warn); }
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-1708';
+const BUILD='g2-1021-1721';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -3070,6 +3074,17 @@ function precheckGrid(J) { if (!RC) return rcRun(() => precheckGrid(J));
     if (blank(String(R.reconNote || '').trim())) out.push({ sev: 'Must fix', msg: 'Reconciliation comment is blank (Report details › Value and reconciliation) – 3.6 requires it (Reconciliation of Market Value).' });
     if (sowLen(R) > 2500) out.push({ sev: 'Must fix', msg: `Additional scope of work is ${sowLen(R).toLocaleString()} characters – 3.6 allows 2,500 for the scope, extraordinary assumptions and hypothetical conditions together (Report details).` });
     if (R.sowAddlScope === 'true' && !sowAny(R)) out.push({ sev: 'Must fix', msg: 'Additional scope of work is Yes but its text is blank (Report details › Scope of work) – type your extraordinary assumptions, hypothetical conditions or added scope, or answer No.' });
+    { const N = typeof clientNeeds === 'function' ? clientNeeds(J) : []; const has = k => N.some(x => x.k === k);   /* the client's letter (her ask Oct 21 2026) */
+      const cost = R.sowCost === 'true' || (blank(R.sowCost) && F.sowCost === true), inc = R.sowIncome === 'true' || (blank(R.sowIncome) && F.sowIncome === true), rent = R.sowRent === 'true' || (blank(R.sowRent) && F.sowRent === true);
+      if (has('cost') && !cost) out.push({ sev: 'Must fix', msg: 'The client asks for the cost approach, but Cost approach developed is not Yes (Report details › Scope of work).' });
+      if ((has('rcn') || has('rcnEach')) && !cost) out.push({ sev: 'Check', msg: 'The client asks for replacement cost new, but the cost approach is not developed – give it in the cost approach, or answer their request in a comment.' });
+      if (has('noCost') && cost) out.push({ sev: 'Check', msg: 'The client says the cost approach is not required – you are developing it anyway (fine; or answer No in Report details › Scope of work).' });
+      if (has('rcnEach')) out.push({ sev: 'Check', msg: 'The client asks for replacement cost new of EACH building – show each building on its own cost line and say so in the cost comment.' });
+      if (has('acn')) out.push({ sev: 'Check', msg: 'The client asks for ACN (actual cash value) – state it in the cost approach comment (replacement cost new less depreciation).' });
+      if (has('rent') && !rent) out.push({ sev: 'Must fix', msg: 'The client asks for a rent survey / rent schedule, but Rent schedule included is not Yes (Report details › Scope of work).' });
+      if (has('ops') && !inc) out.push({ sev: 'Check', msg: 'The client asks for an operating income statement (216) – Income approach developed is not Yes (Report details › Scope of work).' });
+      const d = N.find(x => x.k === 'docs'); if (d) out.push({ sev: 'Check', msg: 'The client asks you to ' + d.t.replace(/^Review \/ comment on/, 'review and comment on') + ' – say so in the report.' });
+      const q = N.find(x => x.k === 'reqs'); if (q) out.push({ sev: 'Check', msg: q.t.replace(/^(\d+)/, '$1') + '.' }); }
     if (blank(rv(J, 'legal'))) out.push({ sev: 'Must fix', msg: 'Legal description is blank (Report details › Legal description) – 3.6 needs the text or an image of it; SFREP showed Text / Image red.' });
     if (blank(R.expLow) && blank(R.expHigh)) out.push({ sev: 'Check', msg: 'No reasonable exposure time entered (Report details › Value and reconciliation).' }); }
   const tot = used.map(c => compTotals(J, c)).filter(t => t.price); const adj = tot.map(t => t.adj);
@@ -3147,6 +3162,7 @@ function preGo(J, x) { const m = String(x.msg || ''); const byUse = n => usedCom
   if (/All rights included|Kind of rights|rights not appraised/i.test(m)) return { stage: 'final', text: 'All rights included', label: 'Report details' };
   if (/Prior services|listed for sale in the past year/i.test(m)) return { stage: 'final', text: 'Prior services and certifications', label: 'Report details' };
   if (/Scope of work/i.test(m)) return { stage: 'final', text: 'Scope of work', label: 'Report details' };
+  if (/^The client (asks|says)/i.test(m)) return { stage: 'final', text: 'Scope of work', label: 'Report details' };
   if (/Reconciliation comment is blank/i.test(m)) return { stage: 'final', text: 'Reconciliation comment', label: 'Report details' };
   if (/Additional scope of work is Yes/i.test(m)) return { stage: 'final', text: 'Additional scope of work – text', label: 'Report details' };
   if (/Legal description is blank/i.test(m)) return { stage: 'final', text: 'Legal description', label: 'Report details' };
@@ -3808,6 +3824,18 @@ const ORDER_ASSIGN = { uadPurchase: 'Purchase', uadRefi: 'Refinance', uadHeloc: 
 
 const R0 = J => { J.report = J.report || { hbu: {} }; J.report.hbu = J.report.hbu || {}; return J.report; };
 const orderOf = J => (app.orders || []).find(o => o.id === J.orderId) || null;
+/* what the client's engagement letter asks for (read in the hub: order.letterFields, order.reqs) – her ask Oct 21 2026 */
+function clientNeeds(J) { const o = orderOf(J); if (!o) return []; const F = o.letterFields || {}; const out = [];
+  if (F.noCost) out.push({ k: 'noCost', t: 'Cost approach not required' }); else if (F.cost) out.push({ k: 'cost', t: 'Cost approach required' });
+  if (F.rcnEach) out.push({ k: 'rcnEach', t: 'Replacement cost new (RCN) of each building' }); else if (F.rcn) out.push({ k: 'rcn', t: 'Replacement cost new / insurable value' });
+  if (F.acn) out.push({ k: 'acn', t: 'ACN (actual cash value)' });
+  if (F.rentWord || F.rent || o.rent) out.push({ k: 'rent', t: F.rentWord ? 'Rent survey' : 'Rent schedule (1007)' });
+  if (F.ops) out.push({ k: 'ops', t: 'Operating income statement (216)' });
+  if (F.mc) out.push({ k: 'mc', t: '1004MC market conditions' });
+  if (F.docReview && F.docReview.length) out.push({ k: 'docs', t: 'Review / comment on: ' + F.docReview.join(', ') });
+  const open = (o.reqs || []).filter(r => !r.done).length; if (open) out.push({ k: 'reqs', t: `${open} client requirement${open > 1 ? 's' : ''} not ticked yet (hub › Order › Client requirements)`, warn: true });
+  return out; }
+const clientNeedsHTML = J => { const L = clientNeeds(J); return L.length ? `<div class="cneeds"><b>The client's letter asks for:</b> ${L.map(x => `<span class="cneed${x.warn ? ' warn' : ''}">${esc(x.t)}</span>`).join(' ')}</div>` : ''; };
 function zoneTable() { if (!app.zoneDesc) { app.zoneDesc = {}; DB.get('kv', 'zoneDesc').then(r => { app.zoneDesc = (r && r.v) || {}; const c = $('#reportCard'); if (c && app.job) c.innerHTML = reportHTML(app.job); }); } return app.zoneDesc; }
 
 /* what the order, the inspection and the CRS already say (shown grey until she types her own) */
@@ -3860,6 +3888,7 @@ function reportHTML(J) {
   return `<h2>Report details <small>– yours to fill in before you export</small></h2>
   <div class="rptneed ${need.length ? 'warn' : 'done'}">${need.length ? `<b>${need.length} answer${need.length > 1 ? 's' : ''} still needed here:</b><ul>${need.map(x => `<li>${esc(x.msg.replace(/\s*\(Report details[^)]*\)\.?/, '').replace(/ – it is the value on page 1 of the report\./, ' – the value on page 1 of the report.'))}</li>`).join('')}</ul>` : '<b>✓ Everything the report needs here is answered.</b>'}
     <span class="rptkey"><span class="k own">your entry</span> <span class="k sug">suggested – type over it or leave it</span></span></div>
+  ${clientNeedsHTML(J)}
   <p class="help">${F.hasOrder ? 'Grey entries come from the order in the Appraisal Assistant, your inspection or the CRS report. Type over any of them.' : 'This assignment is not linked to an order, so nothing is filled from the Appraisal Assistant. Open it from the order (Comp genie button on the order page) to fill the assignment, client and market.'}</p>
   <div class="rptgrid">
     <section><h3>Assignment</h3>
@@ -4113,7 +4142,9 @@ function costDraft(J) {
 }
 function costHTML(J) {
   const o = typeof orderOf === 'function' ? orderOf(J) : null; const want = (R0(J) || {}).sowCost; const on = J.costOn ?? (want === 'true' || (o && o.apCost));
-  if (!on) return `<div class="row"><h2 style="margin:0">Cost approach</h2><span class="grow"></span><button class="btn sm" data-cost="on">Develop the cost approach</button></div><p class="help">Not developed for this assignment (the order says ${o && o.apCost ? 'it is' : 'it is not'} needed).</p>`;
+  const CN = typeof clientNeeds === 'function' ? clientNeeds(J).filter(x => ['noCost', 'cost', 'rcnEach', 'rcn', 'acn'].includes(x.k)) : [];   // the client's letter (her ask Oct 21 2026)
+  const cnHTML = CN.length ? `<div class="cneeds"><b>The client's letter:</b> ${CN.map(x => `<span class="cneed">${esc(x.t)}</span>`).join(' ')}${CN.some(x => x.k === 'rcnEach') ? ' – put each building on its own cost line.' : ''}${CN.some(x => x.k === 'acn') ? ' – state the ACN (cost new less depreciation) in the comment.' : ''}</div>` : '';
+  if (!on) return `<div class="row"><h2 style="margin:0">Cost approach</h2><span class="grow"></span><button class="btn sm" data-cost="on">Develop the cost approach</button></div>${cnHTML}<p class="help">Not developed for this assignment (the order says ${o && o.apCost ? 'it is' : 'it is not'} needed).</p>`;
   const K = costJob(J), X = costCalc(J), M = costMedians(J); const LD = landJob(J);
   const nf = v => blank(v) || v === '' ? '' : Math.round(+v).toLocaleString();
   const rows = K.lines.map(l => `<tr><td><select data-cl="${l.id}|t">${COST_AREA.map(([k, n]) => `<option value="${k}" ${l.t === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select><input class="txt sm" data-cl="${l.id}|label" value="${esc(l.label || '')}" style="width:16em"></td>
@@ -4123,7 +4154,7 @@ function costHTML(J) {
     <td class="r">${!blank(l.cost) ? `<input class="txt xs num" data-cl="${l.id}|cost" value="${nf(l.cost)}" inputmode="numeric" style="width:8em" title="Your total – it replaces sq ft × $/sf; clear it to use them"><br><small class="muted">your total</small>` : X.lineCost({ ...l, cost: null }) ? `<b>${money(X.lineCost({ ...l, cost: null }))}</b><br><input class="txt xs num" data-cl="${l.id}|cost" value="" inputmode="numeric" style="width:8em" placeholder="or type a total $">` : `<input class="txt xs num" data-cl="${l.id}|cost" value="" inputmode="numeric" style="width:8em" placeholder="or type a total $">`}</td><td><label class="check"><input type="checkbox" data-cl="${l.id}|dw" ${l.dw ? 'checked' : ''}> dwelling</label></td><td><button class="btn xs" data-cldel="${l.id}">✕</button></td></tr>`).join('');
   const srow = K.site.map(s => `<tr><td><input class="txt sm" data-cs="${s.id}|desc" value="${esc(s.desc || '')}" style="width:22em" maxlength="96"></td><td class="r"><input class="txt xs num" data-cs="${s.id}|amt" value="${nf(s.amt)}" inputmode="numeric" style="width:8em"></td><td><button class="btn xs" data-csdel="${s.id}">✕</button></td></tr>`).join('');
   const cm = K.comment != null ? K.comment : costDraft(J);
-  return `<div class="row"><h2 style="margin:0">Cost approach <small>UAD 3.6 Cost Approach · your rates, ages and amounts</small></h2><span class="grow"></span><button class="btn sm ghost" data-cost="off">Not developed</button></div>
+  return `<div class="row"><h2 style="margin:0">Cost approach <small>UAD 3.6 Cost Approach · your rates, ages and amounts</small></h2><span class="grow"></span><button class="btn sm ghost" data-cost="off">Not developed</button></div>${cnHTML}
     <div class="row"><label>Cost <select data-ck="type">${['Replacement', 'Reproduction'].map(v => `<option ${K.type === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
       <label>Method <select data-ck="method">${[['ComparativeUnit', 'Comparative unit ($/sq ft)'], ['UnitInPlace', 'Unit in place'], ['QuantitySurvey', 'Quantity survey'], ['Other', 'Other']].map(([v, n]) => `<option value="${v}" ${K.method === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <span class="help">${M.n ? `Your budgets: median building direct ${money(M.bd)}/sf · existing-site basis ${money(M.ex)}/sf · garage ${money(M.gar)}/sf (${M.n} new-construction projects in your filters on the Construction costs tab above – area and quality – CCCI-indexed).` : app.costDb ? 'None of your new-construction budgets is in your filters (Construction costs tab above) – widen them, or type your own $/sf.' : 'Drop your Construction_Cost_Database.xlsx to see your medians.'} BOE check: the Construction costs tab above.</span></div>
