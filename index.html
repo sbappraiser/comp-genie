@@ -316,7 +316,7 @@ table.grid thead th .ghsale{display:block;font-size:12.5px;font-weight:600;color
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0537';
+const BUILD='g2-1021-0542';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1553,8 +1553,8 @@ const ADJ_ROWS = [
   ['mhWidth', 'Manufactured home width', 'Dwelling', 'ManufacturedHomeWidth'],
   ['backToBack', 'Rowhouse / townhouse back-to-back', 'Dwelling', 'RowhouseTownhouseBackToBack'],
   ['rowLoc', 'Rowhouse / townhouse location', 'Dwelling', 'RowhouseTownhouseLocation'],
-  ['q', 'Overall quality', 'Dwelling', 'OverallQualityRating', ['qStep', 'qPct']],
-  ['c', 'Overall condition', 'Dwelling', 'OverallConditionRating', ['cStep', 'cPct']],
+  ['q', 'Overall quality', 'Dwelling', 'OverallQualityRating', ['qTier', 'qStep', 'qPct']],
+  ['c', 'Overall condition', 'Dwelling', 'OverallConditionRating', ['cTier', 'cStep', 'cPct']],
   ['func', 'Functional utility (functional issues)', 'Dwelling', 'FunctionalIssues'],
   ['porch', 'Porch / patio / deck', 'Amenities', 'OutdoorLivingAmenity'],
   ['pool', 'Water features (pool / spa / pond / lake)', 'Amenities', 'WaterFeaturesAmenity', ['pool', 'spa', 'pond', 'lake']],
@@ -1614,6 +1614,8 @@ function vtSel(who, J, text) { const I = vtInfo(J, who, text); const lab = t => 
 const aduNums = F => { if (F.aduSf !== undefined && F.aduSf !== null && F.aduSf !== '') return { sf: +F.aduSf || 0, baths: +F.aduBaths || 0 };
   const t = String(F.adu || ''); if (!t.trim() || /^(no|none)$/i.test(t.trim())) return { sf: 0, baths: 0 };
   const sf = t.match(/([\d,]{2,})\s*(?:sf|sq|square)/i), ba = t.match(/(\d+(?:\.\d)?)\s*(?:full\s*)?ba/i); return { sf: sf ? +sf[1].replace(/,/g, '') : null, baths: ba ? +ba[1] : 0 }; };
+RATES.qTier = ['$ per quality tier', 'one tier = low → mid → high, high Q4 → low Q3 (3 tiers to a whole rating); when set, the step and % boxes are not used'];
+RATES.cTier = ['$ per condition tier', 'one tier = low → mid → high, high C3 → low C2 (3 tiers to a whole rating); when set, the step and % boxes are not used'];
 RATES.solar = ['$ solar (owned)', 'owned solar: has / has not – leased or PPA solar counts as none'];
 RATES.halfBath = ['$ per half bath', 'half-bath difference × rate (blank = half the full-bath rate)'];
 
@@ -1861,6 +1863,8 @@ function rateAmount(row, S, C, J) {
   const R = G0(J).rates; const key = row[4];
   if (Array.isArray(key)) { let tot = 0, any = false; key.forEach(k => { const r = num(R[k]); if (!r) return; let x = null;
       if (['pool', 'spa', 'pond', 'lake', 'tennis', 'sport'].includes(k)) { const a = hasFeat(S, k), b = hasFeat(C, k); if (a !== null && b !== null) x = (a - b) * r; }
+      else if (k === 'qTier' || k === 'cTier') { const f = k[0]; const a = ratingPos(S[f], fineOf(J, 'subj', f)), b = ratingPos(C[f], fineOf(J, C._id, f)); if (a !== null && b !== null) x = Math.round((a - b) * 3) * r; }   // her way (Oct 20 2026): $ per tier
+      else if ((k === 'qStep' || k === 'qPct' || k === 'cStep' || k === 'cPct') && num(R[k[0] + 'Tier'])) {}   // a tier rate is set for this line – it is used instead
       else if (k === 'qStep' || k === 'qPct' || k === 'cStep' || k === 'cPct') { const f = k[0]; const a = ratingPos(S[f], fineOf(J, 'subj', f)), b = ratingPos(C[f], fineOf(J, C._id, f)); if (a !== null && b !== null) x = (a - b) * (k.endsWith('Pct') ? r / 100 * (C.price || 0) : r); }
       else if (k === 'viewStep' || k === 'viewPct') { const a = vtOf(J, 'subj', S.view), b = vtOf(J, C._id, C.view); if (a !== null && b !== null) x = (a - b) * (k === 'viewPct' ? r / 100 * (C.price || 0) : r); }
       else if (k === 'landStep') { const a = goodness('land', S), b = goodness('land', C); if (a !== null && b !== null) x = (a - b) * r; }
@@ -2574,7 +2578,7 @@ function timeHTML(J) {
    never move.  It is a suggestion beside her rate – she decides.
    ===================================================================== */
 const SENS_LABEL = { gla: 'Living area', usableAc: 'Usable lot area', bed: 'Bedrooms', bath: 'Full baths', halfBath: 'Half baths', space: 'Garage spaces', timePct: 'Sale date (time)',
-  pool: 'Pool', spa: 'Spa', pond: 'Pond', lake: 'Lake', tennis: 'Tennis court', sport: 'Sport court', qStep: 'Quality', qPct: 'Quality', cStep: 'Condition', cPct: 'Condition',
+  pool: 'Pool', spa: 'Spa', pond: 'Pond', lake: 'Lake', tennis: 'Tennis court', sport: 'Sport court', qTier: 'Quality (per tier)', cTier: 'Condition (per tier)', qStep: 'Quality', qPct: 'Quality', cStep: 'Condition', cPct: 'Condition',
   viewStep: 'View', viewPct: 'View', landStep: 'Landscaping', aduSf: 'ADU / guest sq ft', aduBath: 'ADU / guest baths', solar: 'Solar (owned)' };
 const PCT_KEYS = ['timePct', 'qPct', 'cPct', 'viewPct'];
 const rowsWith = k => adjRows(app.job).filter(r => r[3] && rowShown(r, app.job) && (k === 'halfBath' ? r[4] === 'bath' : [].concat(r[4] || []).includes(k)));
@@ -2585,14 +2589,14 @@ const medOf = a => { const s = [...a].sort((x, y) => x - y); const n = s.length;
 function sensKeys(J) {   // which rate to test on each line: the one she uses, else the $ one
   const R = G0(J).rates; const set = k => !blank(R[k]);
   const pick = (a, b) => set(b) && !set(a) ? b : a;
-  const ks = ['timePct', pick('viewStep', 'viewPct'), 'usableAc', 'landStep', 'bed', 'bath', 'gla', pick('qStep', 'qPct'), pick('cStep', 'cPct'), 'pool', 'spa', 'pond', 'lake', 'tennis', 'sport', 'aduSf', 'aduBath', 'space', 'solar'];
+  const ks = ['timePct', pick('viewStep', 'viewPct'), 'usableAc', 'landStep', 'bed', 'bath', 'gla', (set('qTier') ? 'qTier' : pick('qStep', 'qPct')), (set('cTier') ? 'cTier' : pick('cStep', 'cPct')), 'pool', 'spa', 'pond', 'lake', 'tennis', 'sport', 'aduSf', 'aduBath', 'space', 'solar'];
   if (set('bath')) ks.splice(ks.indexOf('bath') + 1, 0, 'halfBath');
   return ks;
 }
 function sensRange(k, J, P, ppsf) {
   const cur = num(G0(J).rates[k]);
   let lo = 0, hi = { gla: Math.max(ppsf || 0, 500), usableAc: 4000000, bed: 500000, bath: 250000, halfBath: 125000, space: 150000, pool: 400000, spa: 150000, pond: 200000, lake: 400000,
-    tennis: 400000, sport: 200000, aduSf: 1000, aduBath: 100000, solar: 100000, qStep: 0.15 * P, cStep: 0.15 * P, viewStep: 0.15 * P, landStep: 0.05 * P, qPct: 15, cPct: 15, viewPct: 15, timePct: 2 }[k];
+    tennis: 400000, sport: 200000, aduSf: 1000, aduBath: 100000, solar: 100000, qTier: 0.05 * P, cTier: 0.05 * P, qStep: 0.15 * P, cStep: 0.15 * P, viewStep: 0.15 * P, landStep: 0.05 * P, qPct: 15, cPct: 15, viewPct: 15, timePct: 2 }[k];
   if (k === 'timePct') lo = -2;
   if (cur && Math.abs(cur) * 1.5 > hi) hi = Math.abs(cur) * 2;
   const step = PCT_KEYS.includes(k) ? (k === 'timePct' ? 0.05 : niceStep(hi / 40)) : Math.max(500, niceStep(hi / 40));
