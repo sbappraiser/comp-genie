@@ -300,7 +300,7 @@ body.classic table.grid thead th{background-image:linear-gradient(#4a5866,#4a586
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0324';
+const BUILD='g2-1021-0326';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1115,6 +1115,7 @@ function val(c, k) { return rcMemo('val', c.id + '|' + k, () => val0(c, k)); }
 function val0(c, k) { // → { v, src, auto }
   const f = FIELD[k] || { k, t: 'text', kind: 'id' };
   if (c.edit && k in c.edit && !blank(c.edit[k])) return { v: c.edit[k], src: 'edit' };
+  if (c.zapK && c.zapK[k]) return { v: '', src: 'zap' };   // emptied with Ctrl+Z
   const S = srcVals(c);
   if (c.pick && c.pick[k] && S[c.pick[k]] && !blank(S[c.pick[k]][k])) return { v: S[c.pick[k]][k], src: c.pick[k] };
   let codeOnly = null;
@@ -1771,7 +1772,9 @@ function subjFacts0(J) {
   f._own = landOwned(J, f); if (blank(f.landCommon)) f.landCommon = f._own ? 'No' : 'Yes';
   return f;
 }
-function compFacts(c, J) { return rcMemo('compFacts', c.id, () => compFacts0(c, J)); }
+function compFacts(c, J) { return rcMemo('compFacts', c.id, () => zapFacts(c, compFacts0(c, J))); }
+/* lines she emptied with Ctrl+Z (c.zap = {lineId: true}) stay empty even when a source has a value – until she types one */
+function zapFacts(c, F) { if (!c.zap) return F; for (const id in c.zap) { if (id === 'baths') { F.full = null; F.half = null; } F[id] = id === 'beds' ? null : ''; } return F; }
 function compFacts0(c, J) {
   const g = k => V(c, k); const px = proximity(c, J);
   const DN = docNoOf(c); const F0 = { price: num(g('salePrice')), src: [g('mls') ? 'MLS ' + g('mls') : '', DN ? docText(c) : '', !g('mls') && !DN ? (c.src.crs ? 'CRS Data' : c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : '') : ''].filter(Boolean).join(' · '), prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
@@ -2850,7 +2853,8 @@ const WB_EDIT = { price: 'salePrice', sale: 'saleDate', contract: 'contractDate'
 /* write a typed (or copied) entry into the comp – her own values, kept apart from the sources like any edit */
 function wbFactSet(J, c, id, text) {
   const E = c.edit = c.edit || {}; const t = String(text || '').trim(); const n = s => num(String(s).replace(/[$,\s]/g, ''));
-  const put = (k, v) => { if (blank(v) || v === '') delete E[k]; else E[k] = v; };
+  const put = (k, v) => { if (blank(v) || v === '') { delete E[k]; if (WB_ZAP) { c.zapK = c.zapK || {}; c.zapK[k] = true; } } else { E[k] = v; if (c.zapK) { delete c.zapK[k]; if (!Object.keys(c.zapK).length) delete c.zapK; } } };
+  if (!WB_ZAP && t !== '' && c.zap) { delete c.zap[id]; if (!Object.keys(c.zap).length) delete c.zap; }
   switch (id) {
     case 'usable': put('usableSf', t === '' ? null : Math.round((n(t.replace(/ac(res?)?$/i, '')) || 0) * 43560)); return;
     case 'beds': put('beds', t === '' ? null : n(t)); put('bgBeds', t === '' ? null : 0); return;
@@ -2926,7 +2930,7 @@ function popHTML(J) {
 /* where the cursor is: the comp of the focused cell, or the last one she was in */
 const wbCellComp = el => { const d = el && el.closest && el.closest('[data-gadj],[data-gfact],[data-gfine]'); if (!d) return null; const v = d.dataset.gadj || d.dataset.gfact || d.dataset.gfine; return v.split('|')[0]; };
 document.addEventListener('focusin', e => { const c = wbCellComp(e.target); if (c && c !== 'subj') WB.cur = c; });
-let WB_EQ = null;
+let WB_EQ = null, WB_ZAP = false;
 document.addEventListener('keydown', async e => {
   const t = e.target; const inBox = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
   const cell = t && t.dataset && (t.dataset.gadj || t.dataset.gfact);
@@ -2945,7 +2949,13 @@ document.addEventListener('keydown', async e => {
   }
   /* her keys inside a grid box (Oct 20 2026): Ctrl+Z empties the box (type the new entry; leave it empty and the source value comes back);
      "=" copies the subject at once – a number typed right after it (=2) copies that comp instead */
-  if (cell && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); t.value = ''; WB_EQ = null; return; }
+  if (cell && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); WB_EQ = null;
+    if (t.dataset.gfact) { const [cid, row] = t.dataset.gfact.split('|'); const c = app.job.comps.find(x => x.id === cid); if (!c) return;
+      if (c.zap && c.zap[row] && t.value === '') { wbUnzap(c, row); toast('Back to your sources'); }   // Ctrl+Z again on an emptied box: the sources come back
+      else { WB_ZAP = true; try { wbFactSet(app.job, c, row, ''); } finally { WB_ZAP = false; } c.zap = c.zap || {}; c.zap[row] = true; if (c.edit) delete c.edit['pk_' + row];
+        toast('Emptied – type the new entry (Ctrl+Z again brings back your sources)'); }
+      t.value = ''; t.defaultValue = ''; save(); renderKeepFocus(); return; }
+    t.value = ''; t.dispatchEvent(new Event('change', { bubbles: true })); return; }
   if (cell && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === '=') {   // anywhere in the box, even with text in it
 
     e.preventDefault(); t.value = '='; WB_EQ = { cell, at: Date.now() }; t.dispatchEvent(new Event('change', { bubbles: true })); return; }
@@ -2956,6 +2966,11 @@ document.addEventListener('keydown', async e => {
   if (e.ctrlKey && e.shiftKey && /^Digit[1-9]$/.test(e.code) && WB.cur) { e.preventDefault(); const n = +e.code.slice(5); if (wbSwap(app.job, WB.cur, n)) { save(); renderKeepFocus(); toast(`Swapped with comp ${n}`); } return; }
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !inBox && WB.on && WB.cur && document.querySelector('#gridCard')) { e.preventDefault(); await wbRemove(app.job, WB.cur); return; }
 });
+
+/* undo a Ctrl+Z empty: forget that line's emptied keys (found by a dry run on a blank copy) so the sources show again */
+function wbUnzap(c, row) { if (c.zap) { delete c.zap[row]; if (!Object.keys(c.zap).length) delete c.zap; }
+  const probe = { id: c.id, edit: {} }; WB_ZAP = true; try { wbFactSet(app.job, probe, row, ''); } finally { WB_ZAP = false; }
+  for (const k in (probe.zapK || {})) if (c.zapK) delete c.zapK[k]; if (c.zapK && !Object.keys(c.zapK).length) delete c.zapK; }
 
 /* =====================================================================
    "My comments" picker (Oct 2026): her comment library from the hub (kv 'cmt:lib' in the
@@ -5182,6 +5197,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.cortpick) { const c = app.job.comps.find(x => x.id === t.dataset.cortpick); c.cortPick = +t.value; save(); render(); return; }
   if (t.dataset.edit && 'echo' in t.dataset && String(t.value).trim() === String(t.dataset.echo).trim()) return;   // unchanged copy of the value in use – not her own
   if (t.dataset.edit) { const c = app.job.comps.find(x => x.id === app.sel); let f = FIELD[t.dataset.edit];
+    if (c && String(t.value).trim()) { const k = t.dataset.edit; if (c.zapK) { delete c.zapK[k]; if (!Object.keys(c.zapK).length) delete c.zapK; } if (c.zap) { for (const r in c.zap) if (r === k || WB_EDIT[r] === k) delete c.zap[r]; if (!Object.keys(c.zap).length) delete c.zap; } }   // typed on the comp page: no longer emptied
     if (f.k === 'mlsCondition' && /^\s*(?:(?:low|mid|high)\s+)?c\s*[1-6]\s*[+-]?\s*$/i.test(t.value)) { f = FIELD.condition; toast('A C rating goes in the Condition line (the one the grid uses) – moved it there', 6000); }   // she typed C3- in the MLS words line
     { const m = String(t.value || '').trim().toUpperCase().match(/^(?:(LOW|MID|HIGH)\s+)?([QC])\s*([1-6])\s*([+-])?$/); if (m && ['quality', 'condition'].includes(f.k) && (m[1] || m[4])) {   // "C3-" / "High Q3": UAD takes the whole rating; the tier goes to the grid
       const tier = m[1] ? m[1].toLowerCase() : m[4] === '-' ? 'low' : 'high'; const G = G0(app.job); G.fine = G.fine || {}; G.fine[c.id] = G.fine[c.id] || {}; G.fine[c.id][m[2].toLowerCase()] = tier; t.value = m[2] + m[3];
