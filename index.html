@@ -333,12 +333,17 @@ table.grid tbody td input.adj,table.grid tbody td input.adj::placeholder{font-si
 table.grid tbody td input.adj:placeholder-shown{font-weight:400!important}table.grid tbody td input.adj:placeholder-shown::placeholder{font-weight:800!important}
 table.grid tbody td input.adj[placeholder="$ adj"]::placeholder{font-size:13px!important;font-weight:400!important;color:#8a96a3!important}
 table.grid tbody td.dsc,table.grid tbody td{font-size:14.5px}
+/* her ask (Oct 20 2026): rate boxes two across, short names */
+table.grid th .grates{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;margin-top:5px}
+table.grid th .grates .grate{margin:0}table.grid th .grates .grate label{display:flex;flex-direction:column;gap:1px;font-size:11px;line-height:1.15;color:#3d4a57;font-weight:500}
+table.grid th .grates .grate input{width:100%;min-width:0;box-sizing:border-box;font-size:13px;padding:2px 4px}
+table.grid th .grates i.fromdot{color:#0b7a5a;font-style:normal;font-size:9px;margin-left:3px;vertical-align:1px}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0613';
+const BUILD='g2-1021-0615';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1965,7 +1970,8 @@ function gridHTML(J) {
       if (SBS) return `<td class="dsc" data-cc="${c.id}">${shown}</td><td class="adjc${a.v ? ' hasadj' : ''}" data-cc="${c.id}">${inp}</td>`;
       return `<td class="${a.v ? 'hasadj' : ''}" data-cc="${c.id}"><div class="gval">${shown}</div><input class="txt sm adj ${a.own ? 'own' : a.v !== null ? 'auto' : ''}" data-gadj="${c.id}|${id}" value="${a.own ? (a.v > 0 ? '+' : a.v < 0 ? '-' : '') + Math.abs(a.v).toLocaleString() : ''}" placeholder="${a.v !== null && !a.own ? (a.v >= 0 ? '+' : '') + a.v.toLocaleString() : '$ adj'}" inputmode="decimal" title="${a.own ? 'Your amount – clear it to use the rate' : a.v !== null ? 'From your rate – type to override' : 'Type the adjustment'}"></td>`; }).join('');
     const bedAsk = id === 'beds' && blank(G.rates.bed) ? used.filter(c => { const C = compFacts(c, J); const a = capBeds(S.beds), b = capBeds(C.beds); return a !== null && b !== null && a !== b && blank((G.cells[c.id] || {}).beds); }) : [];
-    const rk = row[4]; const rate = rk ? [].concat(rk === 'bath' ? ['bath', 'halfBath'] : rk).map(k => `<div class="grate"><label title="${esc(RATES[k][1])}">${esc(RATES[k][0])} <input class="txt xs" data-grate="${k}" value="${esc(blank(G.rates[k]) ? '' : G.rates[k])}" inputmode="decimal"></label>${G.rateFrom && G.rateFrom[k] && !blank(G.rates[k]) ? `<small class="from">${/ · /.test(G.rateFrom[k]) ? `from your starting points (${esc(G.rateFrom[k])})` : 'from ' + esc(G.rateFrom[k])}</small>` : ''}</div>`).join('') : '';
+    const rk = row[4]; const rate = rk ? '<div class="grates">' + [].concat(rk === 'bath' ? ['bath', 'halfBath'] : rk).map(k => { const fr = G.rateFrom && G.rateFrom[k] && !blank(G.rates[k]) ? (/ · /.test(G.rateFrom[k]) ? `From your starting points (${G.rateFrom[k]})` : 'From ' + G.rateFrom[k]) : '';
+      return `<div class="grate"><label title="${esc(RATES[k][0] + ' – ' + RATES[k][1] + (fr ? '\n' + fr : ''))}"><span>${esc(rateShort(RATES[k][0]))}${fr ? '<i class="fromdot">●</i>' : ''}</span><input class="txt xs" data-grate="${k}" value="${esc(blank(G.rates[k]) ? '' : G.rates[k])}" inputmode="decimal"></label></div>`; }).join('') + '</div>' : '';
     const ask = bedAsk.length ? `<div class="bedask">${bedAsk.map(c => `Comp ${c.use} has ${compFacts(c, J).beds} bedroom${compFacts(c, J).beds === 1 ? '' : 's'}`).join(', ')} – what bedroom adjustment do you want? Type it per bedroom above, or in the comp's box.</div>` : '';
     return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${GUIDE[id] || PICK[id] ? `<button type="button" class="ginfo" data-ginfo="${id}" title="UAD 3.6 guidance for this line">i</button>` : ''}${type && type !== 'OTHER' && !GRID_INFO[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP: ${esc(type)}">${esc(LINE_EG[id] || type)}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] ? `<br><small class="muted">${esc(GRID_INFO[id])}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
   }).join('');
@@ -2069,6 +2075,8 @@ function otherDesc(r, F) {
 
 /* ---------------- review: direction, math, consistency, missing, bracketing, limits (Oct 2026) ----------------
    Every flag can be marked OK with her reason; nothing is changed for her. */
+/* her ask (Oct 20 2026): short rate names side by side; the full name and where the rate came from are in the hover text */
+function rateShort(l) { return String(l).replace(/^\$ per /, '$/').replace(/^% of price per /, '%/').replace(/^% per month/, '%/month').replace('ADU / guest ', 'ADU ').replace('usable acre', 'usable ac').replace(/half bath/, '½ bath').replace('landscaping step', 'step').replace('condition step', 'C step').replace('quality step', 'Q step').replace(/^\$ /, '$ '); }
 /* her landscaping rating (Oct 20 2026): a drop-down of her 2.6 scale; it goes to SFREP in her "Landscaping" Add Other line */
 const LAND_NAMES = ['Minimal', 'Fair', 'Avg-Fair', 'Average', 'Avg-Good', 'Good', 'Very Good', 'Excellent'];
 function landSel(who, cur) { const g = goodness('land', { land: cur }); const v = g === null ? '' : (LAND_SCALE[g] === 'none' ? 'None' : LAND_NAMES[g - 1]);
