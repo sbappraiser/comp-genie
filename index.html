@@ -297,7 +297,7 @@ table.grid thead th:nth-child(2){z-index:4}table.grid tr.tot td:nth-child(2){bac
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0127';
+const BUILD='g2-1021-0137';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1224,7 +1224,9 @@ function remodelAfter(c, priorDate) {
 function offMlsSale(c) { const s = currentSale(c); if (!s || !/crs|cort/.test(s.from || '')) return false; return ![c.src.mls, c.src.pdf].some(o => o && (o.saleDate || o.contractDate || /Pending|Active/i.test(o.status || ''))); }
 
 /* the recorded document number of THIS sale (her ask Oct 20 2026) – the CRS sale or the CORT line whose date matches the sale (±2 months); CRS first */
-function docNoOf(c) { const cs = currentSale(c); if (!cs || !cs.date) return null; const near = d => d && Math.abs(monthsBetween(d, cs.date)) <= 2;
+function docNoOf(c) {
+  { const m = String((c.edit || {}).verification || '').match(/(?:doc\.?\s*(?:no\.?|#)?|#)\s?(\d{3,12})(?:\s+(\d{1,2}\/\d{1,2}\/\d{2,4}))?/i); if (m) return { doc: m[1], from: 'you', date: m[2] ? isoDate(m[2]) : '' }; }   // she typed it in Your verification notes: hers wins
+  const cs = currentSale(c); if (!cs || !cs.date) return null; const near = d => d && Math.abs(monthsBetween(d, cs.date)) <= 2;
   const L = c.src.crs && c.src.crs.lastSale; if (L && L.doc && near(L.recorded || L.date)) return { doc: L.doc, from: 'crs', date: L.recorded || L.date };
   const t = (c.src.cort || []).find(x => x.doc && near(x.saleDate)); if (t) return { doc: t.doc, from: 'cort', date: t.saleDate };
   for (const a of (c.src.arch || [])) { const m = String((a.v || {}).verification || '').match(/#\s?(\d{3,7})\s+(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (m && near(isoDate(m[2]))) return { doc: m[1], from: 'arch', date: isoDate(m[2]) }; }   // her 2.6 verification line: "Doc. #06575 03/04/26"
@@ -1543,6 +1545,15 @@ const ADJ_ROWS = [
   ['garage', 'Vehicle storage – garage spaces', 'Amenities', 'VehicleStorage', 'space'],
   ['carport', 'Vehicle storage – carport spaces', 'Amenities', 'VehicleStorage', 'cpSpace'],
 ];
+/* her line order (Oct 20 2026): Usable Lot Area/Utility right under Site size; Dwelling in her order, with vehicle storage and
+   whole home amenities moved up into Dwelling; then the rest as before. Order on the grid only – SFREP places each 3.6 line by its type. */
+(function herOrder() {
+  const by = id => ADJ_ROWS.find(r => r[0] === id), take = id => { const i = ADJ_ROWS.findIndex(r => r[0] === id); return i < 0 ? null : ADJ_ROWS.splice(i, 1)[0]; };
+  const u = take('usable'); if (u) ADJ_ROWS.splice(ADJ_ROWS.findIndex(r => r[0] === 'site') + 1, 0, u);
+  const DW = ['style', 'attach', 'levels', 'q', 'c', 'beds', 'baths', 'gla', 'bsmt', 'agUnf', 'bsmtUnf', 'nonCont', 'nsAbove', 'nsBelow', 'func', 'garage', 'carport', 'wholeHome'];
+  const at = ADJ_ROWS.findIndex(r => r[2] === 'Dwelling'); const head = DW.map(take).filter(Boolean); head.forEach(r => { r[2] = 'Dwelling'; });
+  ADJ_ROWS.splice(at, 0, ...head); void by;
+})();
 const LOT_UTILITY = 'Usable Lot Area/Utility';      // her exact SFREP template "Add Other" row name (must match letter for letter)
 const RATES = { gla: ['$ per sq ft', 'subject − comp sq ft × rate'], agUnf: ['$ per sq ft', 'subject − comp unfinished above-grade sq ft × rate'], nsAbove: ['$ per sq ft', 'subject − comp non-standard above-grade sq ft × rate'], nsBelow: ['$ per sq ft', 'subject − comp non-standard below-grade sq ft × rate'], nonCont: ['$ per sq ft', 'subject − comp non-continuous sq ft × rate'], usableAc: ['$ per usable acre', 'subject − comp usable acres × rate'], bed: ['$ per bedroom', 'bedroom difference × rate'],
   bath: ['$ per full bath', 'full-bath difference × rate (half baths at half the rate)'], space: ['$ per garage space', 'space difference × rate'], timePct: ['% per month', 'months from sale to effective date × % × price'],
@@ -2823,7 +2834,7 @@ function wbPagerText() {
   if (pb) pb.disabled = w.scrollLeft < 4; if (nb) nb.disabled = w.scrollLeft + w.clientWidth >= w.scrollWidth - 4;
   if (!w.dataset.pg) { w.dataset.pg = 1; w.addEventListener('scroll', () => wbPagerText(), { passive: true }); }
 }
-const WB_ROWS = row => !wbLean() || row[3] || ['price', 'prox'].includes(row[0]) || !!GRID_INFO[row[0]] || row[0] === 'structure';   /* her listing lines and HOA facts show in Workbook view too */
+const WB_ROWS = row => !wbLean() || row[3] || ['price', 'prox', 'src'].includes(row[0]) || !!GRID_INFO[row[0]] || row[0] === 'structure';   /* her listing lines and HOA facts show in Workbook view too */
 const WB_NOEDIT = ['ppsf', 'src', 'prox', 'overList'];
 /* a line's entry as text, for the subject or a comp (what "=" / "=2" copies) */
 function wbFactText(id, F) {
