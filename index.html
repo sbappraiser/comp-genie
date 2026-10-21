@@ -300,7 +300,7 @@ body.classic table.grid thead th{background-image:linear-gradient(#4a5866,#4a586
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0353';
+const BUILD='g2-1021-0359';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1796,7 +1796,7 @@ function compFacts0(c, J) {
   const DN = docNoOf(c); const F0 = { price: num(g('salePrice')), src: [g('mls') ? 'MLS ' + g('mls') : '', DN ? docText(c, true) : '', !g('mls') && !DN ? (c.src.crs ? 'CRS Data' : c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : '') : ''].filter(Boolean).join('\n'),   /* her layout (Oct 20 2026): MLS 26-2071, then Doc #21129 on the next line; the date is the Sale date line's */ prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
     terms: termsText(g('financing')), xferTerms: g('saleType') && typeof PICK !== 'undefined' ? (/^Other:/.test(String(g('saleType'))) ? String(g('saleType')) : ((PICK.xferTerms.opts.find(o => o[0] === uadSaleType(g('saleType'))) || [])[1] || '')) : '', conc: num(g('concessions')), concYN: g('concessionsYN') || '', contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), landSplit: g('landSplit') || '', usableOwn: !blank((c.edit || {}).usableSf), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
-    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: num(g('cdom')), project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
+    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: (c.edit || {}).cdomUnknown ? 'Unknown' : num(g('cdom')), contractUnk: !!(c.edit || {}).contractUnknown, project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
     rooms: num(g('rooms')), beds: num(g('beds')), full: num(g('full')), half: num(g('half')), gla: num(g('gla')), bsmt: num(g('bsmtFin')), garage: num(g('garage')), energy: g('energy') || '',
     pool: [yes(g('pool')) ? 'Pool' : '', yes(g('spa')) ? 'Spa' : ''].filter(Boolean).join(', ') || (g('pool') && !yes(g('pool')) ? 'None' : ''), courts: [yes(g('tennis')) ? 'Tennis court' : '', yes(g('sport')) ? 'Sport court' : ''].filter(Boolean).join(', '), porch: g('porch') || '', adu: [g('adu'), g('guest'), g('accessory')].filter(Boolean).join('; '),
     other: g('other') || [yes(g('horse')) ? 'Horse facilities' : ''].filter(Boolean).join(', '), _id: c.id, aduSf: g('aduSf'), aduBaths: g('aduBaths'),   // horse: the MLS says 'No' when the box is not ticked (it showed "Horse facilities" for every MLS comp)
@@ -1886,6 +1886,7 @@ function gridHTML(J) {
       if (id === 'usable' && C.landSplit) { const t = splitText(C.landSplit); if (t) shown += `<small class="muted rdays" title="Your 2.6 land split. The usable figure counts the residential (r) part only – if the orchard or other part is usable for this comparison, type the total.">split: ${esc(t)}</small>`; }
       if (id === 'lastRed') { const d = redDaysOf(C); shown += d !== null ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
       if (id === 'conc') shown += concSel(c.id, C);
+      if (id === 'contract' || id === 'cdom') shown += unkSel(c.id, id, C);
       if (id === 'nbhd' && typeof saSel === 'function') shown += saSel(J, c, C);
       if (id === 'q' || id === 'c') shown += qcSel(c.id, id, C[id]) + fineSel(c.id, id, J); if (id === 'view') shown += vtSel(c.id, J, C.view); if (id === 'loc') shown += locBtn(c.id); else if (id === 'q' || id === 'c') {} else if (id === 'garage') shown += `${C.tandem ? `<small class="vsx" title="From your 2.6 Functional utility line – 3.6 has no tandem field; mention it in your comment">${esc(C.tandem)}</small>` : ''}${(c.edit || {}).grid_vsText ? `<small class="vsx">${esc(c.edit.grid_vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="${c.id}" title="Type | spaces | attachment (UAD 3.6 vehicle storage)">▾ pick</button>`; else shown += pkBtn(c.id, id);
       if (!type) return `<td>${shown}</td>`;
@@ -2020,6 +2021,9 @@ const sgn = a => (a < 0 ? '−' : '+') + money(Math.abs(a));
 const factText = (id, F) => id === 'baths' ? (blank(F.full) ? '?' : F.full + '/' + (F.half || 0)) : (showFact(id, F[id]) || '?');
 function gridReview(J) {
   const used = usedComps(J); const S = subjFacts(J); const G = G0(J); const out = []; const add = (key, sev, msg, extra) => out.push({ key, sev, msg, ok: G.ok && G.ok[key], ...(extra || {}) });
+  if (typeof saNorm === 'function') { const ss = saNorm(S.nbhd); const ws = SA_WATER[ss]; used.forEach(c => { const k = saNorm(compFacts(c, J).nbhd); if (!k || !ss) return; const wk = SA_WATER[k];
+    if (ws && !wk) add(`saw:${c.id}`, 'Check', `Comp ${c.use} is in ${k}, not waterfront – the subject is ${ws}, which is not comparable to other areas; explain it in your comment.`);
+    else if (!ws && wk) add(`saw:${c.id}`, 'Check', `Comp ${c.use} is ${wk} (${k}) – waterfront is not comparable to the subject's area; explain it in your comment.`); }); }
   if (typeof saNorm === 'function') { const ss = saNorm(S.nbhd); if (SA_ONLY[ss]) used.forEach(c => { const k = saNorm(compFacts(c, J).nbhd); if (k && k !== ss) add(`sa:${c.id}`, 'Check', SA_ONLY[ss] === 'always' ? `Comp ${c.use} is in ${k}, outside ${ss} – your rule is to stay in ${ss} (its amenities and features are not offered elsewhere).` : `Comp ${c.use} is in ${k}, outside ${ss} – your rule is to stay in ${ss} unless data is lacking; explain it in your comment.`); }); }
   const rowOf = id => adjRows(J).find(r => r[0] === id);
   Object.keys(REVIEW_ROWS).forEach(id => { const row = rowOf(id); if (!row) return; const per = [];
@@ -2271,6 +2275,14 @@ function statusText(s) { s = String(s || '').trim(); if (!s) return ''; if (/^(c
 const OVER_SHORT = 14, OVER_LONG = 30;
 
 /* her ask (Oct 20 2026): a real drop-down for the quality and condition ratings (Q1–Q6 / C1–C6, with the UAD definitions on hover) */
+/* Contract date (F-1 22.01.30: Contract Date Unknown Yes / No) and cumulative days on market (her check): a date / number, or Unknown */
+function unkSel(who, id, C) { const has = id === 'contract' ? !!C.contract && !C.contractUnk : C.cdom !== null && C.cdom !== '' && C.cdom !== 'Unknown';
+  const v = id === 'contract' ? (C.contractUnk ? 'unknown' : has ? 'known' : '') : (C.cdom === 'Unknown' ? 'unknown' : has ? 'known' : '');
+  return ` <select class="fine${v ? '' : ' arch'}" data-gunk="${who}|${id}" title="${id === 'contract' ? 'UAD 3.6 Contract date: the date, or Unknown (type U in the box for Unknown)' : 'Cumulative days on market: the number, or Unknown (type U)'}">${[['', 'pick…'], ['known', id === 'contract' ? 'Date known' : 'Known'], ['unknown', 'Unknown']].map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`; }
+function unkSet(J, c, id, v) { const E = c.edit = c.edit || {}; const fk = id === 'contract' ? 'contractDate' : 'cdom', flag = id === 'contract' ? 'contractUnknown' : 'cdomUnknown';
+  if (c.zapK) { delete c.zapK[fk]; if (!Object.keys(c.zapK).length) delete c.zapK; } if (c.zap) { delete c.zap[id]; if (!Object.keys(c.zap).length) delete c.zap; }
+  if (v === 'unknown') { E[flag] = true; delete E[fk]; c.zapK = c.zapK || {}; c.zapK[fk] = true; }   // no date / number, even if a source has one
+  else delete E[flag]; }
 /* Known sales concessions (F-1 22.01.05): No · Yes, amount known (type it) · Yes, amount unknown */
 const concState = C => C.conc === 0 || (C.conc === null && /^n/i.test(C.concYN || '')) ? 'no' : C.conc > 0 ? 'known' : /^y/i.test(C.concYN || '') ? 'unknown' : '';
 function concSel(who, C) { const v = concState(C);
@@ -2898,6 +2910,7 @@ function wbFactSet(J, c, id, text) {
     case 'courts': put('tennis', t === '' ? null : /tennis/i.test(t) ? 'Yes' : 'No'); put('sport', t === '' ? null : /sport|pickleball|basketball/i.test(t) ? 'Yes' : 'No'); return;
     case 'adu': { put('adu', t || null); const sf = t.match(/(\d[\d,]*)\s*(sf|sq)/i), ba = t.match(/(\d+(\.\d)?)\s*bath/i); put('aduSf', t === '' ? null : sf ? n(sf[1]) : (/^(no|none)$/i.test(t) ? 0 : null)); put('aduBaths', t === '' ? null : ba ? +ba[1] : 0); return; }
   }
+  if (id === 'contract' || id === 'cdom') { if (/^\s*u(nk(nown)?)?\s*$/i.test(t)) { unkSet(J, c, id, 'unknown'); return; } if (t !== '') delete E[id === 'contract' ? 'contractUnknown' : 'cdomUnknown']; }   // her shortcut: U = Unknown
   if (id === 'conc') { if (/^\s*(no|none|n|0)\s*$/i.test(t)) { concSet(J, c, 'no'); return; } if (/unknown|^\s*y(es)?\s*$/i.test(t)) { concSet(J, c, 'unknown'); return; }
     if (t !== '' && n(t) !== null) { put('concessions', n(t)); put('concessionsYN', n(t) > 0 ? 'Yes' : 'No'); return; } }   // typed: No / 0, an amount, or Yes (amount unknown)
   const k = WB_EDIT[id]; if (!k) { put('grid_' + id, t || null); return; }   // a line with no source field (Cooling, Functional utility, her own lines …): her entry
@@ -4436,7 +4449,7 @@ function showGuide(id) {
    Her rules: Birnam Wood – always stay in the community (many amenities no other development has).
    Ennisbrook – stay in it; go outside only for lack of data. */
 const SA_WORDS = [[/\b(golden|gldn|goldn|gold)\s*(quadrangle|qdrngle?|qdrng|quad)\b/g, 'golden quadrangle'], [/\bsb\s*prphry\b|\bsbprphry\b/g, 'santa barbara periphery'], [/\bprphry|periph(ery)?\b/g, 'periphery'], [/\bmntcto|mntc|mont\b/g, 'montecito'],
-  [/\brvra\b/g, 'riviera'], [/\blwr\b/g, 'lower'], [/\bcyn\b/g, 'canyon'], [/\bfthll?s?\b/g, 'foothills'], [/\bcnt|cent\b/g, 'central'], [/\bsb\b/g, 'santa barbara'], [/eucalypts/g, 'eucalyptus'], [/\bcarp\b/g, 'carpinteria']];
+  [/\brvra\b/g, 'riviera'], [/\blwr\b/g, 'lower'], [/\bcyn\b/g, 'canyon'], [/\bfthll?s?\b/g, 'foothills'], [/\bcnt|cent\b/g, 'central'], [/\bsb\b/g, 'santa barbara'], [/eucalypts/g, 'eucalyptus'], [/\bbch\b/g, 'beach'], [/\bpnt\b|\bpt\b/g, 'point'], [/\bpdro\b/g, 'padaro'], [/\bblff\b/g, 'bluff'], [/\bknl\b/g, 'knoll'], [/\bbeachfront\b|\bbeach frnt\b/g, 'beach front'], [/\bcarp\b/g, 'carpinteria']];
 const SA_DIR = { e: 'East', east: 'East', eastern: 'East', w: 'West', west: 'West', western: 'West', s: 'South', south: 'South', n: 'North', north: 'North', ne: 'NE', nw: 'NW', central: 'Central' };
 function saNorm(name) {
   if (!String(name || '').trim()) return ''; let t;
@@ -4456,13 +4469,17 @@ const SA_SEED = {
   'Eucalyptus Hill': { 'Golden Quadrangle West': 'use', 'Pepper Hill': 'use', 'Riviera East': 'use', 'SB Periphery East': 'use' },
 };
 const SA_ONLY = { 'Birnam Wood': 'always', 'Ennisbrook': 'prefer' };
+/* waterfront (her note Oct 20 2026): Montecito waterfront is not comparable to the rest of Montecito; Padaro is Carpinteria's */
+const SA_WATER = { 'Miramar Beach': 'Montecito waterfront', 'Butterfly Beach': 'Montecito waterfront', 'Fernald Point': 'Montecito waterfront', 'Beach Front': 'Montecito waterfront', 'Montecito Beach': 'Montecito waterfront', 'Montecito Beach Front': 'Montecito waterfront',
+  'Padaro Beach': 'Padaro (Carpinteria waterfront)', 'Padaro Bluff': 'Padaro (Carpinteria waterfront)', 'Padaro Knoll': 'Padaro (Carpinteria waterfront)', 'Padaro': 'Padaro (Carpinteria waterfront)', 'Padaro Lane': 'Padaro (Carpinteria waterfront)' };
 let MYSA = {}; DB.get('kv', 'subAreas').then(r => { MYSA = (r && r.v) || {}; }).catch(() => {});
 const SA_LABEL = { similar: 'Similar', superior: 'Superior', inferior: 'Inferior', use: 'May use' };
 function saRel(J, C) { const s = saNorm(subjFacts(J).nbhd), k = saNorm(C.nbhd); if (!s || !k) return null; if (s === k) return { rel: 'same', s, k };
   const mine = (MYSA[s] || {})[k]; if (mine) return { rel: mine, s, k, src: 'yours' }; const seed = (SA_SEED[s] || {})[k]; if (seed) return { rel: seed, s, k, src: 'seed' }; return { rel: '', s, k }; }
 function saSel(J, c, C) { const R = saRel(J, C); if (!R) return ''; if (R.rel === 'same') return `<small class="muted rdays">${esc(R.k)} – same sub-area</small>`;
+  const ws = SA_WATER[R.s], wk = SA_WATER[R.k]; const water = (ws || wk) && ws !== wk ? `<small class="overcall">${ws && !wk ? esc(R.k) + ' is not waterfront – not comparable to ' + esc(ws) : !ws && wk ? esc(R.k) + ' is ' + esc(wk) + ' – not comparable to the subject’s area' : esc(R.k) + ' (' + esc(wk) + ') vs ' + esc(ws)}</small>` : '';
   const out = SA_ONLY[R.s] ? `<small class="${SA_ONLY[R.s] === 'always' ? 'overcall' : 'muted rdays'}">${SA_ONLY[R.s] === 'always' ? 'Outside ' + esc(R.s) + ' – you stay in the community' : 'Outside ' + esc(R.s) + ' – explain the lack of data'}</small>` : '';
-  return `<small class="muted rdays">${esc(R.k)} vs ${esc(R.s)}:</small><select class="fine${R.src === 'yours' ? '' : ' arch'}" data-gsa="${c.id}" title="How this comp's sub-area compares with the subject's – remembered for your next assignment">${[['', '—'], ['similar', 'Similar'], ['superior', 'Superior'], ['inferior', 'Inferior'], ['use', 'May use']].map(([v, l]) => `<option value="${v}" ${v === R.rel ? 'selected' : ''}>${l}${v === R.rel && R.src === 'seed' ? ' (your rule)' : ''}</option>`).join('')}</select>${out}`; }
+  return `<small class="muted rdays">${esc(R.k)} vs ${esc(R.s)}:</small><select class="fine${R.src === 'yours' ? '' : ' arch'}" data-gsa="${c.id}" title="How this comp's sub-area compares with the subject's – remembered for your next assignment">${[['', '—'], ['similar', 'Similar'], ['superior', 'Superior'], ['inferior', 'Inferior'], ['use', 'May use']].map(([v, l]) => `<option value="${v}" ${v === R.rel ? 'selected' : ''}>${l}${v === R.rel && R.src === 'seed' ? ' (your rule)' : ''}</option>`).join('')}</select>${out}${water}`; }
 function saSet(J, cid, v) { const c = J.comps.find(x => x.id === cid); if (!c) return; const R = saRel(J, compFacts(c, J)); if (!R || R.rel === 'same') return;
   MYSA[R.s] = MYSA[R.s] || {}; if (v) MYSA[R.s][R.k] = v; else delete MYSA[R.s][R.k]; DB.put('kv', { id: 'subAreas', v: MYSA }); }
 
@@ -5312,6 +5329,8 @@ document.addEventListener('change', async e => {
   if (t.dataset.gmode) { const G = G0(app.job); G.mode = t.value; if (t.value === 'condo' && !G.tier) G.tier = 'condo'; save(); renderKeepFocus(); return; }
   if (t.dataset.gsa) { saSet(app.job, t.dataset.gsa, t.value); renderKeepFocus(); return; }
   if (t.dataset.gvt) { const G = G0(app.job); G.viewT = G.viewT || {}; const w = t.dataset.gvt; if (t.value === '') { delete G.viewT[w]; } else { G.viewT[w] = +t.value; vtRemember(app.job, w, +t.value); } save(); renderKeepFocus(); return; }
+  if (t.dataset.gunk) { const [cid, id] = t.dataset.gunk.split('|'); const c = app.job.comps.find(x => x.id === cid); if (!c) return; unkSet(app.job, c, id, t.value); save(); renderKeepFocus();
+    if (t.value === 'known') setTimeout(() => { const el = document.querySelector(`[data-gfact="${cid}|${id}"]`); if (el) { el.focus(); el.select(); } }, 50); return; }
   if (t.dataset.gconc) { const c = app.job.comps.find(x => x.id === t.dataset.gconc); if (!c) return; concSet(app.job, c, t.value); save(); renderKeepFocus();
     if (t.value === 'known') setTimeout(() => { const el = document.querySelector(`[data-gfact="${c.id}|conc"]`); if (el) { el.focus(); el.select(); } }, 50); return; }
   if (t.dataset.qc) { const [who, k] = t.dataset.qc.split('|'); pkSave(app.job, who, k, t.value); return; }   // the Q / C drop-down
