@@ -309,7 +309,7 @@ table.grid input.adj.own,body:not(.classic) table.grid input.adj.own{font-weight
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0459';
+const BUILD='g2-1021-0503';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2563,7 +2563,7 @@ function timeHTML(J) {
    ===================================================================== */
 const SENS_LABEL = { gla: 'Living area', usableAc: 'Usable lot area', bed: 'Bedrooms', bath: 'Full baths', halfBath: 'Half baths', space: 'Garage spaces', timePct: 'Sale date (time)',
   pool: 'Pool', spa: 'Spa', pond: 'Pond', lake: 'Lake', tennis: 'Tennis court', sport: 'Sport court', qStep: 'Quality', qPct: 'Quality', cStep: 'Condition', cPct: 'Condition',
-  viewStep: 'View', viewPct: 'View', landStep: 'Landscaping', aduSf: 'ADU / guest sq ft', aduBath: 'ADU / guest baths' };
+  viewStep: 'View', viewPct: 'View', landStep: 'Landscaping', aduSf: 'ADU / guest sq ft', aduBath: 'ADU / guest baths', solar: 'Solar (owned)' };
 const PCT_KEYS = ['timePct', 'qPct', 'cPct', 'viewPct'];
 const rowsWith = k => adjRows(app.job).filter(r => r[3] && rowShown(r, app.job) && (k === 'halfBath' ? r[4] === 'bath' : [].concat(r[4] || []).includes(k)));
 function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= x) return m * p; return 10 * p; }
@@ -2573,14 +2573,14 @@ const medOf = a => { const s = [...a].sort((x, y) => x - y); const n = s.length;
 function sensKeys(J) {   // which rate to test on each line: the one she uses, else the $ one
   const R = G0(J).rates; const set = k => !blank(R[k]);
   const pick = (a, b) => set(b) && !set(a) ? b : a;
-  const ks = ['timePct', pick('viewStep', 'viewPct'), 'usableAc', 'landStep', 'bed', 'bath', 'gla', pick('qStep', 'qPct'), pick('cStep', 'cPct'), 'pool', 'spa', 'pond', 'lake', 'tennis', 'sport', 'aduSf', 'aduBath', 'space'];
+  const ks = ['timePct', pick('viewStep', 'viewPct'), 'usableAc', 'landStep', 'bed', 'bath', 'gla', pick('qStep', 'qPct'), pick('cStep', 'cPct'), 'pool', 'spa', 'pond', 'lake', 'tennis', 'sport', 'aduSf', 'aduBath', 'space', 'solar'];
   if (set('bath')) ks.splice(ks.indexOf('bath') + 1, 0, 'halfBath');
   return ks;
 }
 function sensRange(k, J, P, ppsf) {
   const cur = num(G0(J).rates[k]);
   let lo = 0, hi = { gla: Math.max(ppsf || 0, 500), usableAc: 4000000, bed: 500000, bath: 250000, halfBath: 125000, space: 150000, pool: 400000, spa: 150000, pond: 200000, lake: 400000,
-    tennis: 400000, sport: 200000, aduSf: 1000, aduBath: 100000, qStep: 0.15 * P, cStep: 0.15 * P, viewStep: 0.15 * P, landStep: 0.05 * P, qPct: 15, cPct: 15, viewPct: 15, timePct: 2 }[k];
+    tennis: 400000, sport: 200000, aduSf: 1000, aduBath: 100000, solar: 100000, qStep: 0.15 * P, cStep: 0.15 * P, viewStep: 0.15 * P, landStep: 0.05 * P, qPct: 15, cPct: 15, viewPct: 15, timePct: 2 }[k];
   if (k === 'timePct') lo = -2;
   if (cur && Math.abs(cur) * 1.5 > hi) hi = Math.abs(cur) * 2;
   const step = PCT_KEYS.includes(k) ? (k === 'timePct' ? 0.05 : niceStep(hi / 40)) : Math.max(500, niceStep(hi / 40));
@@ -5291,7 +5291,7 @@ document.addEventListener('click', async e => {
     if (d.wbpop) { const [a, b] = d.wbpop.split('|'); await saveNow(); window.open(`${location.pathname}?pop=grid&from=${a}&to=${b}&job=${encodeURIComponent(app.job.id)}`, 'genie-grid-' + a + (+b >= 99 ? 'all' : ''), +b >= 99 ? `width=${Math.min(screen.availWidth, 1900)},height=${screen.availHeight}` : 'width=1000,height=1100'); return; }
     if (d.wbmv) { const [id, to] = d.wbmv.split('|'); wbMove(app.job, id, +to); save(); renderKeepFocus(); return; }
     if (d.wbpage) { const k = +d.wbpage; const a = Math.max(1, POP.from + k), b = a + (POP.to - POP.from); location.search = `?pop=grid&from=${a}&to=${b}&job=${encodeURIComponent(POP.job)}`; return; }
-    if (d.wbcol) { WB.cur = d.wbcol; document.querySelectorAll('[data-wbcol]').forEach(x => x.classList.toggle('cur', x.dataset.wbcol === WB.cur)); return; } }
+    if (d.wbcol) { WB.cur = d.wbcol; document.querySelectorAll('[data-wbcol]').forEach(x => x.classList.toggle('cur', x.dataset.wbcol === WB.cur)); if (typeof wbColTint === 'function') wbColTint(); return; } }   // clicking the comp's name tints its whole column
   const rd = e.target.closest('[data-revdel]');
   if (rd) { await revLoad(); REVLOG = REVLOG.filter(r => r.id !== rd.dataset.revdel); await revSave(); renderKeepFocus(); return; }
   const sp = e.target.closest('[data-supuse]');
