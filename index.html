@@ -316,7 +316,7 @@ table.grid thead th .ghsale{display:block;font-size:12.5px;font-weight:600;color
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0542';
+const BUILD='g2-1021-0552';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1580,7 +1580,7 @@ const ADJ_ROWS = [
 const LINE_EG = { siteChar: 'e.g. excess land, landlocked, road frontage, shape, wetlands, zero lot line, flag lot', topo: 'e.g. flat, sloping, rolling, rocky', drain: 'e.g. erosion, improper grading, standing water',
   easement: 'e.g. ingress/egress, utility, drainage, conservation', hazard: 'e.g. FEMA flood hazard area, none', primaryAccess: 'e.g. public street, private street', streetAccess: 'e.g. local road | asphalt, collector street | concrete (type and surface)',
   restrict: 'e.g. age, historic preservation, land use, rental', envCond: 'e.g. none, underground storage tank, radon', func: 'e.g. none, floor plan, ceiling height, overimprovement',
-  stl: 'listings: the % you expect it to sell at (e.g. 98%) · sales show their actual %', disaster: 'e.g. fire resistant exterior walls, noncombustible perimeter, fortified roof', zoning: 'legal, legal nonconforming, illegal, no zoning' };
+  adu: 'e.g. Guest House 600 sf 1/0 ba; Shed (▾ pick)', stl: 'listings: the % you expect it to sell at (e.g. 98%) · sales show their actual %', disaster: 'e.g. fire resistant exterior walls, noncombustible perimeter, fortified roof', zoning: 'legal, legal nonconforming, illegal, no zoning' };
 const LOT_UTILITY = 'Usable Lot Area/Utility';      // her exact SFREP template "Add Other" row name (must match letter for letter)
 const RATES = { gla: ['$ per sq ft', 'subject − comp sq ft × rate'], agUnf: ['$ per sq ft', 'subject − comp unfinished above-grade sq ft × rate'], nsAbove: ['$ per sq ft', 'subject − comp non-standard above-grade sq ft × rate'], nsBelow: ['$ per sq ft', 'subject − comp non-standard below-grade sq ft × rate'], nonCont: ['$ per sq ft', 'subject − comp non-continuous sq ft × rate'], usableAc: ['$ per usable acre', 'subject − comp usable acres × rate'], bed: ['$ per bedroom', 'bedroom difference × rate'],
   bath: ['$ per full bath', 'full-bath difference × rate (half baths at half the rate)'], space: ['$ per garage space', 'space difference × rate'], timePct: ['% per month', 'months from sale to effective date × % × price'],
@@ -1611,7 +1611,8 @@ function vtRemember(J, who, t) { const k = vtKey(J, who); if (!k) return; if (t 
 function vtSel(who, J, text) { const I = vtInfo(J, who, text); const lab = t => (VIEW_TIERS.find(x => x[0] === t) || [, ''])[1];
   const first = I.src === 'yours' ? '' : I.src === 'saved' ? lab(I.t) + ' (yours, ' + showDate(I.at) + ')' : I.t === null ? 'tier?' : lab(I.t) + ' (read – check it)';
   return ` <select class="fine${I.src === 'yours' || I.src === 'saved' ? '' : ' arch'}" data-gvt="${who}" title="The degree of view used for the view adjustment (one step per tier). ${I.src === 'yours' ? 'Your choice for this assignment.' : I.src === 'saved' ? 'Your tier for this address from an earlier assignment.' : 'Only read from the words – decide the degree of view and pick it.'}"><option value="">${first || 'clear'}</option>${VIEW_TIERS.map(([n, l]) => `<option value="${n}" ${I.src === 'yours' && I.t === n ? 'selected' : ''}>${l}</option>`).join('')}</select>`; }
-const aduNums = F => { if (F.aduSf !== undefined && F.aduSf !== null && F.aduSf !== '') return { sf: +F.aduSf || 0, baths: +F.aduBaths || 0 };
+const aduNums = F => { { const o = typeof obLiving === 'function' ? obLiving(F.adu) : null; if (o && obParse(F.adu).items.length) return o; }   // her 3.6 outbuilding rows: living ones added up
+  if (F.aduSf !== undefined && F.aduSf !== null && F.aduSf !== '') return { sf: +F.aduSf || 0, baths: +F.aduBaths || 0 };
   const t = String(F.adu || ''); if (!t.trim() || /^(no|none)$/i.test(t.trim())) return { sf: 0, baths: 0 };
   const sf = t.match(/([\d,]{2,})\s*(?:sf|sq|square)/i), ba = t.match(/(\d+(?:\.\d)?)\s*(?:full\s*)?ba/i); return { sf: sf ? +sf[1].replace(/,/g, '') : null, baths: ba ? +ba[1] : 0 }; };
 RATES.qTier = ['$ per quality tier', 'one tier = low → mid → high, high Q4 → low Q3 (3 tiers to a whole rating); when set, the step and % boxes are not used'];
@@ -1827,7 +1828,7 @@ function compFacts0(c, J) {
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), landSplit: g('landSplit') || '', usableOwn: !blank((c.edit || {}).usableSf), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
     topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', redDays: num(g('redDays')), redSrc: (val(c, 'redDays') || {}).src || '', cdom: (c.edit || {}).cdomUnknown ? 'Unknown' : num(g('cdom')), contractUnk: !!(c.edit || {}).contractUnknown, project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
     rooms: num(g('rooms')), beds: num(g('beds')), full: num(g('full')), half: num(g('half')), gla: num(g('gla')), bsmt: num(g('bsmtFin')), garage: num(g('garage')), energy: g('energy') || '',
-    pool: [yes(g('pool')) ? 'Pool' : '', yes(g('spa')) ? 'Spa' : ''].filter(Boolean).join(', ') || (g('pool') && !yes(g('pool')) ? 'None' : ''), courts: [yes(g('tennis')) ? 'Tennis court' : '', yes(g('sport')) ? 'Sport court' : ''].filter(Boolean).join(', '), porch: g('porch') || '', adu: [g('adu'), g('guest'), g('accessory')].filter(Boolean).join('; '),
+    pool: [yes(g('pool')) ? 'Pool' : '', yes(g('spa')) ? 'Spa' : ''].filter(Boolean).join(', ') || (g('pool') && !yes(g('pool')) ? 'None' : ''), courts: [yes(g('tennis')) ? 'Tennis court' : '', yes(g('sport')) ? 'Sport court' : ''].filter(Boolean).join(', '), porch: g('porch') || '', adu: (c.edit || {}).pk_adu && (c.edit || {}).pk_adu === g('adu') ? g('adu') : [g('adu'), g('guest'), g('accessory')].filter(Boolean).join('; '),   // her ▾ pick outbuildings stand alone
     other: g('other') || [yes(g('horse')) ? 'Horse facilities' : ''].filter(Boolean).join(', '), _id: c.id, aduSf: g('aduSf'), aduBaths: g('aduBaths'),   // horse: the MLS says 'No' when the box is not ticked (it showed "Horse facilities" for every MLS comp)
     carport: num(g('carport')), bsmtUnf: !blank(g('bsmtSf')) ? Math.max(0, (+g('bsmtSf')) - (+(g('bsmtFin') || 0))) : null,
     heat: String(g('heating') || '').trim() || (String(g('heatCool') || '').includes(' / ') ? String(g('heatCool')).split(' / ')[0].trim() : (/cool/i.test(g('heatCool') || '') ? '' : String(g('heatCool') || '').trim())), cool: coolText(g('cooling') || g('heatCool')) || (/no cooling listed/i.test(g('heatCool') || '') ? 'None listed' : '') };
@@ -1842,7 +1843,7 @@ function compFacts0(c, J) {
   adjRows(J).forEach(r => { const e = (c.edit || {})['grid_' + r[0]]; if (!blank(e)) F0[r[0]] = e; });   // her entries on lines with no source
   F0._fine = { q: fineOf(J, c.id, 'q'), c: fineOf(J, c.id, 'c') };
   if (g('viewRange') && F0.view && !/limited|panoram/i.test(F0.view)) F0.view += ' – ' + g('viewRange');
-  if (!blank(F0.aduSf) && F0.aduSf > 0) F0.adu = [F0.adu && F0.adu !== 'None' ? F0.adu : 'Living outbuilding', int(F0.aduSf) + ' sf', F0.aduBaths ? F0.aduBaths + ' bath' : ''].filter(Boolean).join(', ');
+  if (!blank(F0.aduSf) && F0.aduSf > 0 && !(typeof obParse === 'function' && obParse(F0.adu).items.some(x => x.sf))) F0.adu = [F0.adu && F0.adu !== 'None' ? F0.adu : 'Living outbuilding', int(F0.aduSf) + ' sf', F0.aduBaths ? F0.aduBaths + ' bath' : ''].filter(Boolean).join(', ');
   F0.beds = blank(F0.beds) ? null : (+F0.beds) + (+(g('bgBeds') || 0)); F0.bedsBg = +(g('bgBeds') || 0);
   F0._own = landOwned(J, F0); if (blank(F0.landCommon)) F0.landCommon = F0._own ? 'No' : 'Yes';
   return F0;
@@ -1914,7 +1915,7 @@ function gridHTML(J) {
     const [id, label, section, type] = row; const head = section !== sec ? `<tr class="grp"><th colspan="${2 + used.length}">${esc(section)}</th></tr>` : ''; sec = section;
     const sv = id === 'baths' ? [S.full, S.half].every(blank) ? '' : `${S.full ?? '–'} / ${S.half ?? 0}` : showFact(id, S[id]);
     const subjCell = ['price', 'ppsf', 'src', 'prox', 'dom', 'terms', 'conc', 'contract', 'sale', 'status', 'listPrice', 'origList', 'listDate', 'lastRed', 'redDays', 'cdom', 'overList', 'xferTerms', 'stl'].includes(id) ? `<td class="subj">${blank(sv) || sv === '' ? '<span class="na" title="Nothing to enter for the subject here – on the 3.6 grid this line is for the comparables (the subject’s own sale or listing, if any, comes from the Sales Contract and Subject Listing sections). Leave it blank; no N/A or dash.">—</span>' : esc(sv)}</td>`
-      : `<td class="subj"><input class="txt sm${(PICK[id] || id === 'view') && !blank(G.subj[id]) && !pkValid(id, G.subj[id], G.subj['pk_' + id]) ? ' bad' : ''}" data-gsubj="${id}" value="${esc(blank(G.subj[id]) ? '' : id === 'usable' && typeof G.subj[id] === 'number' ? G.subj[id] + ' ac' : G.subj[id])}" placeholder="${esc(sv || (id === 'usable' ? 'Measure it' : id === 'adu' ? 'e.g. Guest house 450 sf 1 bath' : ''))}">${id === 'garage' ? `${G.subj.vsText ? `<small class="vsx">${esc(G.subj.vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="subj">▾ pick</button>` : id === 'q' || id === 'c' ? qcSel('subj', id, S[id]) + fineSel('subj', id, J) : id === 'loc' ? locBtn('subj') : id === 'view' ? vtSel('subj', J, S.view) + pkBtn('subj', 'view') : id === 'land' ? landSel('subj', S.land) : PICK[id] ? pkBtn('subj', id) : ''}</td>`;
+      : `<td class="subj"><input class="txt sm${(PICK[id] || id === 'view') && !blank(G.subj[id]) && !pkValid(id, G.subj[id], G.subj['pk_' + id]) ? ' bad' : ''}" data-gsubj="${id}" value="${esc(blank(G.subj[id]) ? '' : id === 'usable' && typeof G.subj[id] === 'number' ? G.subj[id] + ' ac' : G.subj[id])}" placeholder="${esc(sv || (id === 'usable' ? 'Measure it' : id === 'adu' ? 'e.g. Guest house 450 sf 1 bath' : ''))}">${id === 'garage' ? `${G.subj.vsText ? `<small class="vsx">${esc(G.subj.vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="subj">▾ pick</button>` : id === 'q' || id === 'c' ? qcSel('subj', id, S[id]) + fineSel('subj', id, J) : id === 'loc' ? locBtn('subj') : id === 'view' ? vtSel('subj', J, S.view) + pkBtn('subj', 'view') : id === 'land' ? landSel('subj', S.land) : id === 'adu' ? obBtn('subj') : PICK[id] ? pkBtn('subj', id) : ''}</td>`;
     const cells = used.map(c => { const C = compFacts(c, J);
       let shown = id === 'beds' && C.bedsBg ? `${C.beds} (${C.bedsBg} below grade)` : id === 'baths' ? ([C.full, C.half].every(blank) ? '' : `${C.full ?? '–'} / ${C.half ?? 0}`) : id === 'ppsf' ? (C.price && C.gla ? money(C.price / C.gla) : '') : showFact(id, C[id]);
       if (!WB_NOEDIT.includes(id)) { /* she can change any comp fact right on the grid (Oct 19 2026), not only in Workbook view */ const raw = id === 'usable' ? (blank(C.usable) ? '' : C.usable + ' ac') : wbFactText(id, C);
@@ -1924,6 +1925,7 @@ function gridHTML(J) {
       if (id === 'usable' && C.landSplit) { const t = splitText(C.landSplit); if (t) shown += `<small class="muted rdays" title="Your 2.6 land split. The usable figure counts the residential (r) part only – if the orchard or other part is usable for this comparison, type the total.">split: ${esc(t)}</small>`; }
       if (id === 'lastRed') { const d = redDaysOf(C) ?? C.redDays; shown += d !== null && d !== undefined ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending${redDaysOf(C) === null && C.redSrc === 'arch' ? ' (your archive: lpr)' : ''}</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
       if (id === 'conc') shown += concSel(c.id, C);
+      if (id === 'adu' && typeof obBtn === 'function') shown += obBtn(c.id);
       if (id === 'land') shown += landSel(c.id, C.land);
       if (id === 'contract' || id === 'cdom') shown += unkSel(c.id, id, C);
       if (id === 'nbhd' && typeof saSel === 'function') shown += saSel(J, c, C);
@@ -2962,7 +2964,8 @@ function wbFactSet(J, c, id, text) {
     case 'view': case 'loc': { const [a, ...b] = t.split(/:|\s–\s/); put(id === 'view' ? 'viewRating' : 'locRating', a ? a.trim() : null); put(id === 'view' ? 'viewTypes' : 'locFactors', b.join(':').trim() || null); if (id === 'view') put('viewRange', null); return; }
     case 'pool': put('pool', t === '' ? null : /pool/i.test(t) ? 'Yes' : 'No'); put('spa', t === '' ? null : /spa|hot ?tub|jacuzzi/i.test(t) ? 'Yes' : 'No'); return;
     case 'courts': put('tennis', t === '' ? null : /tennis/i.test(t) ? 'Yes' : 'No'); put('sport', t === '' ? null : /sport|pickleball|basketball/i.test(t) ? 'Yes' : 'No'); return;
-    case 'adu': { put('adu', t || null); const sf = t.match(/(\d[\d,]*)\s*(sf|sq)/i), ba = t.match(/(\d+(\.\d)?)\s*bath/i); put('aduSf', t === '' ? null : sf ? n(sf[1]) : (/^(no|none)$/i.test(t) ? 0 : null)); put('aduBaths', t === '' ? null : ba ? +ba[1] : 0); return; }
+    case 'adu': { const o = typeof obLiving === 'function' && obParse(t).items.length ? obLiving(t) : null; if (o) { put('adu', t); put('aduSf', o.sf); put('aduBaths', o.baths); return; }
+      put('adu', t || null); const sf = t.match(/(\d[\d,]*)\s*(sf|sq)/i), ba = t.match(/(\d+(\.\d)?)\s*bath/i); put('aduSf', t === '' ? null : sf ? n(sf[1]) : (/^(no|none)$/i.test(t) ? 0 : null)); put('aduBaths', t === '' ? null : ba ? +ba[1] : 0); return; }
   }
   if (id === 'contract' || id === 'cdom') { if (/^\s*u(nk(nown)?)?\s*$/i.test(t)) { unkSet(J, c, id, 'unknown'); return; } if (t !== '') delete E[id === 'contract' ? 'contractUnknown' : 'cdomUnknown']; }   // her shortcut: U = Unknown
   if (id === 'conc') { if (/^\s*(no|none|n|0)\s*$/i.test(t)) { concSet(J, c, 'no'); return; } if (/unknown|^\s*y(es)?\s*$/i.test(t)) { concSet(J, c, 'unknown'); return; }
@@ -4428,7 +4431,7 @@ const pkBtn = (who, id) => (PICK[id] || id === 'view') ? ` <button type="button"
 function pkSave(J, who, id, txt) { const c = who === 'subj' ? null : J.comps.find(x => x.id === who); const G = G0(J);
   if (c) { wbFactSet(J, c, id, txt); c.edit = c.edit || {}; if (txt) c.edit['pk_' + id] = txt; else delete c.edit['pk_' + id];
     if (id === 'sfSource') { if (txt) c.edit.sfSource = txt; else delete c.edit.sfSource; }
-    if (id === 'xferTerms') { const P = txt ? pkParse(PICK.xferTerms, txt) : null; if (P && P.vals[0]) c.edit.saleType = P.vals[0] === 'Other' ? 'Other: ' + (P.other || 'Other') : P.vals[0]; else delete c.edit.saleType; } /* the comp's Sale type line shows the same answer */ } else { if (txt) { G.subj[id] = txt; G.subj['pk_' + id] = txt; } else { delete G.subj[id]; delete G.subj['pk_' + id]; } } save(); render(); toast((PICK[id] ? PICK[id].title : 'View') + ': ' + (txt || 'cleared')); }
+    if (id === 'xferTerms') { const P = txt ? pkParse(PICK.xferTerms, txt) : null; if (P && P.vals[0]) c.edit.saleType = P.vals[0] === 'Other' ? 'Other: ' + (P.other || 'Other') : P.vals[0]; else delete c.edit.saleType; } /* the comp's Sale type line shows the same answer */ } else { if (txt) { G.subj[id] = txt; G.subj['pk_' + id] = txt; } else { delete G.subj[id]; delete G.subj['pk_' + id]; } } save(); render(); toast((PICK[id] ? PICK[id].title : id === 'adu' ? 'Outbuildings' : 'View') + ': ' + (txt || 'cleared')); }
 function uadPick(who, id) {
   const J = app.job; const c = who === 'subj' ? null : J.comps.find(x => x.id === who); const F = c ? compFacts(c, J) : subjFacts(J); const name = c ? 'Comp ' + (c.use || '') + ' ' + compTitle(c) : 'Subject';
   const bg = document.createElement('div'); bg.className = 'sheetbg';
@@ -4657,7 +4660,7 @@ const AC_EXTRA = { landCommon: AC_YN, backToBack: AC_YN, native: { list: ['No', 
   pool: { multi: true, list: ['None', 'Pool', 'Spa', 'Outdoor shower', 'Sauna'] }, courts: { multi: true, list: ['None', 'Tennis court', 'Sport court', 'Outdoor kitchen', 'Outdoor fireplace', 'Fence', 'Irrigation system'] },
   porch: { multi: true, list: ['None', 'Patio', 'Porch', 'Deck', 'Balcony', 'Gazebo', 'Portico'] },
   wholeHome: { multi: true, list: ['None', 'EV station', 'Elevator', 'Fire suppression system', 'Indoor fireplace', 'Multiple zone HVAC', 'Smart home system', 'Whole house ventilation', 'Wood stove'] },
-  other: { multi: true, list: ['None', 'Club membership', 'Shared laundry facilities', 'Airstrip'] }, adu: { list: ['None'] }, hoaAmen: { list: ['None'] },
+  other: { multi: true, list: ['None', 'Club membership', 'Shared laundry facilities', 'Airstrip'] }, adu: { multi: true, list: ['None', 'Standalone ADU', 'ADU/Garage', 'Guest House', 'Pool House', 'Studio', 'Office', 'Workshop', 'Shed', 'Barn', 'Stable', 'Greenhouse', 'Bunkhouse', 'Boathouse', 'Enclosed Kennel', 'Indoor Riding Arena', 'Manufactured Home', 'Silo', 'Other'] }, hoaAmen: { list: ['None'] },
   disaster: { multi: true, list: ['None', 'Enclosed soffits', 'Fire resistant decking', 'Fire resistant exterior walls', 'Flood vents', 'Fortified roof', 'Framing anchoring or bracing', 'Impact resistant glass', 'Impact resistant shingles', 'Noncombustible perimeter', 'Storm shelter', 'Storm shutters', 'Water heater strapping'] },
   envCond: { multi: true, list: ['None', 'Hazardous above ground storage tank', 'Hazardous substances', 'Landfill', 'Radon', 'Slush pit', 'Soil contamination', 'Superfund site', 'Underground storage tank', 'Water contamination'] },
   drain: { multi: true, list: ['None', 'Evidence of erosion', 'Improper grading', 'Standing water'] } };
@@ -4755,6 +4758,42 @@ function nuAskBox(J, cid) { const c = J.comps.find(x => x.id === cid); if (!c ||
   bg.addEventListener('click', e => { if (e.target.closest('[data-nuaok]') || e.target === bg) close(); });
   setTimeout(() => { const f = bg.querySelector('[data-nuat]'); if (f) f.focus(); }, 30);
 }
+
+/* ---------------- outbuildings (UAD 3.6 Outbuilding Type, F-1 12.001 / 22.14) – her ask Oct 20 2026 ----------------
+   One row per outbuilding: its 3.6 type, and for a living one (ADU, guest house …) its finished sq ft and baths, which the
+   ADU / guest rates use. Shows as "Guest House 600 sf 1/0 ba; Shed". A detached garage that is only for cars goes in
+   Vehicle storage, not here; an ADU over a garage is "ADU/Garage". */
+const OB_TYPES = ['Standalone ADU', 'ADU/Garage', 'Guest House', 'Pool House', 'Studio', 'Office', 'Workshop', 'Shed', 'Barn', 'Stable', 'Greenhouse', 'Bunkhouse', 'Boathouse', 'Enclosed Kennel', 'Indoor Riding Arena', 'Manufactured Home', 'Silo', 'Other'];
+const OB_LIVING = ['Standalone ADU', 'ADU/Garage', 'Guest House', 'Pool House', 'Studio', 'Office', 'Bunkhouse', 'Manufactured Home'];
+const OB_ALIAS = [[/^adu ?\/ ?gar|garage.*adu|adu.*garage|gar.*apt|apartment over/i, 'ADU/Garage'], [/^(adu|standalone adu|second unit|2nd unit|granny|cottage)/i, 'Standalone ADU'], [/^(guest|gst|guesthouse)/i, 'Guest House'], [/^pool ?house|^pool ?hse|cabana/i, 'Pool House'],
+  [/^studio/i, 'Studio'], [/^office|^ofc/i, 'Office'], [/^work ?shop|^wkshp|^shop/i, 'Workshop'], [/^shed|^storage|^stg/i, 'Shed'], [/^barn|^brn/i, 'Barn'], [/^stable/i, 'Stable'], [/^green ?house/i, 'Greenhouse'], [/^bunk/i, 'Bunkhouse'], [/^boat/i, 'Boathouse'], [/^kennel/i, 'Enclosed Kennel'], [/^riding|arena/i, 'Indoor Riding Arena'], [/^manufactured|^mobile/i, 'Manufactured Home'], [/^silo/i, 'Silo']];
+function obParse(text) { const t = String(text || '').trim(); if (!t || /^(none|no)$/i.test(t)) return { none: !!t, items: [] };
+  const items = []; t.split(/;\s*/).forEach(p => { p = p.trim(); if (!p || /^(none|no|n\/a)$/i.test(p)) return;
+    const hit = OB_TYPES.find(x => p.toLowerCase().startsWith(x.toLowerCase())) || (OB_ALIAS.find(([re]) => re.test(p)) || [])[1] || ''; if (!hit) { items.push({ t: 'Other', other: p.slice(0, 40), sf: '', full: '', half: '' }); return; }
+    const sf = p.match(/(\d[\d,]*)\s*(sf|sq)/i), ba = p.match(/(\d+)\s*\/\s*(\d+)\s*ba/i) || p.match(/(\d+)\s*(?:full\s*)?ba/i);
+    items.push({ t: hit, other: hit === 'Other' ? p.replace(/^other:?\s*/i, '').slice(0, 40) : '', sf: sf ? +sf[1].replace(/,/g, '') : '', full: ba ? +ba[1] : '', half: ba && ba[2] !== undefined ? +ba[2] : '' }); });
+  return { none: !items.length, items }; }
+const obText = (none, items) => none || !items.length ? 'None' : items.map(x => `${x.t === 'Other' ? 'Other: ' + (x.other || '') : x.t}${x.sf ? ' ' + (+x.sf).toLocaleString() + ' sf' : ''}${x.full !== '' || x.half !== '' ? ` ${x.full || 0}/${x.half || 0} ba` : ''}`).join('; ');
+/* living area and baths for the ADU / guest rates: every living outbuilding added up (sheds, barns … do not count) */
+function obLiving(text) { const P = obParse(text); if (!P.items.length) return P.none ? { sf: 0, baths: 0 } : null; const L = P.items.filter(x => OB_LIVING.includes(x.t));
+  return { sf: L.reduce((s, x) => s + (+x.sf || 0), 0), baths: L.reduce((s, x) => s + (+x.full || 0) + (+x.half || 0) * 0.5, 0) }; }
+function obPick(who) {
+  const J = app.job; const c = who === 'subj' ? null : J.comps.find(x => x.id === who); const F = c ? compFacts(c, J) : subjFacts(J); const name = c ? 'Comp ' + (c.use || '') + ' ' + compTitle(c) : 'Subject';
+  const P = obParse(F.adu); let none = P.none && /^none|^no$/i.test(String(F.adu || '').trim()); const L = P.items.map(x => ({ ...x })); while (L.length < 4) L.push({ t: '', other: '', sf: '', full: '', half: '' });
+  const bg = document.createElement('div'); bg.className = 'sheetbg';
+  const draw = () => { bg.innerHTML = `<div class="sheet uadpick"><h2>Outbuildings – ${esc(name)}</h2>${F.adu && !P.items.length && !none ? `<p class="help warnTxt">Now: “${esc(F.adu)}” – not a 3.6 outbuilding type. Pick below.</p>` : ''}<div class="pkgrid"><div>
+    <label class="check"><input type="checkbox" data-obnone="1" ${none ? 'checked' : ''}> None</label>
+    <table class="mini"><tr><th>Outbuilding type (3.6)</th><th>Finished sq ft</th><th>Baths full / half</th></tr>${L.map((x, i) => `<tr><td><select data-ob="${i}|t" ${none ? 'disabled' : ''}><option value="">–</option>${OB_TYPES.map(v => `<option ${x.t === v ? 'selected' : ''}>${v}</option>`).join('')}</select>${x.t === 'Other' ? `<br><input class="txt sm" data-ob="${i}|other" maxlength="40" value="${esc(x.other || '')}" placeholder="describe, e.g. Barn/Garage">` : ''}</td>
+      <td><input class="txt xs" data-ob="${i}|sf" value="${esc(x.sf)}" style="width:6em" ${none || !OB_LIVING.includes(x.t) ? 'disabled' : ''}></td><td><input class="txt xs" data-ob="${i}|full" value="${esc(x.full)}" style="width:3em" ${none || !OB_LIVING.includes(x.t) ? 'disabled' : ''}> / <input class="txt xs" data-ob="${i}|half" value="${esc(x.half)}" style="width:3em" ${none || !OB_LIVING.includes(x.t) ? 'disabled' : ''}></td></tr>`).join('')}</table></div>
+    <div class="pkguide"><b>UAD guidance</b><p>One row for each outbuilding, with its intended use (F-1 12.001). Standalone ADU: a detached ADU with no other area. ADU/Garage: a detached garage with an ADU above it or attached by a common wall. Guest House: temporary living quarters without all the elements of a dwelling unit. A detached garage used only for cars goes in Vehicle storage, not here; a garage with other area (workshop, ADU and more) is Other – describe all uses (e.g. Workshop/ADU/Garage). Sq ft and baths are for living outbuildings – they drive your $ per ADU / guest sq ft and bath rates.</p></div></div>
+    <div class="row"><span class="grow"></span><button class="btn primary" data-obsave="1">OK</button><button class="btn" data-obclose="1">Cancel</button></div></div>`; };
+  draw(); document.body.appendChild(bg);
+  bg.addEventListener('change', e => { const t = e.target; if (t.dataset.obnone) { none = t.checked; draw(); return; } const d = t.dataset.ob; if (!d) return; const [i, k] = d.split('|'); L[+i][k] = ['sf', 'full', 'half'].includes(k) ? (t.value.trim() === '' ? '' : Math.max(0, +String(t.value).replace(/[^0-9.]/g, '') || 0)) : t.value; if (k === 't') draw(); });
+  bg.addEventListener('click', e => { const t = e.target; if (t.dataset.obclose || t === bg) { bg.remove(); return; } if (!t.dataset.obsave) return;
+    const rows = none ? [] : L.filter(x => x.t); const txt = obText(none, rows); bg.remove(); pkSave(J, who, 'adu', txt); });
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-obpick]'); if (!b || !app.job) return; e.stopPropagation(); obPick(b.dataset.obpick); }, true);
+const obBtn = who => ` <button type="button" class="btn xs" data-obpick="${who}" title="Pick the 3.6 outbuilding types, with sq ft and baths">▾ pick</button>`;
 
 /* =====================================================================
    Comp Genie – screens
