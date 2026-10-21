@@ -295,12 +295,14 @@ table.grid thead th:nth-child(2){z-index:4}table.grid tr.tot td:nth-child(2){bac
 /* a fixed double line under the comp names, so the header stays set off while the lines scroll under it */
 table.grid thead th,table.grid thead th:nth-child(n){background-image:linear-gradient(#4a5866,#4a5866),linear-gradient(#4a5866,#4a5866);background-size:100% 2px,100% 2px;background-position:left 0 bottom 0,left 0 bottom 4px;background-repeat:no-repeat;padding-bottom:10px}
 body.classic table.grid thead th{background-image:linear-gradient(#4a5866,#4a5866),linear-gradient(#4a5866,#4a5866)}
+/* her ask (Oct 20 2026): the comp names stay on screen while she scrolls down – the grid box itself sticks under the top bar */
+body:not(.popgrid) #gridCard .tablewrap{position:sticky;top:var(--toph,64px)}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0401';
+const BUILD='g2-1021-0403';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -5507,6 +5509,11 @@ function wbRemoveAsk(J, cid) {
     if (b.dataset.wa === 'off') await wbRemove(J, cid); else if (b.dataset.wa === 'out') await outOfArea(J, cid); });
   document.addEventListener('keydown', key); document.body.appendChild(bg); bg.querySelector('[data-wa="off"]').focus();
 }
+
+/* scrolling down over the grid: first bring the grid box up under the top bar, so the comp names are on screen, then scroll inside it */
+document.addEventListener('wheel', e => { if (POP || e.deltaY <= 0 || e.ctrlKey) return; const w = e.target.closest && e.target.closest('#gridCard .tablewrap'); if (!w) return;
+  const top = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--toph')) || 64; const r = w.getBoundingClientRect(); const gap = r.top - top;
+  if (gap > 4 && window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 2) { e.preventDefault(); window.scrollBy(0, Math.min(gap, Math.max(40, e.deltaY))); } }, { passive: false });
 
 /* =====================================================================
    ✍ Help me write (Oct 20 2026, her ask): under each comment box. She types what she wants to say; Claude
