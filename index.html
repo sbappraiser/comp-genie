@@ -316,7 +316,7 @@ table.grid thead th .ghsale{display:block;font-size:12.5px;font-weight:600;color
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0529';
+const BUILD='g2-1021-0532';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1981,6 +1981,7 @@ const markNotUsed = c => { c.notUsed = c.notUsed || { reasons: [], text: '', rep
 function notUsedHTML(J) { const L = J.comps.filter(c => c.notUsed && !c.use); if (!L.length && !app.nuAsk) return '';
   const ask = app.nuAsk && J.comps.find(c => c.id === app.nuAsk);
   return `<h2>Analyzed – not used <small>${L.filter(c => c.notUsed.report).length} go in the report (UAD “Additional properties analyzed not used”)</small></h2>
+    ${nuRulesHTML()}
     ${ask ? `<div class="nuask"><b>${esc(compTitle(ask))}</b> is off the grid and kept here as analyzed – not used. Pick the reason(s) below. <button class="btn sm" data-savedb="${ask.id}">Save it to my comp database</button> <button class="btn sm" data-act="nuok">OK</button></div>` : ''}
     ${L.map(c => { const N = c.notUsed; const st = V(c, 'status') || ''; return `<div class="nu"><div class="nuh"><b>${esc(compTitle(c))}</b> <small>${esc([st, money(V(c, 'salePrice') || V(c, 'listPrice')), showDate(V(c, 'saleDate') || V(c, 'contractDate'))].filter(Boolean).join(' · '))}</small>
       <label class="inl"><input type="checkbox" data-nu="${c.id}|report" ${N.report ? 'checked' : ''}> show in the report</label> <label class="inl"><input type="checkbox" data-nu="${c.id}|client" ${N.client ? 'checked' : ''}> client asked me to consider it</label>
@@ -2996,7 +2997,7 @@ async function wbRemove(J, cid) {
   const c = J.comps.find(x => x.id === cid); if (!c || !c.use) return;
   const snap = { job: J.id, cid, uses: J.comps.map(x => [x.id, x.use]), notUsed: c.notUsed ? JSON.parse(JSON.stringify(c.notUsed)) : null, label: `Comp ${c.use} (${compTitle(c)})` };
   try { await saveToMyDb(c); } catch (e) {}
-  const was = c.use; markNotUsed(c); J.comps.forEach(x => { if (x.use && x.use > was) x.use--; });
+  const was = c.use; markNotUsed(c); J.comps.forEach(x => { if (x.use && x.use > was) x.use--; }); app.nuAsk = c.id; app.nuAskShown = null;
   WB.undo = snap; WB.cur = null; save(); render(); wbUndoBar();
 }
 function wbUndo() { const s = WB.undo; const J = app.job; if (!s || !J || s.job !== J.id) return; const m = new Map(s.uses); J.comps.forEach(x => { if (m.has(x.id)) x.use = m.get(x.id); });
@@ -4704,6 +4705,48 @@ document.addEventListener('keydown', e => { const el = e.target; if (!AC.st || e
 document.addEventListener('focusout', e => { if (e.target === AC.el) setTimeout(acClose, 120); }, true);
 document.addEventListener('scroll', () => { if (AC.st && AC.el) acShow(AC.el, AC.st); }, { capture: true, passive: true });
 
+/* ---------------- why a comp was not used (her ask, Oct 20 2026) ----------------
+   Her screening rules (kept on this computer, kv 'nuRules'): 2-story homes, under N sq ft, condition C4 or worse, busy road,
+   an ADU, a much larger usable lot. "Fill in reasons" ticks the UAD reasons and writes a short comment for every
+   not-used comp that has none yet; and when she takes a comp off the list, a box asks why with those already ticked. */
+const NU_RULES0 = { twoStory: true, minGla: 1400, cond: 4, busy: true, adu: true, lotX: 1.5 };
+let NU_RULES = { ...NU_RULES0 }; DB.get('kv', 'nuRules').then(r => { if (r && r.v) NU_RULES = { ...NU_RULES0, ...r.v }; }).catch(() => {});
+function nuSuggest(J, c) {
+  const S = subjFacts(J), C = compFacts(c, J), R = NU_RULES; const why = new Set(), txt = [];
+  const sl = num(S.levels), cl = num(C.levels); if (R.twoStory && cl && cl >= 2 && (!sl || sl < 2)) { why.add('DesignOrStyleVariance'); txt.push('two-story'); }
+  const g = num(C.gla); if (R.minGla && g && g < R.minGla) { why.add('GrossLivingArea'); txt.push(`${g.toLocaleString()} sq ft (under ${(+R.minGla).toLocaleString()})`); }
+  const cn = num(String(C.c || '').replace(/\D/g, '')); if (R.cond && cn && cn >= R.cond) { why.add('Condition'); txt.push(`C${cn} condition`); }
+  if (R.busy && /adverse[^;]*busy|busy road/i.test(String(C.loc || ''))) { why.add('SiteInfluence'); txt.push('on a busy road'); }
+  const adu = String(C.adu || ''); if (R.adu && (num(C.aduSf) > 0 || (adu.trim() && !/^(none|no)$/i.test(adu.trim()) && /adu|guest|second|cottage/i.test(adu)))) { why.add('AccessoryDwellingUnit'); txt.push('has an ADU / guest unit'); }
+  const su = num(S.usable), cu = num(C.usable); if (R.lotX && su && cu && cu >= su * R.lotX) { why.add('LotSize'); txt.push(`usable lot ${cu.toFixed(2)} ac vs the subject’s ${su.toFixed(2)} ac`); }
+  const t = txt.length ? (txt.join('; ').replace(/^./, m => m.toUpperCase()) + '.') : '';
+  return { reasons: [...why], text: t.slice(0, 360) };
+}
+function nuRulesHTML() { const R = NU_RULES;
+  return `<div class="nurules"><b>My screening rules</b> <label class="inl"><input type="checkbox" data-nurule="twoStory" ${R.twoStory ? 'checked' : ''}> 2-story (subject 1 story)</label>
+    <label class="inl">under <input class="txt xs" data-nurule="minGla" value="${esc(R.minGla || '')}" inputmode="numeric"> sq ft</label>
+    <label class="inl">condition <select class="fine" data-nurule="cond">${[['', 'off'], [3, 'C3 or worse'], [4, 'C4 or worse'], [5, 'C5 or worse']].map(([v, l]) => `<option value="${v}" ${String(v) === String(R.cond || '') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <label class="inl"><input type="checkbox" data-nurule="busy" ${R.busy ? 'checked' : ''}> busy road</label> <label class="inl"><input type="checkbox" data-nurule="adu" ${R.adu ? 'checked' : ''}> ADU</label>
+    <label class="inl">usable lot ≥ <input class="txt xs" data-nurule="lotX" value="${esc(R.lotX || '')}" inputmode="decimal">× the subject’s</label>
+    <button class="btn sm primary" data-act="nufill">Fill in reasons from my rules</button><small class="muted"> – only comps with no reason yet; you can change any.</small></div>`; }
+function nuFill(J) { let n = 0, none = 0; J.comps.filter(c => c.notUsed && !c.use).forEach(c => { const N = c.notUsed; if (N.reasons.length || (N.text || '').trim()) return; const s = nuSuggest(J, c); if (!s.reasons.length) { none++; return; } N.reasons = s.reasons; N.text = s.text; n++; });
+  save(); render(); toast(`Reasons filled in for ${n} comp${n === 1 ? '' : 's'}` + (none ? ` · ${none} did not match your rules – pick their reasons by hand` : ''), 7000); }
+/* the box that asks why, right when she takes a comp off */
+function nuAskBox(J, cid) { const c = J.comps.find(x => x.id === cid); if (!c || !c.notUsed) return; const N = c.notUsed;
+  if (!N.reasons.length && !(N.text || '').trim()) { const s = nuSuggest(J, c); N.reasons = s.reasons; N.text = s.text; }
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  const draw = () => { bg.innerHTML = `<div class="sheet"><h2>Why not ${esc(compTitle(c))}?</h2><p class="help">Kept as analyzed – not used (it goes in the report’s “Additional properties analyzed not used”). ${N.reasons.length ? 'Ticked from your screening rules – change anything.' : 'Pick the reason(s).'}</p>
+    <div class="nur">${NOTUSED_REASONS.map(([v, l]) => `<label class="chip2"><input type="checkbox" data-nua="${v}" ${N.reasons.includes(v) ? 'checked' : ''}>${esc(l)}</label>`).join('')}</div>
+    <input class="txt" data-nuat="1" maxlength="360" value="${esc(N.text || '')}" placeholder="Comment, e.g. Two-story; superior quality (360 characters)" style="width:100%;margin-top:8px">
+    <div class="row" style="margin-top:10px"><label class="inl"><input type="checkbox" data-nuarep="1" ${N.report ? 'checked' : ''}> show in the report</label><span class="grow"></span><button class="btn primary" data-nuaok="1">OK</button></div></div>`; };
+  draw(); document.body.appendChild(bg);
+  bg.addEventListener('change', e => { const t = e.target; if (t.dataset.nua) { N.reasons = N.reasons.filter(x => x !== t.dataset.nua); if (t.checked) N.reasons.push(t.dataset.nua); } if (t.dataset.nuat) N.text = t.value; if (t.dataset.nuarep) N.report = t.checked; save(); });
+  bg.addEventListener('input', e => { if (e.target.dataset.nuat) N.text = e.target.value; });
+  const close = () => { save(); bg.remove(); app.nuAsk = null; render(); };
+  bg.addEventListener('click', e => { if (e.target.closest('[data-nuaok]') || e.target === bg) close(); });
+  setTimeout(() => { const f = bg.querySelector('[data-nuat]'); if (f) f.focus(); }, 30);
+}
+
 /* =====================================================================
    Comp Genie – screens
    ===================================================================== */
@@ -5134,6 +5177,7 @@ function renderPage() {
   <section class="card st st-final" id="exportCard"><h2>Export</h2>${exportHTML(J)}</section>
   <footer class="foot">Comp Genie · your data stays on this computer · build ${typeof BUILD !== 'undefined' ? BUILD : ''}</footer>`;
   fillImages(); mapsRender(); { const t = document.querySelector('.top'); if (t) document.documentElement.style.setProperty('--toph', t.offsetHeight + 'px'); }   // the comp's sticky header sits under the top bar
+  if (app.nuAsk && app.nuAskShown !== app.nuAsk && typeof nuAskBox === 'function') { app.nuAskShown = app.nuAsk; const id = app.nuAsk; setTimeout(() => nuAskBox(J, id), 0); }
   wbFit(); document.querySelectorAll('table.grid').forEach(t => { const h = t.querySelector('thead th'); if (h) t.style.setProperty('--labw', h.offsetWidth + 'px'); });   // every grid (workbook, final): the Subject column sticks right after the line names
   hbarSync(); if (typeof wbColTint === 'function') wbColTint();
 }
@@ -5454,6 +5498,7 @@ document.addEventListener('click', async e => {
     case 'close': if (CPOP) { window.close(); break; } app.sel = null; render(); break;
     case 'backup': backupJob(); break;
     case 'nuok': app.nuAsk = null; render(); break;
+    case 'nufill': nuFill(app.job); break;
     case 'sens-run': { app.sens = { job: app.job.id, res: { ...sensRun(app.job), at: Date.now() } }; renderKeepFocus(); toast('Sensitivity run again with your current rates'); break; }
     case 'sup-run': { toast('Measuring your lines from your groups…'); await new Promise(r => setTimeout(r, 30)); app.job.support = supRun(app.job); save(); renderKeepFocus(); break; }
     case 'ts-run': { toast('Measuring time from your groups…'); await new Promise(r => setTimeout(r, 30)); app.job.timeSupport = await tsRun(app.job); save(); renderKeepFocus(); break; }
@@ -5539,6 +5584,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.jobname) { app.job.name = t.value.trim() || 'Assignment'; save(); renderParts(); return; }
   if (t.dataset.notes) { const c = app.job.comps.find(x => x.id === t.dataset.notes); c.notes = t.value; save(); return; }
   // adjustment grid
+  if (t.dataset.nurule) { const k = t.dataset.nurule; NU_RULES[k] = t.type === 'checkbox' ? t.checked : (t.value === '' ? null : +t.value); DB.put('kv', { id: 'nuRules', v: NU_RULES }); return; }
   if (t.dataset.nu || t.dataset.nur) { const [id, k] = (t.dataset.nu || t.dataset.nur).split('|'); const c = app.job.comps.find(x => x.id === id); if (!c) return; markNotUsed(c); const N = c.notUsed;
     if (t.dataset.nur) { N.reasons = N.reasons.filter(x => x !== k); if (t.checked) N.reasons.push(k); } else if (k === 'report' || k === 'client') N[k] = t.checked; else N[k] = t.value;
     save(); if (t.dataset.nur && k === 'Other') render(); return; }
