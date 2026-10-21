@@ -259,7 +259,7 @@ table.cmp tr.disrow td.using{background:#fff36b}table.cmp tr.flagrow td.using,ta
 nav.steps{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .stepb{font:inherit;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:2px solid var(--line);background:#fff;color:#000;border-radius:10px;padding:8px 14px;cursor:pointer;text-decoration:none;min-width:190px}
 .stepb b{font-size:16px}.stepb small{color:#1a1a1a;font-size:12px}.stepb.on{border-color:#ff8a00;background:#fff3e0;box-shadow:0 0 0 2px #ffcf99}
-#app[data-stage="micro"] .st:not(.st-micro),#app[data-stage="workbook"] .st:not(.st-workbook),#app[data-stage="final"] .st:not(.st-final){display:none!important}
+#app[data-stage="micro"] .st:not(.st-micro),#app[data-stage="workbook"] .st:not(.st-workbook),#app[data-stage="final"] .st:not(.st-final),#app[data-stage="cost"] .st:not(.st-cost){display:none!important}
 .cstrip{display:flex;flex-wrap:wrap;gap:6px}.cchip{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;color:#000}.cchip.ok{border-color:#8fcca0;background:var(--ok-l)}.cchip.on{outline:2px solid #ff8a00}
 table.cmplines th{text-align:left;font-weight:700}table.cmplines tr.linereq th,table.cmplines tr.linereq td{background:#fff36b}table.cmplines tr.lineopt td:nth-child(3){background:#f3f8ff}table.cmplines td.subj{background:#f4f6f8}
 table.grid.final td{font-size:14px}.famt{font-weight:700;color:#0b4fc4;font-size:13px}span.bad,b.bad{color:#d40000;font-weight:700}
@@ -306,7 +306,7 @@ input:focus::placeholder{color:#3a2a00!important;opacity:1}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0442';
+const BUILD='g2-1021-0444';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -5006,8 +5006,8 @@ function renderPage() {
   <section class="card st st-workbook" id="gridCard">${gridHTML(J)}</section>
   <section class="card st st-final" id="finalCard">${finalGridHTML(J)}</section>
   <section class="card st st-final" id="mapCard"></section>
-  <section class="card st st-workbook" id="refCard">${refHTML(J)}</section>
-  <section class="card st st-workbook" id="costCard">${costHTML(J)}</section>
+  <section class="card st st-cost" id="refCard">${refHTML(J)}</section>
+  <section class="card st st-cost" id="costCard">${costHTML(J)}</section>
   <section class="card st st-workbook" id="incomeCard">${incomeHTML(J)}</section>
   <section class="card st st-workbook st-final" id="nuCard">${notUsedHTML(J)}</section>
   <section class="card st st-workbook" id="timeCard">${timeHTML(J)}</section>
@@ -5530,7 +5530,7 @@ function stageBarHTML(J) { const st = J.stage || (J.comps.some(c => c.use) ? 'wo
   const o = (app.orders || []).find(x => x.id === J.orderId);
   const step = (k, n, l, sub) => `<button class="stepb${st === k ? ' on' : ''}" data-act="stage" data-s="${k}"><b>${n}</b> ${l}<small>${sub}</small></button>`;
   return `<nav class="steps">${o ? `<a class="stepb" href="../appraisal-assistant/?order=${encodeURIComponent(o.id)}&tab=market" target="_top" title="Macro, then micro – the order's Market tab in the Appraisal Assistant"><b>⓪</b> Market<small>macro → micro</small></a>` : ''}
-    ${step('micro', '①', 'Comps considered', `${J.comps.length} · screen, pick for the workbook`)}${step('workbook', '②', 'Workbook', U.length ? `${U.length} comps · ${conf} confirmed · adjust` : 'confirm each comp, adjust')}${step('final', '③', 'Final grid', 'review · export to SFREP')}</nav>`; }
+    ${step('micro', '①', 'Comps considered', `${J.comps.length} · screen, pick for the workbook`)}${step('workbook', '②', 'Workbook', U.length ? `${U.length} comps · ${conf} confirmed · adjust` : 'confirm each comp, adjust')}${step('final', '③', 'Final grid', 'review · export to SFREP')}${step('cost', '④', 'Cost approach', 'land sales · construction costs')}</nav>`; }
 
 /* Side-to-side scroll bar pinned to the bottom of the window: shows when a wide table
    (workbook, final grid, comps considered) is on screen but its own scroll bar is below the
