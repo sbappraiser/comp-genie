@@ -402,6 +402,12 @@ nav.steps.path .stepb.done{border-color:#0b8a3d}
 nav.steps.path .stepb{padding:5px 9px}nav.steps.path .stepb b{font-size:15px}
 .revcat{margin:10px 0 4px}.revcat h3{font-size:17px;margin:12px 0 6px;display:flex;align-items:center;gap:6px}.revcat h3 small{font-weight:600;color:#c40000}
 .revcat h3 small.rvok{color:#0b8a3d}
+/* line notes under the line names live in the ⓘ unless Settings › Show line notes (body.lnotes) */
+body:not(.lnotes) table.grid tbody th small.uadn,body:not(.lnotes) table.grid tbody th small.muted{display:none!important}
+.ginfo.gtip{cursor:help}
+.setmenu .adddbm{width:min(460px,92vw)}.setmenu .adddbm>b{margin-top:6px}.setmenu label.check{display:flex;gap:8px;align-items:center;font-size:15px}
+/* the grid's own scroll box stays just under the top bar while the page scrolls, so the comp names and line names never slide under it (Oct 21 2026) */
+body:not(.gridbox):not(.popgrid) #gridCard .tablewrap{position:sticky;top:var(--toph,64px)}
 
 /* ===== One look for every page (her requests Oct 21 2026) – shared by the Appraisal Assistant hub, the Comp genie and the iPad app.
    Her legend:  red * = required · green box = required · blue box = optional, goes into the report as more information ·
@@ -480,7 +486,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-1848';
+const BUILD='g2-1021-1915';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2199,7 +2205,8 @@ function gridHTML(J) {
     const rk = isObSlot(id) ? null : (row[6] || row[4]); const rate = rk ? '<div class="grates">' + [].concat(rk === 'bath' ? ['bath', 'halfBath'] : rk).map(k => { const fr = G.rateFrom && G.rateFrom[k] && !blank(G.rates[k]) ? (/ · /.test(G.rateFrom[k]) ? `From your starting points (${G.rateFrom[k]})` : 'From ' + G.rateFrom[k]) : '';
       return `<div class="grate"><label title="${esc(RATES[k][0] + ' – ' + RATES[k][1] + (fr ? '\n' + fr : ''))}"><span>${esc(rateShort(RATES[k][0]))}${fr ? '<i class="fromdot">●</i>' : ''}</span><input class="txt xs" data-grate="${k}" value="${esc(blank(G.rates[k]) ? '' : G.rates[k])}" inputmode="decimal"></label></div>`; }).join('') + '</div>' : '';
     const ask = bedAsk.length ? `<div class="bedask">${bedAsk.map(c => `Comp ${c.use} has ${compFacts(c, J).beds} bedroom${compFacts(c, J).beds === 1 ? '' : 's'}`).join(', ')} – what bedroom adjustment do you want? Type it per bedroom above, or in the comp's box.</div>` : '';
-    return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${GUIDE[id] || PICK[id] ? `<button type="button" class="ginfo" data-ginfo="${id}" title="UAD 3.6 guidance for this line">i</button>` : ''}${type && type !== 'OTHER' && !GRID_INFO[id] && LINE_EG[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP: ${esc(type)}">${esc(LINE_EG[id])}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] && GRID_INFO[id] !== 'UAD 3.6' ? `<br><small class="muted">${esc(GRID_NOTE[id] || GRID_INFO[id].replace(/^UAD 3\.6 \((.*)\)$/, '$1'))}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
+    return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${(() => { const tip = [type && type !== 'OTHER' && !GRID_INFO[id] && LINE_EG[id] ? 'e.g. ' + LINE_EG[id] : '', type === 'OTHER' ? 'Add Other line in SFREP: “' + row[5] + '”' : '', GRID_INFO[id] && GRID_INFO[id] !== 'UAD 3.6' ? (GRID_NOTE[id] || GRID_INFO[id]) : '', id === 'structure' ? STRUCTURES.join(' · ') : id === 'unitPos' ? 'Interior · Corner · End' : id === 'landCommon' ? 'Yes = no land owned · No = the unit owns land' : ''].filter(Boolean).join(' — ');   /* her ask (Oct 21 2026): the notes under a line name go in its ⓘ (Settings › Show line notes puts them back) */
+      return GUIDE[id] || PICK[id] ? `<button type="button" class="ginfo" data-ginfo="${id}" title="${esc((tip ? tip + ' — ' : '') + 'click for the UAD 3.6 guidance for this line')}">i</button>` : tip ? `<span class="ginfo gtip" title="${esc(tip)}" tabindex="0">i</span>` : ''; })()}${type && type !== 'OTHER' && !GRID_INFO[id] && LINE_EG[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP: ${esc(type)}">${esc(LINE_EG[id])}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] && GRID_INFO[id] !== 'UAD 3.6' ? `<br><small class="muted">${esc(GRID_NOTE[id] || GRID_INFO[id].replace(/^UAD 3\.6 \((.*)\)$/, '$1'))}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
   }).join('');
   const sumRow = (label, fn, cls = '') => `<tr class="tot ${cls}"><th>${label}</th><td></td>${used.map((c, i) => `<td${SBS ? ' colspan="2"' : ''} data-cc="${c.id}">${fn(tot[i], c)}</td>`).join('')}</tr>`;
   const thSub = SBS ? '<span class="ghsub"><span>Description</span><span title="+(−) $ Adjustment">+(−) $ Adjustment</span></span>' : '';
@@ -5566,7 +5573,7 @@ async function start() {
   const last = await DB.get('kv', 'lastJob');
   app.job = ((POP || CPOP) && app.jobs.find(j => j.id === (POP || CPOP).job)) || app.jobs.find(j => last && j.id === last.v) || app.jobs[0] || null;
   app.orders = await readOrders();
-  await archPhotoInit(); try { if (localStorage.getItem('genie.classic') === '1') document.body.classList.add('classic'); } catch (e) {} try { if (localStorage.getItem('genie.sbs') !== '0') document.body.classList.add('sbs'); } catch (e) { document.body.classList.add('sbs'); } try { const gl = await DB.get('kv', 'gridLines'); if (gl && gl.v) GRID_DEFAULT = gl.v; } catch (e) {}
+  await archPhotoInit(); try { if (localStorage.getItem('genie.classic') === '1') document.body.classList.add('classic'); } catch (e) {} try { if (localStorage.getItem('genie.lnotes') === '1') document.body.classList.add('lnotes'); } catch (e) {} try { if (localStorage.getItem('genie.sbs') !== '0') document.body.classList.add('sbs'); } catch (e) { document.body.classList.add('sbs'); } try { const gl = await DB.get('kv', 'gridLines'); if (gl && gl.v) GRID_DEFAULT = gl.v; } catch (e) {}
   const oq = new URLSearchParams(location.search).get('order');
   if (new URLSearchParams(location.search).get('embed')) document.body.classList.add('embed');
   if (POP) document.body.classList.add('popgrid');   // inside the Appraisal Assistant's Comp genie tab
@@ -5942,6 +5949,19 @@ function renderPage() {
   <header class="top"><h1>Comp Genie</h1><span class="pill ver" title="The Comp genie version – after Ctrl+R it should match the one I tell you">Version ${typeof BUILD !== 'undefined' ? BUILD : ''}</span>
     <span class="pill ${ARCH.loaded ? 'ok' : 'warn'}">${ARCH.loaded ? `Archive: ${ARCH.rows.length.toLocaleString()} records` : 'Archive not loaded'}</span>${archPhotoPill()}
     <span class="pill">${app.cort.length ? `CORT: ${app.cort.length} sales` : 'No CORT table'}</span><span class="pill" title="Your land sale and construction cost databases (shared with the cost approach)">${(app.land || []).length ? `Land sales: ${app.land.length}` : 'No land sales'} · ${app.costDb ? `Costs: ${app.costDb.projects.length} projects` : 'No cost database'}</span>
+    <details class="adddb setmenu"><summary class="btn sm" title="Your settings – the look, the grid, how notes show">⚙ Settings</summary><div class="adddbm">
+      <b>Look</b>
+      <label class="check"><input type="checkbox" data-classic="1" ${document.body.classList.contains('classic') ? 'checked' : ''}> Classic (ACI) look for the grid</label>
+      <label class="check"><input type="checkbox" data-lnotes="1" ${document.body.classList.contains('lnotes') ? 'checked' : ''}> Show line notes under the line names <small>(otherwise they are in each ⓘ)</small></label>
+      <b>Grid</b>
+      <label class="check"><input type="checkbox" data-sbs="1" ${document.body.classList.contains('sbs') ? 'checked' : ''}> Adjustment beside the entry</label>
+      <label class="check"><input type="checkbox" data-wbon="1" ${typeof WB !== 'undefined' && WB.on ? 'checked' : ''}> Workbook view (only the lines you adjust)</label>
+      <label>Open the grid <select data-gview="1"><option value="page" ${document.body.classList.contains('gridbox') ? '' : 'selected'}>on the page</option><option value="box" ${document.body.classList.contains('gridbox') ? 'selected' : ''}>in its own box (two scroll bars)</option></select></label>
+      <button class="btn sm" data-act="set-lines">Pick the grid lines this report needs…</button>
+      <button class="btn sm" data-act="starts-edit">Edit my starting points (rates)…</button>
+      <b>Your data</b>
+      <a class="btn sm" href="?view=db" target="genie-dbs">My databases – what each holds, safety, undo ↗</a>
+      <span class="help">Each setting is kept on this computer and applies to every assignment.</span></div></details>
     <details class="adddb"><summary class="btn sm" title="Add files to your databases – or drop them anywhere on this page">📥 Add to my databases</summary><div class="adddbm">
       <label class="btn sm">CORT weekly closings (PDF / CSV)<input type="file" multiple accept=".pdf,.csv" data-act="files" hidden></label>
       <label class="btn sm">Land sales (your land sales workbook, Excel)<input type="file" multiple accept=".xlsx" data-act="files" hidden></label>
@@ -6312,6 +6332,7 @@ document.addEventListener('click', async e => {
     case 'rmall-yes': app.job.comps = []; app.sel = null; app.confirm = null; await saveNow(); render(); toast('All comps removed – your files list is unchanged'); break;
     case 'path': { if (typeof e !== 'undefined' && e.preventDefault) e.preventDefault(); const x = pathSteps(app.job).find(y => y.k === t.dataset.p); if (!x) break; if (x.href) { window.top.location.href = x.href; break; }
       app.pathAt = x.k; app.job.stage = x.st; save(); render.top = true; render(); setTimeout(() => { const c = document.querySelector(x.sel); if (c) { const d = c.closest('details'); if (d) d.open = true; c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 120); break; }
+    case 'set-lines': { if (app.job.stage !== 'workbook') { app.job.stage = 'workbook'; save(); render.top = true; render(); } setTimeout(() => { const d = [...document.querySelectorAll('#gridCard details')].find(x => /Grid lines/.test(x.querySelector('summary') ? x.querySelector('summary').textContent : '')); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 120); break; }
     case 'goreport': { app.job.stage = 'final'; save(); render.top = true; render(); setTimeout(() => { const c = document.getElementById('reportCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120); break; }
     case 'close': if (CPOP) { window.close(); break; } app.sel = null; render(); break;
     case 'backup': backupJob(); break;
@@ -6426,6 +6447,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.gfine) { const G = G0(app.job); G.fine = G.fine || {}; const [who, k] = t.dataset.gfine.split('|'); G.fine[who] = G.fine[who] || {}; G.fine[who][k] = t.value; save(); renderKeepFocus(); return; }
   if (t.dataset.gok !== undefined) { const G = G0(app.job); G.ok = G.ok || {}; const v = t.value.trim(); if (v) G.ok[t.dataset.gok] = v; else delete G.ok[t.dataset.gok]; save(); renderKeepFocus(); return; }
   if (t.dataset.sbs) { try { localStorage.setItem('genie.sbs', t.checked ? '1' : '0'); } catch (e) {} document.body.classList.toggle('sbs', t.checked); renderKeepFocus(); return; }
+  if (t.dataset.lnotes) { try { localStorage.setItem('genie.lnotes', t.checked ? '1' : '0'); } catch (e) {} document.body.classList.toggle('lnotes', t.checked); return; }
   if (t.dataset.classic) { try { localStorage.setItem('genie.classic', t.checked ? '1' : '0'); } catch (e) {} document.body.classList.toggle('classic', t.checked); return; }
   if (t.dataset.gline) { const G = G0(app.job); G.lines = G.lines || {}; G.lines[t.dataset.gline] = t.checked; save(); render(); return; }
   if (t.dataset.gfact) { const [cid, row] = t.dataset.gfact.split('|'); const c = app.job.comps.find(x => x.id === cid); if (!c) return;
@@ -6756,7 +6778,7 @@ if (location.protocol === 'file:') {
     L.innerHTML = `<button class="x" aria-label="Close">×</button><h3>What the colors mean</h3><ul>${LEGEND.map(([s, t]) => `<li>${s}<span>${t}</span></li>`).join('')}</ul>`;
     L.querySelector('.x').onclick = () => L.remove(); document.body.appendChild(L); }
   let F = null; function corner() { if (!F) { F = document.createElement('div'); F.id = 'lookFile'; } const H = document.querySelector('header.top, .top');   // in the page's own top bar, at its right end (pages that redraw their top bar get it back)
-    if (H) { if (F.parentNode !== H) { F.className = 'inhead'; H.appendChild(F); } } else if (F.parentNode !== document.body) { F.className = ''; document.body.appendChild(F); }
+    if (H) { if (F.parentNode !== H) { F.className = 'inhead'; H.appendChild(F); const h = H.offsetHeight; if (h && getComputedStyle(H).position === 'sticky') document.documentElement.style.setProperty('--toph', h + 'px'); } }   // the genie keeps its grid under the top bar (--toph): adding this box can make the bar taller else if (F.parentNode !== document.body) { F.className = ''; document.body.appendChild(F); }
     let name = ''; try { name = typeof window.lookFileName === 'function' ? String(window.lookFileName() || '') : ''; } catch (e) {}
     const want = (name ? `<span title="The file you are working in">📄 ${name.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span>` : '') + '<button type="button" data-lookleg="1" title="What the colors mean">ⓘ Colors</button>';
     if (F.innerHTML !== want) F.innerHTML = want; }
