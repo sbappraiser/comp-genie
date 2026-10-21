@@ -359,7 +359,7 @@ table.tbl.cost input::placeholder{color:#9aa4ae;font-style:italic}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0836';
+const BUILD='g2-1021-0848';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2106,6 +2106,7 @@ function myDbAuto() { clearTimeout(MYDB_T); MYDB_T = setTimeout(async () => { co
 function otherDesc(r, F) {
   if (r[0] === 'usable') { if (F.landSplit && !F.usableOwn) { const t = splitRaw(F.landSplit); if (t) return t; }   // her rule (Oct 20 2026): the 2.6 utility as she wrote it ("0.62r/2.15o"), without the neighborhood
     return blank(F.usable) ? '' : (+F.usable).toFixed(2) + ' ac'; }
+  if (r[0] === 'land' && typeof landCanon === 'function') return String(landCanon(F.land) || '').trim();   /* the subject's typed "Average-Good" went to SFREP as typed */
   return String(F[r[0]] || '').trim();
 }
 
