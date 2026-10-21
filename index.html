@@ -384,6 +384,11 @@ body.gridbox #gridCard .tablewrap::-webkit-scrollbar{width:16px;height:16px}body
 .adddbm{position:absolute;z-index:30;top:110%;left:0;width:min(440px,90vw);display:grid;gap:6px;background:#fff;border:2px solid var(--look-navy);border-radius:10px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 .adddbm .btn{justify-content:flex-start;text-align:left}
 body.gridbox #gridCard>*:not(.gboxbar):not(.tablewrap){display:none!important}   /* only the grid in the box; the controls and comment stay on the page */
+.dbcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px;margin:10px 0}
+.dbcard h2{font-size:19px;margin:0 0 6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dbcard p{margin:4px 0;font-size:15.5px}.dbuse{color:#27313b}
+.dbst{font:600 14px system-ui,sans-serif;padding:2px 10px;border-radius:999px;background:#e3e6ea;color:#27313b}
+.dbst.on{background:#dff3e6;color:#0b6b30}.dbst.off{background:#ffecec;color:#c40000}
 
 /* ===== One look for every page (her requests Oct 21 2026) – shared by the Appraisal Assistant hub, the Comp genie and the iPad app.
    Her legend:  red * = required · green box = required · blue box = optional, goes into the report as more information ·
@@ -462,7 +467,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-1737';
+const BUILD='g2-1021-1756';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -3087,8 +3092,9 @@ function precheckGrid(J) { if (!RC) return rcRun(() => precheckGrid(J));
     [['sowCost', 'Cost approach developed?'], ['sowIncome', 'Income approach developed?'], ['sowRent', 'Rent schedule included?'], ['sowAddlUser', 'Intended users besides the client?']].forEach(([k, l]) => { if (R[k] !== 'true' && R[k] !== 'false' && F[k] === undefined) out.push({ sev: 'Must fix', msg: `Scope of work: answer "${l}" (Report details).` }); });
     if (blank(num(String(R.opinion || '').replace(/[$,\s]/g, '')))) out.push({ sev: 'Must fix', msg: 'Opinion of market value is blank (Report details › Value and reconciliation) – it is the value on page 1 of the report.', hint: blank(G.value) ? '' : 'The grey ' + money(G.value) + ' there is only your sales comparison value as a hint – type your final value.' });   /* her Oct 21 import: page 1 Opinion of Market Value was blank */
     if (blank(String(R.reconNote || '').trim())) out.push({ sev: 'Must fix', msg: 'Reconciliation comment is blank (Report details › Value and reconciliation) – 3.6 requires it (Reconciliation of Market Value).' });
-    if (sowLen(R) > 2500) out.push({ sev: 'Must fix', msg: `Additional scope of work is ${sowLen(R).toLocaleString()} characters – 3.6 allows 2,500 for the scope, extraordinary assumptions and hypothetical conditions together (Report details).` });
-    if (R.sowAddlScope === 'true' && !sowAny(R)) out.push({ sev: 'Must fix', msg: 'Additional scope of work is Yes but its text is blank (Report details › Scope of work) – type your extraordinary assumptions, hypothetical conditions or added scope, or answer No.' });
+    const RX = typeof RE === 'function' ? RE(J) : R;
+    if (sowLen(RX) > 2500) out.push({ sev: 'Must fix', msg: `Additional scope of work is ${sowLen(RX).toLocaleString()} characters – 3.6 allows 2,500 for the scope, extraordinary assumptions and hypothetical conditions together (Report details).` });
+    if (R.sowAddlScope === 'true' && !sowAny(RX)) out.push({ sev: 'Must fix', msg: 'Additional scope of work is Yes but its text is blank (Report details › Scope of work) – type your extraordinary assumptions, hypothetical conditions or added scope, or answer No.' });
     { const N = typeof clientNeeds === 'function' ? clientNeeds(J) : []; const has = k => N.some(x => x.k === k);   /* the client's letter (her ask Oct 21 2026) */
       const cost = R.sowCost === 'true' || (blank(R.sowCost) && F.sowCost === true), inc = R.sowIncome === 'true' || (blank(R.sowIncome) && F.sowIncome === true), rent = R.sowRent === 'true' || (blank(R.sowRent) && F.sowRent === true);
       if (has('cost') && !cost) out.push({ sev: 'Must fix', msg: 'The client asks for the cost approach, but Cost approach developed is not Yes (Report details › Scope of work).' });
@@ -3876,9 +3882,14 @@ function reportFrom(J) {
     amc: o.amcUsed ? (o.amcCo || '') : '', amcAddr1: o.amcUsed ? o.amcAddr1 || '' : '', amcAddr2: o.amcUsed ? o.amcAddr2 || '' : '',
     insp: I.inspType || 'InteriorAndExterior', market: (o.market && o.market.uad) || null, contract: o.uad || null, hasOrder: !!o.id,
     sowCost: o.id ? !!o.apCost : undefined, sowIncome: o.id ? !!o.apIncome : undefined, sowRent: o.id ? !!o.rent : undefined, sowAddlUser: o.id ? !!String(o.otherUsers || '').trim() : undefined,
+    /* her Order › Scope of work tab (Oct 21 2026): highest and best use, added scope, extraordinary assumptions, hypothetical conditions */
+    hbu: { legal: !!o.hbuLegal, phys: !!o.hbuPhys, fin: !!o.hbuFin, max: !!o.hbuMax }, hbuPresent: o.hbuPresent || '', hbuNote: o.hbuNote || '', sowNote: o.sowNote || '', eaNote: o.ea || '', hcNote: o.hc || '',
     listedYear: o.listing === 'listed' || o.listing === 'contract' ? true : undefined, priorHits: priorHits(J, o.effDate || o.inspDate || o.dod || J.subject.eff || '') };
 }
 const rv = (J, k) => { const R = R0(J), F = reportFrom(J); return blank(R[k]) ? F[k] : R[k]; };
+/* her answers here, or the order's Scope of work tab where she left one blank (read-only copy for checking and export) */
+function RE(J) { const R = R0(J), F = reportFrom(J); const o = { ...R }; ['hbuNote', 'hbuPresent', 'sowNote', 'eaNote', 'hcNote'].forEach(k => { if (blank(R[k]) && !blank(F[k])) o[k] = F[k]; });
+  o.hbu = Object.values(R.hbu || {}).some(Boolean) ? R.hbu : (Object.values(F.hbu || {}).some(Boolean) ? F.hbu : (R.hbu || {})); return o; }
 
 /* her exposure-time rule (Oct 19 2026): count only the days a comp was on the market at a reasonable price – from its last price
    reduction to the pending / contingent date; a comp that was never reduced counts its days on market */
@@ -3903,7 +3914,7 @@ function priorHits(J, eff0) {
   return out;
 }
 function reportHTML(J) {
-  const R = R0(J), F = reportFrom(J), G = G0(J), H = R.hbu;
+  const R = R0(J), F = reportFrom(J), G = G0(J), H = RE(J).hbu, RX = RE(J);
   const inp = (k, ph, w) => `<input class="txt" data-rpt="${k}" value="${esc(R[k] ?? '')}" placeholder="${esc(F[k] || ph || '')}"${w ? ` style="width:${w}"` : ''}>`;
   const sel = (k, list, def, note = 'from the order') => `<select data-rpt="${k}"><option value="">${def ? esc((list.find(x => x[0] === def) || [, ''])[1]) + ' (' + note + ')' : '—'}</option>${list.map(([v, l]) => `<option value="${v}"${R[k] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const yn = (k, def) => `<select data-rpt="${k}"><option value="">${def === true ? 'Yes' : def === false ? 'No' : '—'}${def !== undefined ? ' (usual)' : ''}</option><option value="true"${R[k] === 'true' ? ' selected' : ''}>Yes</option><option value="false"${R[k] === 'false' ? ' selected' : ''}>No</option></select>`;
@@ -3929,21 +3940,21 @@ function reportHTML(J) {
       <label class="fld"><span>AMC</span>${inp('amc')}</label></section>
     <section><h3>Highest and best use</h3>
       ${HBU_TESTS.map(([k, l]) => `<label class="check"><input type="checkbox" data-hbu="${k}" ${H[k] ? 'checked' : ''}>${l}</label>`).join('')}
-      <label class="fld"><span>Is the highest and best use as improved the present use?</span>${yn('hbuPresent')}</label>
+      <label class="fld"><span>Is the highest and best use as improved the present use?</span>${yn('hbuPresent', F.hbuPresent === 'true' ? true : F.hbuPresent === 'false' ? false : undefined)}</label>
       <div class="row"><button class="btn small" data-act="hbu-all">All four tests met · present use</button><button class="btn ghost small" data-act="hbu-draft">Draft the comment</button></div>
-      <label class="fld"><span>Highest and best use comment ${cmtBtn('textarea[data-rpt="hbuNote"]')}</span><textarea class="txt" rows="4" data-rpt="hbuNote" placeholder="Your comment">${esc(R.hbuNote || '')}</textarea></label></section>
+      <label class="fld"><span>Highest and best use comment ${cmtBtn('textarea[data-rpt="hbuNote"]')}</span><textarea class="txt" rows="4" data-rpt="hbuNote" placeholder="${esc(F.hbuNote ? 'From the order’s Scope of work: ' + F.hbuNote : 'Your comment')}">${esc(R.hbuNote || '')}</textarea></label></section>
     <section><h3>Scope of work <small>UAD 3.6 – every answer is required</small></h3>
       <label class="fld"><span>Cost approach developed?</span>${yn('sowCost', F.sowCost)}</label>
       <label class="fld"><span>Income approach developed?</span>${yn('sowIncome', F.sowIncome)}</label>
       <label class="fld"><span>Rent schedule (1007) included?</span>${yn('sowRent', F.sowRent)}</label>
       <label class="fld"><span>Government agency appraisal (FHA, VA, USDA)?</span>${yn('sowGov', false)}${R.sowGov === 'true' ? ` ${sel('govType', [['FHA', 'FHA'], ['VA', 'VA'], ['USDA', 'USDA']], '')}` : ''}</label>
       <label class="fld"><span>Intended users besides the client?</span>${yn('sowAddlUser', F.sowAddlUser)}</label>
-      <label class="fld"><span>Additional scope of work?</span>${yn('sowAddlScope', sowAny(R) ? true : false)}</label>
-      <label class="fld"><span>Scope of work – what you did beyond the standard <small class="muted">(shares 2,500 characters with the two boxes below)</small></span><textarea class="txt" rows="3" maxlength="2500" data-rpt="sowNote" placeholder="e.g. Exterior photos of the comps were taken from the street; the subject's permits were reviewed at the County.">${esc(R.sowNote || '')}</textarea></label></section>
+      <label class="fld"><span>Additional scope of work?</span>${yn('sowAddlScope', sowAny(RX) ? true : false)}</label>
+      <label class="fld"><span>Scope of work – what you did beyond the standard <small class="muted">(shares 2,500 characters with the two boxes below)</small></span><textarea class="txt" rows="3" maxlength="2500" data-rpt="sowNote" placeholder="${esc(F.sowNote ? 'From the order’s Scope of work: ' + F.sowNote : 'e.g. Exterior photos of the comps were taken from the street; the subject\'s permits were reviewed at the County.')}">${esc(R.sowNote || '')}</textarea></label></section>
     <section><h3>Extraordinary assumptions and hypothetical conditions <small>go to SFREP in Additional Scope of Work</small></h3>
-      <label class="fld"><span>Extraordinary assumptions</span><textarea class="txt" rows="3" maxlength="2500" data-rpt="eaNote" placeholder="e.g. The owner-reported permits for the 2010 remodel are assumed accurate; if not, the value could change.">${esc(R.eaNote || '')}</textarea></label>
-      <label class="fld"><span>Hypothetical conditions</span><textarea class="txt" rows="3" maxlength="2500" data-rpt="hcNote" placeholder="e.g. As if the repairs listed in the Unit Interior section were completed as of the effective date.">${esc(R.hcNote || '')}</textarea></label>
-      <p class="help">${sowLen(R).toLocaleString()} of 2,500 characters used (all three boxes together). A value <i>subject to</i> repairs or completion: choose it in Market value condition under Value and reconciliation.</p></section>
+      <label class="fld"><span>Extraordinary assumptions</span><textarea class="txt" rows="3" maxlength="2500" data-rpt="eaNote" placeholder="${esc(F.eaNote ? 'From the order’s Scope of work: ' + F.eaNote : 'e.g. The owner-reported permits for the 2010 remodel are assumed accurate; if not, the value could change.')}">${esc(R.eaNote || '')}</textarea></label>
+      <label class="fld"><span>Hypothetical conditions</span><textarea class="txt" rows="3" maxlength="2500" data-rpt="hcNote" placeholder="${esc(F.hcNote ? 'From the order’s Scope of work: ' + F.hcNote : 'e.g. As if the repairs listed in the Unit Interior section were completed as of the effective date.')}">${esc(R.hcNote || '')}</textarea></label>
+      <p class="help">${sowLen(RX).toLocaleString()} of 2,500 characters used (all three boxes together). A value <i>subject to</i> repairs or completion: choose it in Market value condition under Value and reconciliation.</p></section>
     <section><h3>Subject and site</h3>
       <label class="fld"><span>Legal description</span><textarea class="txt" rows="2" data-rpt="legal" placeholder="${esc(F.legal || 'From the CRS report or the preliminary title report')}">${esc(R.legal || '')}</textarea></label>
       <label class="fld"><span>Number of parcels</span>${inp('parcels', '1', '5em')}</label>
@@ -4015,7 +4026,7 @@ const rightsGuess = t => /oil|gas|mineral|hydrocarbon/i.test(t || '') ? 'Mineral
 
 /* ---------------- into the full report (DOM of the merged file) ---------------- */
 function writeReportXML(doc, NS, J, SUBJ, VA, SVC) {
-  const R = R0(J), F = reportFrom(J), H = R.hbu, G = G0(J);
+  const R = RE(J), F = reportFrom(J), H = R.hbu, G = G0(J);   // RE: her answers, else the order's Scope of work tab
   const pos = (parent, tag) => { const seq = D1_ORDER[parent.localName] || []; const r = seq.indexOf(tag); const kids = [...parent.children];
     if (r >= 0) return kids.find(k => { const i = seq.indexOf(k.localName); return i > r; }) || null;
     return kids.find(k => seq.indexOf(k.localName) < 0 && k.localName > tag) || null; };
@@ -5312,6 +5323,36 @@ function obSlotAmount(row, S, C, J) { if (!S._obKnown || !C._obKnown) return nul
   [['aduSf', 'sf'], ['aduBath', 'full'], ['aduHalf', 'half']].forEach(([k, f]) => { const r = num(R[k]); if (!r) return; tot += ((+a[f] || 0) - (+b[f] || 0)) * r; any = true; });
   return any ? Math.round(tot / 500) * 500 : null; }
 
+/* ===== My databases (her ask Oct 21 2026): one place for the files that feed every assignment – CSV, PDF, Excel, the archive.
+   Opened as comp-genie/?view=db (the hub's "My databases" tab shows it). Per-order files stay in the order's Documents. ===== */
+const DBV = new URLSearchParams(location.search).get('view') === 'db';
+function dbViewHTML() {
+  const add = (label, accept) => `<label class="btn primary">${label}<input type="file" multiple accept="${accept}" data-act="files" hidden></label>`;
+  const ok = (on, txt) => `<span class="dbst ${on ? 'on' : 'off'}">${on ? '✓ ' : ''}${txt}</span>`;
+  const landN = (app.land || []).length, cost = app.costDb, cortN = (app.cort || []).length;
+  const cortDates = cortN ? (() => { const d = app.cort.map(r => r.saleDate || r.recDate || r.date || '').filter(Boolean).sort(); return d.length ? ` · ${showDate(d[0])} to ${showDate(d[d.length - 1])}` : ''; })() : '';
+  const cards = [
+    ['Comp archive (your ACI reports)', ARCH.loaded ? ok(true, `${ARCH.rows.length.toLocaleString()} records`) : ok(false, 'not loaded in this browser'),
+      'Every comparable and subject from your past ACI reports – the comps you used, their adjustments and notes.', 'Comps considered (your archive column), History, grouped sales, sensitivity',
+      add('Add the archive (Comp Archive.json.gz)', '.gz,.json') + (ARCH.loaded ? ` <button class="btn" data-act="archphotos">${AP.state === 'ok' ? 'Archive photos ✓ – reconnect' : 'Connect the archive photos folder'}</button>` : '')],
+    ['CORT weekly closings', cortN ? ok(true, `${cortN.toLocaleString()} sales${cortDates}`) : ok(false, 'none yet'),
+      'The recorded sales from your weekly CORT emails – document numbers, buyers and sellers, prices, financing.', 'Sale verification and document numbers on each comp, off-market sales',
+      add('Add CORT files (PDF or CSV)', '.pdf,.csv')],
+    ['Land sales', landN ? ok(true, `${landN.toLocaleString()} sales`) : ok(false, 'none yet'),
+      'Vacant land sales from MLS or CRS exports, with your own edits (location, access, view).', 'Cost approach › site value (land sales, extraction)',
+      add('Add land sales (MLS / CRS CSV or PDF)', '.csv,.pdf')],
+    ['Construction cost database', cost ? ok(true, `${cost.projects.length} projects · ${cost.lines.length.toLocaleString()} budget lines${cost.decisions ? ' · your decisions applied' : ''}`) : ok(false, 'not loaded'),
+      'Your contractors’ budgets: cost per square foot by area, quality and kind of project.', 'Cost approach › cost new and soft costs',
+      add('Add the cost database (Excel .xlsx)', '.xlsx')],
+    ['MLS market statistics', '<span class="dbst">in the Appraisal Assistant</span>', 'Monthly market numbers for the market conditions section.', 'Order › Market tab (macro → micro)', ''],
+    ['Your comments and standard wording', '<span class="dbst">in the Appraisal Assistant</span>', 'Your comment library (OneNote) and the standard paragraphs you reuse.', 'Every comment box (My comments), engagement letters', '']];
+  return `<header class="top"><h1>My databases</h1><span class="pill ver">Version ${typeof BUILD !== 'undefined' ? BUILD : ''}</span><span class="grow"></span></header>
+  <p class="help">The files that feed every assignment. Add files with the buttons, or drop them anywhere on this page – each one is recognized by what is in it and filed in the right database. Everything stays on this computer. Files for one assignment (engagement letter, contract, CRS report, plans, the iPad workfile) go in that order's <b>① Documents</b> instead.</p>
+  <div class="dbcards">${cards.map(([t, st, what, where, btn]) => `<section class="card dbcard"><h2>${t} ${st}</h2><p>${what}</p><p class="dbuse"><b>Used in:</b> ${where}</p>${btn ? `<div class="row">${btn}</div>` : ''}</section>`).join('')}</div>
+  <label class="drop" id="drop"><input type="file" multiple data-act="files" hidden><b>Or drop files here</b></label>
+  <section class="card"><h2>Keeping them safe</h2><p>Your databases live in this browser on this computer. <b>Back up</b> in the Appraisal Assistant saves your orders; keep the original files (archive, CORT emails, cost workbook) in OneDrive as well, so they can always be added again. Your original files are never changed here – a copy is read.</p></section>`;
+}
+
 /* =====================================================================
    Comp Genie – screens
    ===================================================================== */
@@ -5694,6 +5735,7 @@ function renderPage() {
   const J = app.job; const root = $('#app');
   if (J && !J.gridManual && J.comps.some(c => c.use) && !gridInDateOrder(J)) { gridDateOrder(J); save(); }   // her rule: the grid is in closing-date order unless she numbered it herself
   if (CPOP) { const c = J && J.comps.find(x => x.id === CPOP.id); root.innerHTML = c ? `<header class="top pop"><h1>Comp Genie</h1><span class="pill">${esc(J.name)}</span><span class="grow"></span><small>stays in step with your other windows</small></header>` + detailHTML(c) : '<p class="help">That comp is no longer in this assignment.</p>'; document.title = (c ? compTitle(c) : 'Comp') + ' · ' + (J ? J.name : ''); fillImages(); return; }
+  if (typeof DBV !== 'undefined' && DBV) { root.innerHTML = dbViewHTML(); document.title = 'My databases'; return; }
   if (POP) { root.innerHTML = popHTML(J); document.title = `Comps ${POP.from}–${POP.to} · ${J.name}`; wbUndoBar(); return; }
   if (app.home || !J) { root.innerHTML = homeHTML(); document.title = 'Comp Genie'; return; }
   document.title = 'Comp Genie · ' + J.name;
@@ -5708,6 +5750,7 @@ function renderPage() {
       <label class="btn sm">Land sales (MLS / CRS CSV or PDF)<input type="file" multiple accept=".csv,.pdf" data-act="files" hidden></label>
       <label class="btn sm">Construction cost database (Excel .xlsx)<input type="file" multiple accept=".xlsx" data-act="files" hidden></label>
       <label class="btn sm">Comp archive (Comp Archive.json.gz)<input type="file" multiple accept=".gz,.json" data-act="files" hidden></label>
+      <a class="btn sm" href="?view=db" target="genie-dbs">All my databases – what each holds ↗</a>
       <span class="help">Each file is recognized by what is in it and filed in the right database on this computer. You can also drop files anywhere on this page.</span></div></details>
     <span class="grow"></span>
     <label class="jobsel">Assignment <select data-act="pickjob" id="jobpick"><option value="">All assignments (start page)</option>${app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(jobLabel(j))}</option>`).join('')}</select></label>
