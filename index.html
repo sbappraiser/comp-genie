@@ -294,7 +294,7 @@ table.grid thead th:nth-child(2){z-index:4}table.grid tr.tot td:nth-child(2){bac
 #gridCard table.grid thead th:nth-child(2){z-index:5}#gridCard table.grid thead th:first-child{z-index:6}
 /* a fixed double line under the comp names, so the header stays set off while the lines scroll under it */
 table.grid thead th,table.grid thead th:nth-child(n){background-image:linear-gradient(#4a5866,#4a5866),linear-gradient(#4a5866,#4a5866);background-size:100% 2px,100% 2px;background-position:left 0 bottom 0,left 0 bottom 4px;background-repeat:no-repeat;padding-bottom:10px}
-body.classic table.grid thead th{background-image:linear-gradient(#4a5866,#4a5866),linear-gradient(#4a5866,#4a5866)}
+body.classic table.grid thead th,body.classic table.grid thead th:nth-child(n){background-color:#fff!important;color:#000;background-image:linear-gradient(#4a5866,#4a5866),linear-gradient(#4a5866,#4a5866);background-size:100% 2px,100% 2px;background-position:left 0 bottom 0,left 0 bottom 4px;background-repeat:no-repeat}   /* her Oct 21 note: the Classic header was dark – white, like the other look */
 /* her ask (Oct 20 2026): the comp names stay on screen while she scrolls down – the grid box itself sticks under the top bar */
 #acbox{position:fixed;z-index:60;background:#fff;border:1.5px solid var(--look-navy);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);display:none;padding:3px 0;font-size:14px;max-width:340px}
 #acbox .aci{padding:4px 10px;cursor:pointer;white-space:nowrap}#acbox .aci.on,#acbox .aci:hover{background:var(--look-cur)}#acbox .aci small{color:#6b7785}#acbox .acmore,#acbox .achint{padding:2px 10px;font-size:11.5px;color:#6b7785}#acbox .achint{border-top:1px solid #eef1f4;margin-top:2px}
@@ -369,6 +369,21 @@ table.tbl.cost input::placeholder{color:#9aa4ae;font-style:italic}
 .rptneed .rptkey .k{display:inline-block!important;width:auto!important}
 /* her exterior / interior rating lines: the grey "= Q4" is the overall rating that goes when the box is blank */
 input.fact[data-gfact$="|extQ"]::placeholder, input.fact[data-gfact$="|extC"]::placeholder, input.fact[data-gfact$="|intQ"]::placeholder, input.fact[data-gfact$="|intC"]::placeholder { color: #9aa3ad !important; font-weight: 400 !important; font-style: italic; }
+
+/* ===== the grid in its own box (her ask Oct 21 2026): the grid alone scrolls up/down and side to side with its own two scroll bars; the page behind stays still.
+   Not the whole screen, so the RoboForm bar and the browser stay reachable. ===== */
+body.gridbox:has(#gridCard table.grid){overflow:hidden}
+body.gridbox:has(#gridCard table.grid)::before{content:"";position:fixed;inset:0;background:rgba(20,30,45,.35);z-index:40}
+body.gridbox #gridCard{position:fixed;top:56px;left:1.5vw;right:1.5vw;bottom:14px;z-index:45;margin:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.35);border:2px solid var(--look-navy);overflow:hidden}
+body.gridbox #gridCard>*{flex:none}
+body.gridbox #gridCard .tablewrap{flex:1 1 auto;min-height:0;max-height:none!important;height:auto!important;overflow:scroll!important}
+body.gridbox #hbar{display:none!important}
+body.gridbox #gridCard .tablewrap::-webkit-scrollbar{width:16px;height:16px}body.gridbox #gridCard .tablewrap::-webkit-scrollbar-thumb{background:#8a97a6;border-radius:8px;border:3px solid #eef1f4}body.gridbox #gridCard .tablewrap::-webkit-scrollbar-track{background:#eef1f4}
+.gboxbar{display:none}body.gridbox .gboxbar{display:flex;align-items:center;gap:10px;padding:6px 2px 8px;font-size:15px}
+.adddb{position:relative}.adddb>summary{list-style:none;cursor:pointer}.adddb>summary::-webkit-details-marker{display:none}
+.adddbm{position:absolute;z-index:30;top:110%;left:0;width:min(440px,90vw);display:grid;gap:6px;background:#fff;border:2px solid var(--look-navy);border-radius:10px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.adddbm .btn{justify-content:flex-start;text-align:left}
+body.gridbox #gridCard>*:not(.gboxbar):not(.tablewrap){display:none!important}   /* only the grid in the box; the controls and comment stay on the page */
 
 /* ===== One look for every page (her requests Oct 21 2026) – shared by the Appraisal Assistant hub, the Comp genie and the iPad app.
    Her legend:  red * = required · green box = required · blue box = optional, goes into the report as more information ·
@@ -447,7 +462,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-1721';
+const BUILD='g2-1021-1737';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -3328,7 +3343,8 @@ function wbBar(J, all) {
   return `<div class="wbbar"><label class="chk" title="Like your 2.6 grid: each comp's $ adjustment in its own column beside the entry (fewer comps fit across – slide for the rest). SFREP gets the same 3.6 lines either way."><input type="checkbox" data-sbs="1" ${document.body.classList.contains('sbs') ? 'checked' : ''}> <b>Adjustment beside the entry</b></label> <label class="chk"><input type="checkbox" data-wbon="1" ${on ? 'checked' : ''}> <b>Workbook view</b> <small>only the lines you adjust · type comp facts in the grid</small></label>
     ${on ? `<label title="How many comps fit across the screen – all of them stay in the grid; slide to the others with the scroll bar at the bottom or ◀ ▶">Comps across <select data-wbper="1">${[3, 4, 5, 6, 9, 99].map(n => `<option value="${n}" ${n === per ? 'selected' : ''}>${n === 99 ? 'all' : n}</option>`).join('')}</select></label>
       ${per < 99 && pages > 1 ? `<span class="pager"><button class="btn sm" data-act="wb-prev" disabled title="Slide back">◀</button> <span class="pgtxt">comps 1–${Math.min(all.length, per)} of ${all.length}</span> <button class="btn sm" data-act="wb-next" title="Slide to the next comps">▶</button></span>` : ''}` : ''}
-    <span class="grow"></span><span class="pops">Pop out <button class="btn sm primary" data-wbpop="1|99" title="All the comps side by side in their own window – the side-to-side scroll bar stays at the bottom of the window; scroll up and down with the mouse wheel">all comps</button> ${pops.map(([a, b]) => `<button class="btn sm" data-wbpop="${a}|${b}" title="Opens the grid for comps ${a}–${b} in its own window – drag it to another monitor">${a}–${b}</button>`).join('')}</span>
+    <span class="grow"></span><span class="gview">View <select data-gview="1" title="How to look at the grid"><option value="page" ${document.body.classList.contains('gridbox') ? '' : 'selected'}>On the page</option><option value="box" ${document.body.classList.contains('gridbox') ? 'selected' : ''}>⤢ In its own box (two scroll bars)</option><option value="win:1|99">Own window – all comps</option>${pops.map(([a, b]) => `<option value="win:${a}|${b}">Own window – comps ${a}–${b}</option>`).join('')}</select></span>
+    <span class="pops">Pop out <button class="btn sm primary" data-wbpop="1|99" title="All the comps side by side in their own window – the side-to-side scroll bar stays at the bottom of the window; scroll up and down with the mouse wheel">all comps</button> ${pops.map(([a, b]) => `<button class="btn sm" data-wbpop="${a}|${b}" title="Opens the grid for comps ${a}–${b} in its own window – drag it to another monitor">${a}–${b}</button>`).join('')}</span>
     ${(() => { const n = emptyLines(J).length, h = Object.keys(G0(J).hide || {}).length; return `<button class="btn sm" data-act="hide-empty" ${n ? '' : 'disabled'} title="Hides the optional lines with nothing in them for the subject or any comp – they stay saved (blank) and go to SFREP as before">Hide empty lines${n ? ' (' + n + ')' : ''}</button>${h ? `<button class="btn sm" data-act="show-hidden" title="Bring the hidden empty lines back">Show hidden (${h})</button>` : ''}`; })()}
     <button class="btn sm" data-act="wb-arrange">${app.wbArrange ? 'Close arrange' : 'Arrange'}</button></div>
     ${app.wbArrange ? `<div class="wbarr">${all.map((c, i) => `<div><b>#${c.use}</b> ${esc(compTitle(c))} <button class="btn sm" data-wbmv="${c.id}|${c.use - 1}" ${i ? '' : 'disabled'}>▲</button><button class="btn sm" data-wbmv="${c.id}|${c.use + 1}" ${i < all.length - 1 ? '' : 'disabled'}>▼</button> move to # <input class="txt xs" data-wbto="${c.id}" inputmode="numeric" placeholder="${c.use}"></div>`).join('')}</div>` : ''}
@@ -3350,7 +3366,7 @@ function wbMark(el) { const k = FOCUS_KEYS.map(k => [k, el.getAttribute && el.ge
   document.querySelectorAll('.lastcell').forEach(x => x.classList.remove('lastcell')); el.classList.add('lastcell'); }
 function wbColTint() { let st = document.getElementById('curcolcss'); if (!st) { st = document.createElement('style'); st.id = 'curcolcss'; document.head.appendChild(st); }
   const ths = [...document.querySelectorAll('#gridCard table.grid thead th')]; const i = WB.cur ? ths.findIndex(h => h.dataset.wbcol === WB.cur) : -1; ths.forEach(h => { if (h.dataset.wbcol) h.classList.toggle('cur', h.dataset.wbcol === WB.cur); });
-  st.textContent = i < 0 ? '' : `#gridCard table.grid tbody td[data-cc="${WB.cur}"]:not(.none){background:#fff9c4!important} #gridCard table.grid tbody td.adjc.none[data-cc="${WB.cur}"]{background:#f1f3f5!important} #gridCard table.grid tbody td.dsc[data-cc="${WB.cur}"]{box-shadow:inset 2px 0 0 #e0b400} #gridCard table.grid tbody td.adjc[data-cc="${WB.cur}"]{box-shadow:inset -2px 0 0 #e0b400} #gridCard table.grid thead th[data-wbcol="${WB.cur}"]{background:#fff3a0!important;box-shadow:inset 0 -3px 0 #e0b400}`;
+  st.textContent = '';   /* her note (Oct 21 2026): no column highlight – only the pale yellow box she is in (look.css) and the comp's name marked in the header */
   if (WB_LAST) { const el = document.querySelector(`[${WB_LAST[0]}="${CSS.escape(WB_LAST[1])}"]`); if (el && !el.classList.contains('lastcell')) { document.querySelectorAll('.lastcell').forEach(x => x.classList.remove('lastcell')); el.classList.add('lastcell'); } } }
 let WB_EQ = null, WB_ZAP = false;
 document.addEventListener('keydown', async e => {
@@ -3402,6 +3418,15 @@ function wbReveal(el) { const w = el.closest('.tablewrap'); if (!w) { el.scrollI
   const W = w.getBoundingClientRect(), r = td.getBoundingClientRect(); const ths = w.querySelectorAll('thead th'); const fixed = (ths[0] ? ths[0].offsetWidth : 0) + (ths[1] ? ths[1].offsetWidth : 0); const head = w.querySelector('thead') ? w.querySelector('thead').offsetHeight : 0;
   if (r.left < W.left + fixed) w.scrollLeft -= (W.left + fixed - r.left) + 6; else if (r.right > W.right - 14) w.scrollLeft += (r.right - W.right) + 20;
   if (r.top < W.top + head) w.scrollTop -= (W.top + head - r.top) + 6; else if (r.bottom > W.bottom - 14) w.scrollTop += (r.bottom - W.bottom) + 20; }
+
+/* View: the grid on the page, in its own box, or in its own window (her ask Oct 21 2026) */
+function gridBox(on) { document.body.classList.toggle('gridbox', !!on); try { localStorage.setItem('genie-gridbox', on ? '1' : ''); } catch (e) {} if (typeof hbarSync === 'function') try { hbarSync(); } catch (e) {} }
+document.addEventListener('change', e => { const s = e.target.closest && e.target.closest('select[data-gview]'); if (!s) return; const v = s.value;
+  if (v === 'page') gridBox(false); else if (v === 'box') gridBox(true);
+  else if (v.startsWith('win:')) { gridBox(false); const b = document.createElement('button'); b.dataset.wbpop = v.slice(4); b.hidden = true; document.body.appendChild(b); b.click(); b.remove(); setTimeout(() => { s.value = 'page'; }, 50); } });
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-act="gbox-close"]')) { e.stopPropagation(); gridBox(false); const s = document.querySelector('select[data-gview]'); if (s) s.value = 'page'; } }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('gridbox') && !document.querySelector('.sheet-bg,.sheetbg')) gridBox(false); });
+try { if (localStorage.getItem('genie-gridbox') === '1' && !(typeof POP !== 'undefined' && POP)) document.addEventListener('DOMContentLoaded', () => document.body.classList.add('gridbox')); } catch (e) {}
 
 /* =====================================================================
    "My comments" picker (Oct 2026): her comment library from the hub (kv 'cmt:lib' in the
@@ -5678,6 +5703,12 @@ function renderPage() {
   <header class="top"><h1>Comp Genie</h1><span class="pill ver" title="The Comp genie version – after Ctrl+R it should match the one I tell you">Version ${typeof BUILD !== 'undefined' ? BUILD : ''}</span>
     <span class="pill ${ARCH.loaded ? 'ok' : 'warn'}">${ARCH.loaded ? `Archive: ${ARCH.rows.length.toLocaleString()} records` : 'Archive not loaded'}</span>${archPhotoPill()}
     <span class="pill">${app.cort.length ? `CORT: ${app.cort.length} sales` : 'No CORT table'}</span><span class="pill" title="Your land sale and construction cost databases (shared with the cost approach)">${(app.land || []).length ? `Land sales: ${app.land.length}` : 'No land sales'} · ${app.costDb ? `Costs: ${app.costDb.projects.length} projects` : 'No cost database'}</span>
+    <details class="adddb"><summary class="btn sm" title="Add files to your databases – or drop them anywhere on this page">📥 Add to my databases</summary><div class="adddbm">
+      <label class="btn sm">CORT weekly closings (PDF / CSV)<input type="file" multiple accept=".pdf,.csv" data-act="files" hidden></label>
+      <label class="btn sm">Land sales (MLS / CRS CSV or PDF)<input type="file" multiple accept=".csv,.pdf" data-act="files" hidden></label>
+      <label class="btn sm">Construction cost database (Excel .xlsx)<input type="file" multiple accept=".xlsx" data-act="files" hidden></label>
+      <label class="btn sm">Comp archive (Comp Archive.json.gz)<input type="file" multiple accept=".gz,.json" data-act="files" hidden></label>
+      <span class="help">Each file is recognized by what is in it and filed in the right database on this computer. You can also drop files anywhere on this page.</span></div></details>
     <span class="grow"></span>
     <label class="jobsel">Assignment <select data-act="pickjob" id="jobpick"><option value="">All assignments (start page)</option>${app.jobs.map(j => `<option value="${j.id}" ${j.id === J.id ? 'selected' : ''}>${esc(jobLabel(j))}</option>`).join('')}</select></label>
     <button class="btn" data-act="newjob">New assignment</button>
@@ -5704,7 +5735,7 @@ function renderPage() {
   <section class="card st st-micro" id="compsCard">${ON('micro') ? compsCardHTML(J) : ''}</section>
   <section class="card st st-workbook" id="wbStrip">${ON('workbook') ? confirmStripHTML(J) : ''}</section>
   <div id="detail" class="st st-micro st-workbook">${app.sel && ON("micro", "workbook") ? detailHTML(J.comps.find(c => c.id === app.sel)) : ''}</div>
-  <section class="card st st-workbook" id="gridCard">${ON('workbook') ? gridHTML(J) : ''}</section>
+  <section class="card st st-workbook" id="gridCard">${ON('workbook') ? `<div class="gboxbar"><b>The grid in its own box</b> <span class="help" style="margin:0">scroll inside it – up and down with the mouse wheel, side to side with the bar at the bottom (or Shift + wheel)</span><span class="grow"></span><button class="btn primary" data-act="gbox-close">✕ Close the box (Esc)</button></div>` + gridHTML(J) : ''}</section>
   <section class="card st st-final" id="finalCard">${ON('final') ? finalGridHTML(J) : ''}</section>
   <section class="card st st-final" id="mapCard"></section>
   <section class="card st st-cost" id="refCard">${ON('cost') ? refHTML(J) : ''}</section>
@@ -6038,6 +6069,7 @@ document.addEventListener('click', async e => {
     case 'cancel': app.confirm = null; render(); break;
     case 'rmall': app.confirm = 'rmall'; render(); break;
     case 'rmall-yes': app.job.comps = []; app.sel = null; app.confirm = null; await saveNow(); render(); toast('All comps removed – your files list is unchanged'); break;
+    case 'goreport': { app.job.stage = 'final'; save(); render.top = true; render(); setTimeout(() => { const c = document.getElementById('reportCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120); break; }
     case 'close': if (CPOP) { window.close(); break; } app.sel = null; render(); break;
     case 'backup': backupJob(); break;
     case 'nuok': app.nuAsk = null; render(); break;
@@ -6240,7 +6272,7 @@ function stageBarHTML(J) { const st = J.stage || (J.comps.some(c => c.use) ? 'wo
   const o = (app.orders || []).find(x => x.id === J.orderId);
   const step = (k, n, l, sub) => `<button class="stepb${st === k ? ' on' : ''}" data-act="stage" data-s="${k}"><b>${n}</b> ${l}<small>${sub}</small></button>`;
   return `<nav class="steps">${o ? `<a class="stepb" href="../appraisal-assistant/?order=${encodeURIComponent(o.id)}&tab=market" target="_top" title="Macro, then micro – the order's Market tab in the Appraisal Assistant"><b>⓪</b> Market<small>macro → micro</small></a>` : ''}
-    ${step('micro', '①', 'Comps considered', `${J.comps.length} · screen, pick for the workbook`)}${step('workbook', '②', 'Workbook', U.length ? `${U.length} comps · ${conf} confirmed · adjust` : 'confirm each comp, adjust')}${step('final', '③', 'Final grid', 'review · export to SFREP')}${step('cost', '④', 'Cost approach', 'land sales · construction costs')}</nav>`; }
+    ${step('micro', '①', 'Comps considered', `${J.comps.length} · screen, pick for the workbook`)}${step('workbook', '②', 'Workbook', U.length ? `${U.length} comps · ${conf} confirmed · adjust` : 'confirm each comp, adjust')}${step('final', '③', 'Final grid', 'review · export to SFREP')}${step('cost', '④', 'Cost approach', 'land sales · construction costs')}<button class="stepb" data-act="goreport" title="Report details (assignment, highest and best use, scope of work, extraordinary assumptions, value) – at the bottom of ③ Final grid"><b>⑤</b> Report details<small>scope · assumptions · value</small></button></nav>`; }
 
 /* Side-to-side scroll bar pinned to the bottom of the window: shows when a wide table
    (workbook, final grid, comps considered) is on screen but its own scroll bar is below the
@@ -6470,12 +6502,15 @@ if (location.protocol === 'file:') {
     const want = (name ? `<span title="The file you are working in">📄 ${name.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span>` : '') + '<button type="button" data-lookleg="1" title="What the colors mean">ⓘ Colors</button>';
     if (F.innerHTML !== want) F.innerHTML = want; }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-lookleg]')) legend(); });
-  /* the mouse wheel moves a drop-down up and down when the pointer is on it (her ask) – the page still scrolls everywhere else */
+  /* the mouse wheel moves a drop-down up and down once she has clicked on it (her ask) – the page still scrolls everywhere else */
   document.addEventListener('wheel', e => { const s = e.target.closest && e.target.closest('select'); if (!s || s.multiple || s.disabled || s.size > 1) return;
     if (document.activeElement !== s) return;   // only once she has clicked into it, so scrolling the page past a drop-down never changes an answer
     e.preventDefault(); const n = s.options.length; if (!n) return; let i = s.selectedIndex + (e.deltaY > 0 ? 1 : -1); i = Math.max(0, Math.min(n - 1, i));
     while (s.options[i] && s.options[i].disabled && i > 0 && i < n - 1) i += e.deltaY > 0 ? 1 : -1;
-    if (i !== s.selectedIndex) { s.selectedIndex = i; s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true })); } }, { passive: false });
+    if (i !== s.selectedIndex) { const key = selKey(s); s.selectedIndex = i; s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true }));
+      if (key) setTimeout(() => { if (document.activeElement && document.activeElement.matches && document.activeElement.matches(key)) return; const n = document.querySelector(key); if (n) n.focus({ preventScroll: true }); }, 60); } }, { passive: false });   // pages that redraw on a change: stay on the same drop-down so the wheel keeps working
+  /* a selector that finds the same drop-down after the page redraws: its id, or its data- attributes */
+  function selKey(el) { if (el.id) return '#' + CSS.escape(el.id); const a = [...el.attributes].filter(x => x.name.startsWith('data-')); return a.length ? 'select' + a.map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join('') : null; }
   const start = () => { if (window.self !== window.top && document.body.classList.contains('embed')) return;   // inside the hub: the hub shows the file name
     corner(); setInterval(corner, 400); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
