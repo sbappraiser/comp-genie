@@ -345,12 +345,17 @@ table.grid th .grates .grate:only-child input{width:90px;flex:0 0 90px}
 
 ul.oblist{list-style:none;margin:4px 0 2px;padding:0;font-size:13px;line-height:1.35;color:#111}ul.oblist li{padding:1px 0;border-bottom:1px dotted #c9d1d9}ul.oblist li:last-child{border-bottom:0}
 span.obslot{font-size:14.5px;font-weight:600;color:#000;display:inline-block;padding:3px 2px}
+/* her ask (Oct 20 2026): a shorter comp header – "Adjustment" on one line, level with "Description" */
+table.grid thead th .ghsub{align-items:flex-end;margin-top:3px;line-height:1.1;font-size:10.5px}
+table.grid thead th .ghsub span:last-child{white-space:nowrap;width:auto;min-width:104px;padding-left:4px;letter-spacing:0}
+table.grid thead th[data-wbcol]{padding-top:4px;padding-bottom:3px;line-height:1.25}
+table.grid thead th .ghsub{padding-bottom:2px}
 
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0636';
+const BUILD='g2-1021-0641';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1992,7 +1997,7 @@ function gridHTML(J) {
     return head + `<tr class="${[ask ? 'asking' : '', GRID_INFO[id] ? 'info' : '', GRID_KEEP.has(id) ? 'reqrow' : 'optrow'].filter(Boolean).join(' ')}"><th>${GRID_KEEP.has(id) ? REQ_STAR : ''}${esc(label)}${GUIDE[id] || PICK[id] ? `<button type="button" class="ginfo" data-ginfo="${id}" title="UAD 3.6 guidance for this line">i</button>` : ''}${type && type !== 'OTHER' && !GRID_INFO[id] && LINE_EG[id] ? `<br><small class="uadn" title="The UAD 3.6 line this goes to in SFREP: ${esc(type)}">${esc(LINE_EG[id])}</small>` : type === 'OTHER' ? `<br><small class="uadn">Add Other: “${esc(row[5])}”</small>` : ''}${GRID_INFO[id] && GRID_INFO[id] !== 'UAD 3.6' ? `<br><small class="muted">${esc(GRID_NOTE[id] || GRID_INFO[id].replace(/^UAD 3\.6 \((.*)\)$/, '$1'))}</small>` : ''}${id === 'structure' ? '<br><small class="muted">' + STRUCTURES.join(' · ') + '</small>' : id === 'unitPos' ? '<br><small class="muted">Interior · Corner · End</small>' : id === 'landCommon' ? '<br><small class="muted">Yes = no land owned · No = the unit owns land</small>' : ''}${rate}${ask}</th>${subjCell}${cells}</tr>`;
   }).join('');
   const sumRow = (label, fn, cls = '') => `<tr class="tot ${cls}"><th>${label}</th><td></td>${used.map((c, i) => `<td${SBS ? ' colspan="2"' : ''} data-cc="${c.id}">${fn(tot[i], c)}</td>`).join('')}</tr>`;
-  const thSub = SBS ? '<span class="ghsub"><span>Description</span><span>+(−) $ Adjustment</span></span>' : '';
+  const thSub = SBS ? '<span class="ghsub"><span>Description</span><span title="+(−) $ Adjustment">+(−) $ Adjustment</span></span>' : '';
   const adjs = totAll.map(t => t.adj).filter(Boolean); const lo = Math.min(...adjs), hi = Math.max(...adjs);
   const med = adjs.length ? [...adjs].sort((a, b) => a - b)[Math.floor((adjs.length - 1) / 2)] : null;
   if (POP) return `<div class="tablewrap"><table class="grid${lean ? ' wb' : ''}"><thead><tr><th></th><th>Subject<br><span class="gaddr">${esc(J.subject.addr || '')}</span></th>${used.map(c => `<th data-wbcol="${c.id}"${SBS ? ' colspan="2"' : ''} class="${WB.cur === c.id ? 'cur' : ''}">Comp ${c.use}<br><span class="gaddr">${esc(compTitle(c))}</span>${gridHeadSale(c, J)}${gridMlsLink(c)}${thSub}</th>`).join('')}</thead><tbody>${rows}
