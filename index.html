@@ -300,7 +300,7 @@ body.classic table.grid thead th{background-image:linear-gradient(#4a5866,#4a586
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0342';
+const BUILD='g2-1021-0353';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1880,12 +1880,13 @@ function gridHTML(J) {
     const cells = used.map(c => { const C = compFacts(c, J);
       let shown = id === 'beds' && C.bedsBg ? `${C.beds} (${C.bedsBg} below grade)` : id === 'baths' ? ([C.full, C.half].every(blank) ? '' : `${C.full ?? '–'} / ${C.half ?? 0}`) : id === 'ppsf' ? (C.price && C.gla ? money(C.price / C.gla) : '') : showFact(id, C[id]);
       if (!WB_NOEDIT.includes(id)) { /* she can change any comp fact right on the grid (Oct 19 2026), not only in Workbook view */ const raw = id === 'usable' ? (blank(C.usable) ? '' : C.usable + ' ac') : wbFactText(id, C);
-        shown = `<input class="txt sm fact${(PICK[id] || id === 'view') && !pkValid(id, raw, (c.edit || {})['pk_' + id]) ? ' bad' : ''}" data-gfact="${c.id}|${id}" value="${esc(raw)}" placeholder="${id === 'usable' ? 'Measure it (ac)' : ''}" title="Type the comp's entry · = copies the subject · =2 copies comp 2">`; }
+        shown = `<input class="txt sm fact${(PICK[id] || id === 'view') && !pkValid(id, raw, (c.edit || {})['pk_' + id]) ? ' bad' : ''}" data-gfact="${c.id}|${id}" value="${esc(raw)}" placeholder="${id === 'usable' ? 'Measure it (ac)' : id === 'contract' ? 'Unknown' : ''}" title="Type the comp's entry · = copies the subject · =2 copies comp 2">`; }
       else if (id === 'usable' && blank(C.usable)) shown = '<span class="measure">Measure it</span>'; else shown = id === 'src' ? esc(shown).replace(/\n/g, '<br>') : esc(shown);
       if (id === 'overList' && C.over > 0) { const dm = num(C.cdom) || num(C.dom); shown += dm === null ? '' : dm <= OVER_SHORT ? `<small class="muted rdays">${dm} days on market – likely multiple offers</small>` : dm >= OVER_LONG ? `<small class="overcall">${dm} days on market – call the agent</small>` : `<small class="muted rdays">${dm} days on market</small>`; }
       if (id === 'usable' && C.landSplit) { const t = splitText(C.landSplit); if (t) shown += `<small class="muted rdays" title="Your 2.6 land split. The usable figure counts the residential (r) part only – if the orchard or other part is usable for this comparison, type the total.">split: ${esc(t)}</small>`; }
       if (id === 'lastRed') { const d = redDaysOf(C); shown += d !== null ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
       if (id === 'conc') shown += concSel(c.id, C);
+      if (id === 'nbhd' && typeof saSel === 'function') shown += saSel(J, c, C);
       if (id === 'q' || id === 'c') shown += qcSel(c.id, id, C[id]) + fineSel(c.id, id, J); if (id === 'view') shown += vtSel(c.id, J, C.view); if (id === 'loc') shown += locBtn(c.id); else if (id === 'q' || id === 'c') {} else if (id === 'garage') shown += `${C.tandem ? `<small class="vsx" title="From your 2.6 Functional utility line – 3.6 has no tandem field; mention it in your comment">${esc(C.tandem)}</small>` : ''}${(c.edit || {}).grid_vsText ? `<small class="vsx">${esc(c.edit.grid_vsText)}</small>` : ''} <button type="button" class="btn xs" data-vspick="${c.id}" title="Type | spaces | attachment (UAD 3.6 vehicle storage)">▾ pick</button>`; else shown += pkBtn(c.id, id);
       if (!type) return `<td>${shown}</td>`;
       const a = cellAmount(J, c, row);
@@ -2019,6 +2020,7 @@ const sgn = a => (a < 0 ? '−' : '+') + money(Math.abs(a));
 const factText = (id, F) => id === 'baths' ? (blank(F.full) ? '?' : F.full + '/' + (F.half || 0)) : (showFact(id, F[id]) || '?');
 function gridReview(J) {
   const used = usedComps(J); const S = subjFacts(J); const G = G0(J); const out = []; const add = (key, sev, msg, extra) => out.push({ key, sev, msg, ok: G.ok && G.ok[key], ...(extra || {}) });
+  if (typeof saNorm === 'function') { const ss = saNorm(S.nbhd); if (SA_ONLY[ss]) used.forEach(c => { const k = saNorm(compFacts(c, J).nbhd); if (k && k !== ss) add(`sa:${c.id}`, 'Check', SA_ONLY[ss] === 'always' ? `Comp ${c.use} is in ${k}, outside ${ss} – your rule is to stay in ${ss} (its amenities and features are not offered elsewhere).` : `Comp ${c.use} is in ${k}, outside ${ss} – your rule is to stay in ${ss} unless data is lacking; explain it in your comment.`); }); }
   const rowOf = id => adjRows(J).find(r => r[0] === id);
   Object.keys(REVIEW_ROWS).forEach(id => { const row = rowOf(id); if (!row) return; const per = [];
     used.forEach(c => { const C = compFacts(c, J); const gs = goodness(id, S), gc = goodness(id, C); const a = cellAmount(J, c, row).v; const name = 'Comp ' + c.use;
@@ -4426,6 +4428,44 @@ function showGuide(id) {
   document.addEventListener('keydown', key); document.body.appendChild(bg); bg.querySelector('[data-gclose]').focus();
 }
 
+/* ---------------- her market sub-areas (Oct 20 2026, Montecito first) ----------------
+   Her archive spells one sub-area many ways ("GldnQdrnglE", "Golden Quadrangle E", "Montecito - Golden Quadrangle East" …);
+   saNorm() reads them all as one name. Her relationships say how a comp's sub-area compares with the subject's
+   (similar / superior / inferior, or "may use" when she pairs areas without a rating). She sets or changes them on the
+   Market area name line; they are kept on this computer (kv 'subAreas') for the next assignment.
+   Her rules: Birnam Wood – always stay in the community (many amenities no other development has).
+   Ennisbrook – stay in it; go outside only for lack of data. */
+const SA_WORDS = [[/\b(golden|gldn|goldn|gold)\s*(quadrangle|qdrngle?|qdrng|quad)\b/g, 'golden quadrangle'], [/\bsb\s*prphry\b|\bsbprphry\b/g, 'santa barbara periphery'], [/\bprphry|periph(ery)?\b/g, 'periphery'], [/\bmntcto|mntc|mont\b/g, 'montecito'],
+  [/\brvra\b/g, 'riviera'], [/\blwr\b/g, 'lower'], [/\bcyn\b/g, 'canyon'], [/\bfthll?s?\b/g, 'foothills'], [/\bcnt|cent\b/g, 'central'], [/\bsb\b/g, 'santa barbara'], [/eucalypts/g, 'eucalyptus'], [/\bcarp\b/g, 'carpinteria']];
+const SA_DIR = { e: 'East', east: 'East', eastern: 'East', w: 'West', west: 'West', western: 'West', s: 'South', south: 'South', n: 'North', north: 'North', ne: 'NE', nw: 'NW', central: 'Central' };
+function saNorm(name) {
+  if (!String(name || '').trim()) return ''; let t;
+  t = String(name || '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/\(adjacent\)|\(|\)/g, ' ').replace(/[-–,/.]+/g, ' ').replace(/\s+/g, ' ').trim();
+  SA_WORDS.forEach(([re, w]) => { t = t.replace(re, w); });
+  t = t.replace(/\bgolden quadrangle(?=[a-z])/g, 'golden quadrangle ').replace(/\bdistrict\b/g, '').replace(/\s+/g, ' ').trim();
+  if (/^montecito\b/.test(t) && t !== 'montecito' && !/^montecito (periphery|foothills|shores|beach|west|east|w|e|eastern|western|north|south)\b/.test(t)) t = t.replace(/^montecito\s*/, '');   // "Montecito - Hedgerow District" → Hedgerow
+  if (t === 'montecito' || t === 'central montecito' || t === 'montecito central' || t === 'central') return 'Central Montecito';
+  const w = t.split(' '); let dir = ''; if (w.length > 1 && SA_DIR[w[w.length - 1]]) dir = SA_DIR[w.pop()]; else if (w.length > 1 && SA_DIR[w[0]] && w[0] !== 'central') dir = SA_DIR[w.shift()];
+  const base = w.join(' ').replace(/\b\w/g, m => m.toUpperCase()).replace(/\bSanta Barbara Periphery\b/, 'SB Periphery');
+  return base + (dir ? ' ' + dir : '');
+}
+/* her relationships as she described them; keyed by the subject's sub-area */
+const SA_SEED = {
+  'Golden Quadrangle East': { 'Golden Quadrangle West': 'similar', 'Hedgerow': 'similar', 'Lower Village': 'similar', 'Golden Quadrangle Central': 'superior', 'Central Montecito': 'inferior' },
+  'Golden Quadrangle West': { 'Golden Quadrangle East': 'similar', 'Hedgerow': 'similar', 'Lower Village': 'similar', 'Golden Quadrangle Central': 'superior', 'Central Montecito': 'inferior', 'Eucalyptus Hill': 'use' },
+  'Eucalyptus Hill': { 'Golden Quadrangle West': 'use', 'Pepper Hill': 'use', 'Riviera East': 'use', 'SB Periphery East': 'use' },
+};
+const SA_ONLY = { 'Birnam Wood': 'always', 'Ennisbrook': 'prefer' };
+let MYSA = {}; DB.get('kv', 'subAreas').then(r => { MYSA = (r && r.v) || {}; }).catch(() => {});
+const SA_LABEL = { similar: 'Similar', superior: 'Superior', inferior: 'Inferior', use: 'May use' };
+function saRel(J, C) { const s = saNorm(subjFacts(J).nbhd), k = saNorm(C.nbhd); if (!s || !k) return null; if (s === k) return { rel: 'same', s, k };
+  const mine = (MYSA[s] || {})[k]; if (mine) return { rel: mine, s, k, src: 'yours' }; const seed = (SA_SEED[s] || {})[k]; if (seed) return { rel: seed, s, k, src: 'seed' }; return { rel: '', s, k }; }
+function saSel(J, c, C) { const R = saRel(J, C); if (!R) return ''; if (R.rel === 'same') return `<small class="muted rdays">${esc(R.k)} – same sub-area</small>`;
+  const out = SA_ONLY[R.s] ? `<small class="${SA_ONLY[R.s] === 'always' ? 'overcall' : 'muted rdays'}">${SA_ONLY[R.s] === 'always' ? 'Outside ' + esc(R.s) + ' – you stay in the community' : 'Outside ' + esc(R.s) + ' – explain the lack of data'}</small>` : '';
+  return `<small class="muted rdays">${esc(R.k)} vs ${esc(R.s)}:</small><select class="fine${R.src === 'yours' ? '' : ' arch'}" data-gsa="${c.id}" title="How this comp's sub-area compares with the subject's – remembered for your next assignment">${[['', '—'], ['similar', 'Similar'], ['superior', 'Superior'], ['inferior', 'Inferior'], ['use', 'May use']].map(([v, l]) => `<option value="${v}" ${v === R.rel ? 'selected' : ''}>${l}${v === R.rel && R.src === 'seed' ? ' (your rule)' : ''}</option>`).join('')}</select>${out}`; }
+function saSet(J, cid, v) { const c = J.comps.find(x => x.id === cid); if (!c) return; const R = saRel(J, compFacts(c, J)); if (!R || R.rel === 'same') return;
+  MYSA[R.s] = MYSA[R.s] || {}; if (v) MYSA[R.s][R.k] = v; else delete MYSA[R.s][R.k]; DB.put('kv', { id: 'subAreas', v: MYSA }); }
+
 /* =====================================================================
    Comp Genie – screens
    ===================================================================== */
@@ -5270,6 +5310,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.boe) { app.boe = app.boe || {}; app.boe[t.dataset.boe] = t.value; const c = $('#refCard'); if (c) c.innerHTML = refHTML(app.job); return; }
   if (t.dataset.refarea !== undefined || t.dataset.refnew !== undefined) { const R = app.ref; if (t.dataset.refarea !== undefined) R.area = t.value; if (t.dataset.refnew !== undefined) R.newOnly = t.checked; const c = $('#refCard'); if (c) c.innerHTML = refHTML(app.job); return; }
   if (t.dataset.gmode) { const G = G0(app.job); G.mode = t.value; if (t.value === 'condo' && !G.tier) G.tier = 'condo'; save(); renderKeepFocus(); return; }
+  if (t.dataset.gsa) { saSet(app.job, t.dataset.gsa, t.value); renderKeepFocus(); return; }
   if (t.dataset.gvt) { const G = G0(app.job); G.viewT = G.viewT || {}; const w = t.dataset.gvt; if (t.value === '') { delete G.viewT[w]; } else { G.viewT[w] = +t.value; vtRemember(app.job, w, +t.value); } save(); renderKeepFocus(); return; }
   if (t.dataset.gconc) { const c = app.job.comps.find(x => x.id === t.dataset.gconc); if (!c) return; concSet(app.job, c, t.value); save(); renderKeepFocus();
     if (t.value === 'known') setTimeout(() => { const el = document.querySelector(`[data-gfact="${c.id}|conc"]`); if (el) { el.focus(); el.select(); } }, 50); return; }
