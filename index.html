@@ -306,7 +306,7 @@ input:focus::placeholder{color:#3a2a00!important;opacity:1}
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-0446';
+const BUILD='g2-1021-0449';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -645,7 +645,7 @@ function archCanon(a) {
     mls: a.mls_no || '', addr: [a.street_number, a.street_name].filter(Boolean).join(' '), unit: a.unit || '', city: a.city || '', zip: a.zip || '', apn: a.apn || '', nbhd: a.neighborhood || '',
     status: a.listing_status || (isListing ? 'Listing' : a.record_role === 'subject' ? '' : (a.price ? 'Closed' : '')),
     salePrice: isListing ? null : a.price, listPrice: isListing ? a.price : null, saleDate: isListing ? '' : (a.sale_month || ''), contractDate: a.contract_month || '', dom: a.dom, saleType: a.sale_type || '', financing: a.financing || '', concessions: a.concession_amt,
-    verification: a.verification || '', lprDays: a.lpr_days, sfSource: a.record_role === 'subject' || /\bfiles\b|inspection|pers\.?\s*insp/i.test(a.verification || '') ? 'Measured (my inspection)' : '',   // she measured it only when she inspected it: her subject, or "Files" / "Inspection" in her 2.6 verification
+    verification: a.verification || '', lprDays: a.lpr_days, redDays: a.lpr_days ?? null, sfSource: a.record_role === 'subject' || /\bfiles\b|inspection|pers\.?\s*insp/i.test(a.verification || '') ? 'Measured (my inspection)' : '',   // she measured it only when she inspected it: her subject, or "Files" / "Inspection" in her 2.6 verification
     siteSf: a.site_sf, usableSf: a.usable_sf, landSplit: a.land_split || '', topo: a.topography || '',
     locRating: a.location_rating || '', locFactors: String(a.location_factors || '').split(';').filter(Boolean).map(x => LOC_TEXT[x] || x).join('; '),
     viewRating: a.view_rating || '', viewTypes: String(a.view_types || '').split(';').filter(Boolean).join('; '), viewRange: a.view_panoramic ? 'Panoramic' : a.view_limited ? 'Limited' : '',
@@ -927,6 +927,7 @@ const FIELDS = [
   { k: 'saleDate', l: 'Sale date', g: 'Sale and listing', kind: 'sale', t: 'date' },
   { k: 'dom', l: 'Days on market', g: 'Sale and listing', kind: 'listing', t: 'int' },
   { k: 'cdom', l: 'Cumulative days on market', g: 'Sale and listing', kind: 'listing', t: 'int' },
+  { k: 'redDays', l: 'Days from the last price reduction to pending', g: 'Sale and listing', kind: 'listing', t: 'int' },   // her 2.6 'lpr:32' (archive), or the MLS printout History
   { k: 'saleType', l: 'Sale type', g: 'Sale and listing', kind: 'sale', t: 'text' },
   { k: 'financing', l: 'Transfer terms (financing)', g: 'Sale and listing', kind: 'sale', t: 'text' },
   { k: 'concessions', l: 'Known sales concessions ($)', g: 'Sale and listing', kind: 'sale', t: 'money' },
@@ -1811,7 +1812,7 @@ function compFacts0(c, J) {
   const DN = docNoOf(c); const F0 = { price: num(g('salePrice')), src: [g('mls') ? 'MLS ' + g('mls') : '', DN ? docText(c, true) : '', !g('mls') && !DN ? (c.src.crs ? 'CRS Data' : c.src.cort.length ? 'CORT' : c.src.arch.length ? 'Your archive' : '') : ''].filter(Boolean).join('\n'),   /* her layout (Oct 20 2026): MLS 26-2071, then Doc #21129 on the next line; the date is the Sale date line's */ prox: px ? px.mi.toFixed(2) + ' mi ' + px.dir.replace(/([a-z])([A-Z])/, '$1 $2') : '',
     terms: termsText(g('financing')), xferTerms: g('saleType') && typeof PICK !== 'undefined' ? (/^Other:/.test(String(g('saleType'))) ? String(g('saleType')) : ((PICK.xferTerms.opts.find(o => o[0] === uadSaleType(g('saleType'))) || [])[1] || '')) : '', conc: num(g('concessions')), concYN: g('concessionsYN') || '', contract: g('contractDate') || '', sale: g('saleDate') || '', dom: g('dom'),
     site: num(g('siteSf')), usable: acOf(num(g('usableSf'))), landSplit: g('landSplit') || '', usableOwn: !blank((c.edit || {}).usableSf), loc: [g('locRating'), g('locFactors')].filter(Boolean).join(': '), view: [g('viewRating'), g('viewTypes')].filter(Boolean).join(': '),
-    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', cdom: (c.edit || {}).cdomUnknown ? 'Unknown' : num(g('cdom')), contractUnk: !!(c.edit || {}).contractUnknown, project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
+    topo: g('topo') || '', nbhd: g('nbhd') || '', land: g('landscaping') || '', style: g('style') || '', attach: g('attach') || '', levels: num(g('stories')), status: statusText(g('status')), listPrice: num(g('listPrice')), origList: num(g('origList')), listDate: g('listDate') || '', lastRed: g('lastRed') || '', redDays: num(g('redDays')), redSrc: (val(c, 'redDays') || {}).src || '', cdom: (c.edit || {}).cdomUnknown ? 'Unknown' : num(g('cdom')), contractUnk: !!(c.edit || {}).contractUnknown, project: g('project') || '', hoa: num(g('hoa')), hoaAmen: g('hoaAmen') || '', landCommon: g('landCommon') || '', structure: g('structure') || '', unitPos: g('unitPos') || '', floor: g('floor') ?? null, year: num(g('yearBuilt')), q: g('quality') || '', c: g('condition') || '',
     rooms: num(g('rooms')), beds: num(g('beds')), full: num(g('full')), half: num(g('half')), gla: num(g('gla')), bsmt: num(g('bsmtFin')), garage: num(g('garage')), energy: g('energy') || '',
     pool: [yes(g('pool')) ? 'Pool' : '', yes(g('spa')) ? 'Spa' : ''].filter(Boolean).join(', ') || (g('pool') && !yes(g('pool')) ? 'None' : ''), courts: [yes(g('tennis')) ? 'Tennis court' : '', yes(g('sport')) ? 'Sport court' : ''].filter(Boolean).join(', '), porch: g('porch') || '', adu: [g('adu'), g('guest'), g('accessory')].filter(Boolean).join('; '),
     other: g('other') || [yes(g('horse')) ? 'Horse facilities' : ''].filter(Boolean).join(', '), _id: c.id, aduSf: g('aduSf'), aduBaths: g('aduBaths'),   // horse: the MLS says 'No' when the box is not ticked (it showed "Horse facilities" for every MLS comp)
@@ -1904,7 +1905,7 @@ function gridHTML(J) {
       else if (id === 'usable' && blank(C.usable)) shown = '<span class="measure">Measure it</span>'; else shown = id === 'src' ? esc(shown).replace(/\n/g, '<br>') : esc(shown);
       if (id === 'overList' && C.over > 0) { const dm = num(C.cdom) || num(C.dom); shown += dm === null ? '' : dm <= OVER_SHORT ? `<small class="muted rdays">${dm} days on market – likely multiple offers</small>` : dm >= OVER_LONG ? `<small class="overcall">${dm} days on market – call the agent</small>` : `<small class="muted rdays">${dm} days on market</small>`; }
       if (id === 'usable' && C.landSplit) { const t = splitText(C.landSplit); if (t) shown += `<small class="muted rdays" title="Your 2.6 land split. The usable figure counts the residential (r) part only – if the orchard or other part is usable for this comparison, type the total.">split: ${esc(t)}</small>`; }
-      if (id === 'lastRed') { const d = redDaysOf(C); shown += d !== null ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
+      if (id === 'lastRed') { const d = redDaysOf(C) ?? C.redDays; shown += d !== null && d !== undefined ? `<small class="muted rdays">${d} day${d === 1 ? '' : 's'} to pending${redDaysOf(C) === null && C.redSrc === 'arch' ? ' (your archive: lpr)' : ''}</small>` : (C.lastRed ? '<small class="muted rdays">no contract date</small>' : ''); }
       if (id === 'conc') shown += concSel(c.id, C);
       if (id === 'land') shown += landSel(c.id, C.land);
       if (id === 'contract' || id === 'cdom') shown += unkSel(c.id, id, C);
@@ -3454,7 +3455,7 @@ const rv = (J, k) => { const R = R0(J), F = reportFrom(J); return blank(R[k]) ? 
 /* her exposure-time rule (Oct 19 2026): count only the days a comp was on the market at a reasonable price – from its last price
    reduction to the pending / contingent date; a comp that was never reduced counts its days on market */
 function expRows(J) {
-  return usedComps(J).map(c => { const C = compFacts(c, J); const d = redDaysOf(C); const dom = num(C.dom);
+  return usedComps(J).map(c => { const C = compFacts(c, J); const d = redDaysOf(C) ?? C.redDays; const dom = num(C.dom);
     return { c, title: compTitle(c), use: c.use, lastRed: C.lastRed, days: d !== null ? d : dom, from: d !== null ? 'since the last price reduction' : 'days on market (no reduction)', dom }; }).filter(r => r.days !== null && r.days !== undefined && !isNaN(r.days));
 }
 function expHelpHTML(J) {
