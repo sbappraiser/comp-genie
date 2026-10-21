@@ -486,7 +486,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1021-1921';
+const BUILD='g2-1021-1932';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -986,7 +986,7 @@ function mlsCanon(raw, G, g) {
     hoaAmen: (G['Condo/CO-OP/PUD'] || []).filter(x => !/^(Attached|Detached|End Unit|Corner.*|Interior.*|Association Fee.*|\d.*)$/i.test(x)).join('; '),
     project: g('Complex Name', 'Complex', 'Project Name', 'Condo/CO-OP/PUD: Complex Name'),
     lat: num(g('Geo Lat', 'Latitude')), lon: num(g('Geo Lon', 'Longitude')),
-    remarks: g('Public Remarks'), privateRemarks: g('Private Remarks'), water: list('Water/Sewer'), roof: list('Roof'), foundation: list('Foundation'),
+    remarks: g('Public Remarks'), privateRemarks: g('Private Remarks'), water: list('Water/Sewer'), roof: list('Roof'), exterior: list('Exterior'), foundation: list('Foundation'),
     remodel: [has('Amenities', /Remodeled Kitchen/) ? 'Remodeled kitchen' : '', has('Amenities', /Remodeled Bath/) ? 'Remodeled bath' : '', has('Condition', /Updated|Remodeled/) ? 'Updated/Remodeled' : ''].filter(Boolean).join('; '),
     listAgent: g('Listing Member'), sellAgent: g('Selling Member'),
   };
@@ -1542,6 +1542,9 @@ function funcIssues(t) { t = String(t || '').trim(); if (!t) return []; const ou
 function uadInfluences(s) { const out = []; String(s || '').split(/;\s*/).filter(Boolean).forEach(p => { const m = INFL_MAP.find(([re]) => re.test(p)); const t = m ? m[1] : 'Other'; if (!out.some(o => o.t === t && t !== 'Other')) out.push({ t, other: t === 'Other' ? p.slice(0, 33) : '' }); }); return out; }
 const yes = v => /^(yes|y|true|1)/i.test(String(v || '')) || (typeof v === 'string' && /guest|adu/i.test(v) && !/^none|^no$/i.test(v));
 
+/* MLS roof / exterior words → the UAD 3.6 lists (A-1 RoofMaterialType, WallMaterialType); anything else goes as Other with the MLS word */
+function uadRoof(t) { const out = []; String(t || '').split(/;\s*|,\s*/).map(x => x.trim()).filter(Boolean).forEach(x => { const m = [[/compos|comp\b|shingle|asphalt/i, 'Composition'], [/concrete/i, 'Concrete'], [/clay|spanish|mission/i, 'Clay'], [/metal|steel/i, 'Metal'], [/shake|wood/i, 'Wood'], [/slate/i, 'Slate'], [/rock|gravel|tar|built.?up/i, 'TarAndGravel'], [/rubber|membrane|torch/i, 'Rubber'], [/solar shingle/i, 'SolarShingles']].find(([re]) => re.test(x)); const t2 = m ? m[1] : 'Other'; if (!out.some(o => o.t === t2 && t2 !== 'Other')) out.push({ t: t2, o: x.slice(0, 33) }); }); return out.filter(o => o.t !== 'Other' || !/^other$/i.test(o.o)); }
+function uadWall(t) { const out = []; String(t || '').split(/;\s*|,\s*/).map(x => x.trim()).filter(Boolean).forEach(x => { const m = [[/stucco/i, 'Stucco'], [/adobe/i, 'Adobe'], [/brick/i, 'Brick'], [/synthetic stone|veneer/i, 'SyntheticStone'], [/stone/i, 'Stone'], [/vinyl/i, 'Vinyl'], [/hardi|cement/i, 'CementBoard'], [/block/i, 'ConcreteBlock'], [/concrete/i, 'PouredConcrete'], [/log/i, 'Log'], [/alum/i, 'Aluminum'], [/steel|metal/i, 'Steel'], [/glass/i, 'Glass'], [/wood|siding|shingle|board/i, 'Wood']].find(([re]) => re.test(x)); const t2 = m ? m[1] : 'Other'; if (!out.some(o => o.t === t2 && t2 !== 'Other')) out.push({ t: t2, o: x.slice(0, 33) }); }); return out.filter(o => o.t !== 'Other' || !/^other$/i.test(o.o)); }
 function photoName(c) { return safeName(compTitle(c)).replace(/[^A-Za-z0-9.()-]+/g, '_') + '.jpg'; }
 
 /* ---- one comparable ---- */
@@ -1603,6 +1606,10 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   { const R = compQC(CF); XV(ud, 'InteriorConditionRatingCode', R.intC); XV(ud, 'InteriorQualityRatingCode', R.intQ); if (aduHere) XV(ud, 'UnitIdentifier', `Comp${n} Primary`); }   /* A-1 1800.0157 / .0158: interior Q and C for every comp – her own if typed, else the overall ratings */
   const st = X(imp, 'STRUCTURE'); { const K = typeof PICK !== 'undefined' && CF.constr ? pkParse(PICK.constr, String(CF.constr)) : null; if (K && K.ok && K.vals[0]) { const cm = X(X(st, 'CONSTRUCTION_METHODS'), 'CONSTRUCTION_METHOD'); XV(cm, 'ConstructionMethodType', K.vals[0]); if (K.vals[0] === 'Other') XV(cm, 'ConstructionMethodTypeOtherDescription', (K.other || 'Other').slice(0, 33)); } } const sty = uadStyle(g('style')); if (sty) { const a = X(st, 'ARCHITECTURAL_DESIGN'); XV(a, 'ArchitecturalDesignCategoryType', sty.t); if (sty.other) XV(a, 'ArchitecturalDesignCategoryTypeOtherDescription', sty.other); }
   if (isAtt && stru) { const a = st.kids.find(k => k.tag === 'ARCHITECTURAL_DESIGN') || X(st, 'ARCHITECTURAL_DESIGN'); XV(a, 'StructuralDesignType', stru); }
+  /* roof and exterior walls from the MLS (D-1 sends them for every comp) – only what the MLS says, mapped to the 3.6 lists */
+  { const roof = uadRoof(g('roof')), wall = uadWall(g('exterior')); if (roof.length || wall.length) { const SC = X(st, 'STRUCTURE_COMPONENTS');
+      if (wall.length) { const C = X(SC, 'STRUCTURE_COMPONENT'); const EW = X(C, 'EXTERIOR_WALLS'); wall.forEach(w => { const e = X(EW, 'EXTERIOR_WALL'); XV(e, 'WallMaterialType', w.t); if (w.t === 'Other') XV(e, 'WallMaterialTypeOtherDescription', w.o); }); XV(X(C, 'STRUCTURE_COMPONENT_DETAIL'), 'ImprovementComponentType', 'ExteriorWallsAndTrim'); }
+      if (roof.length) { const C = X(SC, 'STRUCTURE_COMPONENT'); const RM = X(X(C, 'ROOF'), 'ROOF_MATERIALS'); roof.forEach(w => { const e = X(RM, 'ROOF_MATERIAL'); XV(e, 'RoofMaterialType', w.t); if (w.t === 'Other') XV(e, 'RoofMaterialTypeOtherDescription', w.o); }); XV(X(C, 'STRUCTURE_COMPONENT_DETAIL'), 'ImprovementComponentType', 'Roof'); } } }
   { const sd = X(st, 'STRUCTURE_DETAIL'); if (mode !== 'condo') { const R = compQC(CF); XV(sd, 'ExteriorConditionRatingCode', R.extC); XV(sd, 'ExteriorQualityRatingCode', R.extQ); } XV(sd, 'LivingUnitCount', 1); if (stru === 'RowhouseTownhouse' && !blank(CF.unitPos)) XV(sd, 'RowhouseTownhouseEndUnitIndicator', /end|corner/i.test(CF.unitPos) ? 'true' : 'false'); if (!blank(CF.levels)) XV(sd, 'StoriesCount', CF.levels); }
   const heats = CFx.heat && typeof PICK !== 'undefined' && pkParse(PICK.heat, CFx.heat).ok ? pkParse(PICK.heat, CFx.heat).vals.filter(v => v !== 'None') : uadHeat(g('heatCool')); if (heats.length || cool) { const sy = X(imp, 'SYSTEM');
     if (cool && cool.exists) { const ce = X(X(sy, 'COOLING_SYSTEMS'), 'COOLING_SYSTEM'); XV(ce, 'CoolingSystemType', cool.type); if (cool.type === 'Other') XV(ce, 'CoolingSystemTypeOtherDescription', ((typeof PICK !== 'undefined' && pkParse(PICK.cool, CFx.cool).other) || 'Other').slice(0, 19)); }
@@ -1672,7 +1679,7 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   { const L = typeof vwParse === 'function' ? vwParse(CF.view) : []; if (L.length) { const SV = X(SI, 'SITE_VIEWS'); L.forEach((v, i) => { const e = X(SV, 'SITE_VIEW'); XV(e, 'ValueMarketabilityImpactType', v.impact); XV(e, 'ViewPrimaryIndicator', i === 0 ? 'true' : 'false'); XV(e, 'ViewRangeType', v.range || null); XV(e, 'ViewType', v.type); if (v.type === 'Other') XV(e, 'ViewTypeOtherDescription', (v.other || 'Other').slice(0, 33)); }); } }   // each view with its impact and range (her ▾ pick)
   // DATA_SOURCES
   const rel = (arc, from, to) => { X(RELS, 'RELATIONSHIP', { 'xlink:arcrole': 'urn:fdc:mismo.org:2009:residential/DATA_SOURCE_IsDataSourceFor_' + arc, 'xlink:from': from, 'xlink:to': to }).selfClose = true; };
-  const ds = (type, id, name) => { const l = `DATA_SOURCE_${type}SalesComp${n}`; const e = X(DSS, 'DATA_SOURCE', { 'xlink:label': l }); XV(e, 'DataSourceName', name || DS_NAME[type] || type); XV(e, 'DataSourceIdentifier', id); XV(e, 'DataSourceType', type); rel('PROPERTY', l, lab); return l; };
+  const made = {}; const ds = (type, id, name) => { const l = `DATA_SOURCE_${type}SalesComp${n}`; made[type] = l; const e = X(DSS, 'DATA_SOURCE', { 'xlink:label': l }); XV(e, 'DataSourceName', name || DS_NAME[type] || type); XV(e, 'DataSourceIdentifier', id); XV(e, 'DataSourceType', type); rel('PROPERTY', l, lab); return l; };
   const src = [];
   if (g('mls') && (c.src.mls || c.src.pdf || /MLS/i.test(g('verification') || ''))) src.push(ds('MLS', g('mls')));
   /* the recorded document number of the sale (CRS or CORT; her rule Oct 20 2026: the date is the Sale date line's). A-1 22.01.18 and SFREP's
@@ -1681,6 +1688,9 @@ function buildCompXML(PROPS, RELS, DSS, c, n, job) {
   const pub = c.src.crs || doc ? ds('AssessorRecord', doc, c.src.crs ? DS_NAME.AssessorRecord : 'County recorder') : null;
   if (c.src.arch.length) src.push(ds('PreviousAppraisalFile', null));
   /* the comp's transfer history (F-1 21.011): its data source, linked to each prior sale or to "no prior sales" (D-1 SF1) */
+  /* where the comp's living area came from (A-1 0700.0125 Area Data Source; her Oct 21 import showed it red) */
+  { const gs = (val(c, 'gla') || {}).src; const want = { mls: 'MLS', pdf: 'MLS', crs: 'AssessorRecord', arch: 'PreviousAppraisalFile' }[gs]; const from = (want && made[want]) || made.MLS || made.AssessorRecord || made.PreviousAppraisalFile;
+    if (from && ar.kids.length) { ar.attrs['xlink:label'] = `PROPERTY_UNIT_AREA_SalesComp${n}`; rel('PROPERTY_UNIT_AREA', from, ar.attrs['xlink:label']); } }
   const th = pub || src[0]; if (th) { if (prior.length) prior.forEach((s, k) => rel('SALES_HISTORY', th, `SALES_HISTORY_SalesComp${n}_PriorSales${prior.length > 1 ? k + 1 : ''}`)); else rel('PriorSalesOrTransfersIndicator', th, `PriorSalesOrTransfersIndicator_SalesComp${n}NoPriorSales`); }
 }
 /* A-1: DataSourceName is required (33 characters) */
@@ -2733,10 +2743,43 @@ function sfrepTypeHTML(J) { const used = usedComps(J); if (!used.length) return 
   const lines = rows.map(r => { const cells = used.map(c => { const a = cellAmount(J, c, r).v; const C = compFacts(c, J); const d = r[3] === 'OTHER' ? otherDesc(r, C) : ''; return { a, d }; });
     const sd = r[3] === 'OTHER' ? otherDesc(r, S) : ''; if (!sd && cells.every(x => !x.a && !x.d)) return '';
     return `<tr><td><b>${esc(r[1])}</b>${r[3] === 'OTHER' ? `<br><small class="muted">your Add Other line – type the descriptions too</small>` : ''}</td>${r[3] === 'OTHER' ? `<td>${esc(sd)}</td>` : '<td></td>'}${cells.map(x => `<td class="r">${x.d ? esc(x.d) + '<br>' : ''}${x.a ? `<b>${x.a > 0 ? '+' : ''}${Math.round(x.a).toLocaleString()}</b>` : x.d ? '<span class="muted">0</span>' : ''}</td>`).join('')}</tr>`; }).filter(Boolean);
-  if (!lines.length) return '';
-  return `<details class="sfrepType" open><summary><b>Type these into SFREP after the import</b> <small>(${lines.length} line${lines.length > 1 ? 's' : ''}) – SFREP's import skips them, even in Fannie Mae's own sample</small></summary>
+  if (!lines.length) return `<p><button class="btn primary" data-act="sfrep-sheet">🖨 SFREP after the import – checklist to print</button></p>`;
+  return `<p><button class="btn primary" data-act="sfrep-sheet">🖨 SFREP after the import – checklist to print</button></p><details class="sfrepType" open><summary><b>Type these into SFREP after the import</b> <small>(${lines.length} line${lines.length > 1 ? 's' : ''}) – SFREP's import skips them, even in Fannie Mae's own sample</small></summary>
     <div class="tablewrap"><table class="tbl"><thead><tr><th>Line</th><th>Subject</th>${used.map(c => `<th class="r">Comp ${c.use}<br><small>${esc(compTitle(c))}</small></th>`).join('')}</tr></thead><tbody>${lines.join('')}</tbody></table></div>
     <p class="help">Everything else on your grid (sale data, site, view, location, quality, condition, cooling, water features, outdoor living, vehicle storage …) comes in with the import. Check each comp's net adjustment in SFREP against your grid when you are done.</p></details>`; }
+/* ===== her "SFREP after the import" sheet (Oct 21 2026): one printable page in SFREP's screen order – what she still types or checks, with a box to tick ===== */
+function sfrepSheetHTML(J) { const used = usedComps(J), S = subjFacts(J); const ck = t => `<li><span class="bx"></span><span>${t}</span></li>`;
+  const rows = adjRows(J).filter(r => r[3] && rowShown(r, J) && (r[3] === 'OTHER' ? true : SFREP_DROPS(isObSlot(r[0]) ? (/^aduU/.test(r[0]) ? 'AccessoryDwellingUnitLocation' : 'Outbuilding') : r[3])));
+  const grid = rows.map(r => { const cells = used.map(c => { const a = cellAmount(J, c, r).v; const d = r[3] === 'OTHER' ? otherDesc(r, compFacts(c, J)) : ''; return { a, d }; }); const sd = r[3] === 'OTHER' ? otherDesc(r, S) : '';
+    if (!sd && cells.every(x => !x.a && !x.d)) return ''; return `<tr><td><span class="bx"></span> <b>${esc(r[1])}</b>${r[3] === 'OTHER' ? '<br><small>Add Other line – type the descriptions too</small>' : ''}</td><td>${esc(sd)}</td>${cells.map(x => `<td class="r">${x.d ? esc(x.d) + '<br>' : ''}${x.a ? `<b>${x.a > 0 ? '+' : ''}${Math.round(x.a).toLocaleString()}</b>` : x.d ? '0' : ''}</td>`).join('')}</tr>`; }).filter(Boolean).join('');
+  const tot = used.map(c => compTotals(J, c)); const noPhoto = used.filter(c => !c.front);
+  const R = typeof RE === 'function' ? RE(J) : R0(J);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>SFREP after the import – ${esc(J.name)}</title><style>
+  body{font:15px/1.45 Arial,sans-serif;color:#000;margin:24px}h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;background:#1f3f66;color:#fff;padding:4px 8px;margin:18px 0 6px}
+  ul{list-style:none;padding:0;margin:0}li{margin:5px 0;display:flex;gap:8px}.bx{flex:none;display:inline-block;width:14px;height:14px;border:1.5px solid #000;margin-top:2px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}th,td{border:1px solid #888;padding:3px 6px;vertical-align:top}th{background:#eee}.r{text-align:right}small{color:#444}
+  .noprint{margin:0 0 12px}@media print{.noprint{display:none}h2{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>
+  <div class="noprint"><button onclick="print()">Print</button></div>
+  <h1>SFREP after the import – ${esc(J.name)}</h1><p>Import first (Home › Import Forms, your template, Include adjustments, Overwrite populated fields off), then go down this page in SFREP's order and tick each box.</p>
+  <h2>Subject</h2><ul>
+    ${ck('<b>Environmental condition</b> and <b>Accessibility feature</b> rows that came in red and blank: if the answer is None, click <i>Remove</i> on that row (SFREP does not take "None").')}
+    ${ck('<b>Outbuildings</b>: if an Outbuilding Type is red, pick its type (a shed that is not real property comes in blank) and add its front photo.')}
+    ${ck('<b>Legal description</b> and <b>Subject property commentary</b> are filled in.')}</ul>
+  <h2>Sales comparison approach</h2>
+  ${grid ? `<p>Type these – SFREP's import skips them (even in Fannie Mae's own sample):</p><table><thead><tr><th>Line</th><th>Subject</th>${used.map(c => `<th class="r">Comp ${c.use}<br><small>${esc(compTitle(c))}</small></th>`).join('')}</tr></thead><tbody>${grid}</tbody></table>` : '<p>No skipped lines on this grid.</p>'}
+  <p><b>Then check each comp's net adjustment and adjusted price in SFREP against your grid:</b></p>
+  <table><thead><tr><th></th>${used.map(c => `<th class="r">Comp ${c.use}</th>`).join('')}</tr></thead><tbody>
+    <tr><td><span class="bx"></span> Net adjustment</td>${tot.map(t => `<td class="r">${t.net >= 0 ? '+' : '−'}${money(Math.abs(Math.round(t.net)))}</td>`).join('')}</tr>
+    <tr><td><span class="bx"></span> Adjusted price</td>${tot.map(t => `<td class="r">${money(Math.round(t.adj))}</td>`).join('')}</tr></tbody></table>
+  <ul>${noPhoto.length ? ck(`<b>Comp photos</b>: add a front photo for ${noPhoto.map(c => 'comp ' + c.use + ' (' + esc(compTitle(c)) + ')').join(', ')}.`) : ck('<b>Comp photos</b> came in – check each one shows.')}
+    ${ck('<b>Analysis of Prior Sale and Transfer History</b> of the comparable sales is filled in.')}</ul>
+  <h2>Cost approach</h2><ul>${ck('Each cost line, depreciation and the site value match the Comp genie' + (J.costOn ? '' : ' (or the section is answered “not developed”)') + '.')}</ul>
+  <h2>Reconciliation</h2><ul>${ck('<b>Opinion of market value</b> ' + (R.opinion ? money(num(String(R.opinion).replace(/[$,\\s]/g, ''))) : '(blank in the genie – type it)') + ', exposure time and the reconciliation comment.')}
+    ${ck('<b>Reason for exclusion</b> for any approach not developed.')}</ul>
+  <h2>Certification and signature</h2><ul>${ck('<b>Scope of inspection by appraiser</b> (exterior / interior) and the inspection date.')}${ck('<b>Date of signature and report</b>, then sign.')}${ck('Run SFREP’s own check (UCDP / compliance) and clear what it lists.')}</ul>
+  </body></html>`; }
+function sfrepSheetOpen(J) { const w = window.open('', 'sfrep-sheet-' + J.id, 'width=1000,height=1100'); if (!w) { toast('Chrome blocked the window – allow pop-ups for this page'); return; } w.document.write(sfrepSheetHTML(J)); w.document.close(); }
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-act="sfrep-sheet"]') && app.job) sfrepSheetOpen(app.job); });
 
 /* =====================================================================
    Market conditions (time) support, Oct 2026 – her comparability groups.
@@ -4053,6 +4096,8 @@ const VCOND = [['AsIs', 'As is'], ['SubjectToRepair', 'Subject to repair'], ['Su
 /* her three boxes → UAD 3.6 Additional Scope of Work (one 2,500-character field) */
 const sowText = R => [String(R.sowNote || '').trim(), String(R.eaNote || '').trim() ? 'Extraordinary assumptions: ' + String(R.eaNote).trim() : '', String(R.hcNote || '').trim() ? 'Hypothetical conditions: ' + String(R.hcNote).trim() : ''].filter(Boolean).join('\n\n');
 const sowAny = R => !!sowText(R); const sowLen = R => sowText(R).length;
+/* her appraiser details (from her SFREP signature page, Oct 21 2026) */
+const APPRAISER_ME = { first: 'Jennifer', middle: 'L', last: 'Heath', company: 'Jennifer Heath, LLC', addr: '5662 Calle Real, PNB #103', city: 'Goleta', state: 'CA', zip: '93117', licType: 'CertifiedResidential', lic: 'AR017399', licState: 'CA', licExp: '2027-03-04' };
 const EXCL_REASONS = [['NotNecessaryForCredibleResults', 'Not necessary for credible results'], ['InsufficientData', 'Insufficient data'], ['LackOfLandSales', 'Lack of land sales'], ['DifficultyEstimatingDepreciation', 'Difficulty estimating depreciation'], ['Other', 'Other']];
 const HBU_TESTS = [['legal', 'Legally permissible'], ['phys', 'Physically possible'], ['fin', 'Financially feasible'], ['max', 'Maximally productive']];
 const ORDER_ASSIGN = { uadPurchase: 'Purchase', uadRefi: 'Refinance', uadHeloc: 'HomeEquity', uadConstruction: 'Construction', construction: 'Construction' };
@@ -4135,6 +4180,7 @@ function reportHTML(J) {
       <label class="fld"><span>Assignment reason</span>${sel('assign', ASSIGN, F.assign)}</label>
       ${rv(J, 'assign') === 'Other' ? `<label class="fld"><span>Other reason</span>${inp('assignOther', 'e.g. Estate settlement')}</label>` : ''}
       <label class="fld"><span>Property valuation method</span>${sel('vmethod', VMETHOD, 'TraditionalAppraisal', 'usual')}</label>
+      <label class="fld"><span>Measurement standard (your sketch)</span>${sel('measStd', [['AmericanNationalStandardsInstitute', 'ANSI Z765'], ['AmericanMeasurementStandard', 'American Measurement Standard'], ['Other', 'Other']], 'AmericanNationalStandardsInstitute', 'usual')}</label>
       <label class="fld"><span>Property data report used instead of an inspection?</span>${yn('pdr', false)}</label>
       <label class="fld"><span>Your file number</span>${inp('fileNo')}</label>
       <label class="fld"><span>Effective date</span>${inp('eff', 'YYYY-MM-DD')}</label>
@@ -4174,6 +4220,7 @@ function reportHTML(J) {
       <label class="fld"><span>Additional certifications by you?</span>${yn('addlCert', false)}</label>
       <label class="fld"><span>Is this a reconsideration of value?</span>${yn('reconsider', false)}</label>
       <label class="fld"><span>Subject listed for sale in the past year?</span>${yn('listedYear', F.listedYear)}</label></section>
+    ${typeof cmtBoxesHTML === 'function' ? cmtBoxesHTML(J) : ''}
     <section><h3>Value and reconciliation</h3>
       <label class="fld"><span>Opinion of market value</span>${inp('opinion', !blank(G.value) ? money(G.value) + ' (sales comparison)' : '$')}</label>
       <label class="fld"><span>Market value condition</span>${sel('vcond', VCOND, 'AsIs', 'usual')}</label>
@@ -4252,7 +4299,7 @@ function writeReportXML(doc, NS, J, SUBJ, VA, SVC) {
   const asg = rv(J, 'assign'); set(sow, 'ValuationAssignmentType', asg); if (asg === 'Other') set(sow, 'ValuationAssignmentTypeOtherDescription', (R.assignOther || '').slice(0, 33) || null);
   const rd = path(VR, 'VALUATION_REPORT_DETAIL');
   set(rd, 'AppraiserFileIdentifier', rv(J, 'fileNo')); set(rd, 'PropertyDataReportIndicator', tf('pdr', 'false'));
-  set(rd, 'SketchExistsIndicator', 'true'); set(rd, 'ValuationReportInspectionCertificationType', F.insp);
+  set(rd, 'MeasurementStandardPublisherType', rv(J, 'measStd') || 'AmericanNationalStandardsInstitute'); set(rd, 'SketchExistsIndicator', 'true');   /* A-1 3300.0007: required with a sketch (her Oct 21 import: Sketch › Measurement Standard blank) */ set(rd, 'ValuationReportInspectionCertificationType', F.insp);
   { const fb = (k, def) => tf(k, def === true ? 'true' : def === false ? 'false' : undefined);   // the order's answer when she has not chosen
     set(sow, 'CostApproachIndicator', fb('sowCost', F.sowCost)); set(sow, 'IncomeApproachIndicator', fb('sowIncome', F.sowIncome)); set(sow, 'RentScheduleIndicator', fb('sowRent', F.sowRent));
     set(sow, 'GovernmentAgencyAppraisalIndicator', fb('sowGov', false)); if (R.sowGov === 'true' && R.govType) set(sow, 'GovernmentAgencyAppraisalType', R.govType);
@@ -4290,6 +4337,7 @@ function writeReportXML(doc, NS, J, SUBJ, VA, SVC) {
   if (HBU_TESTS.some(([k]) => H[k]) || R.hbuPresent) { const hb = child(SITE, 'HIGHEST_AND_BEST_USE');
     set(hb, 'FinanciallyFeasibleIndicator', String(!!H.fin)); set(hb, 'LegallyPermissibleIndicator', String(!!H.legal)); set(hb, 'MaximallyProductiveIndicator', String(!!H.max)); set(hb, 'PhysicallyPossibleIndicator', String(!!H.phys)); set(hb, 'SiteHighestBestUseIndicator', R.hbuPresent || null); }
   comment('HighestAndBestUse', R.hbuNote, 4000);
+  if (typeof CMT_BOXES !== 'undefined') CMT_BOXES.forEach(([k, cat, , max]) => comment(cat, String(R[k] || '').trim(), max));   // her comment boxes for SFREP (cmtdraft.js)
   // usable lot area in the site comment (it cannot be a site influence)
   const S = subjFacts(J);
   if (!blank(S.usable)) { const VC = child(VR, 'VALUATION_COMMENTARIES'); const line = `Usable Lot Area/Utility: ${(+S.usable).toFixed(2)} ac.`;
@@ -4314,13 +4362,69 @@ function writeReportXML(doc, NS, J, SUBJ, VA, SVC) {
     const p = num(String(K.price || '').replace(/[$,\s]/g, '')); set(sc, 'SalesContractAmount', p); set(sc, 'SalesContractDate', isoDate(K.cdate) || null); set(sc, 'SalesContractExistsIndicator', 'true'); set(sc, 'SalesContractReviewedIndicator', 'true');
     set(sc, 'SaleType', K.saleType); const ca = num(String(K.concAmt || '').replace(/[$,\s]/g, '')); if (ca !== null) set(sc, 'TotalSalesConcessionAmount', ca);
     comment('SalesContract', K.cmt, 5000); }
-  // parties: client, lender, AMC (the appraiser stays as your SFREP template has her)
+  /* the appraiser (A-1 2400.0041 / .0047 / .0051, required) and who completed the inspection (D-1: INSPECTION_CompletedBy_ROLE) –
+     her Oct 21 import showed Scope of Inspection by Appraiser red. Her details (APPRAISER_ME); with Overwrite off SFREP keeps her own profile. */
+  { const M = APPRAISER_ME; const PS = child(SVC, 'PARTIES'); const P = add(PS, 'PARTY'); const nm = path(P, 'INDIVIDUAL', 'NAME'); set(nm, 'FirstName', M.first); set(nm, 'LastName', M.last); if (M.middle) set(nm, 'MiddleName', M.middle);
+    const ad = path(P, 'ADDRESSES', 'ADDRESS'); set(ad, 'AddressLineText', M.addr); set(ad, 'CityName', M.city); set(ad, 'PostalCode', M.zip); set(ad, 'StateCode', M.state);
+    const RO = child(child(P, 'ROLES'), 'ROLE'); RO.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:label', 'ROLE_Appraiser'); set(path(RO, 'APPRAISER', 'APPRAISER_DETAIL'), 'AppraiserCompanyName', M.company);
+    const L = path(RO, 'LICENSES', 'LICENSE'); set(child(L, 'APPRAISER_LICENSE'), 'AppraiserLicenseType', M.licType); const LD = child(L, 'LICENSE_DETAIL'); set(LD, 'LicenseExpirationDate', M.licExp); set(LD, 'LicenseIdentifier', M.lic); set(LD, 'LicenseIssuingAuthorityStateCode', M.licState);
+    set(child(RO, 'ROLE_DETAIL'), 'PartyRoleType', 'Appraiser');
+    const insp = [...SUBJ.getElementsByTagNameNS(NS, 'INSPECTION')].find(x => (x.getAttributeNS('http://www.w3.org/1999/xlink', 'label') || '') === 'INSPECTION_Appraiser');
+    if (insp) { const RL = child(SVC, 'RELATIONSHIPS'); const r = doc.createElementNS(NS, 'RELATIONSHIP'); const XLN = 'http://www.w3.org/1999/xlink'; r.setAttributeNS(XLN, 'xlink:arcrole', 'urn:fdc:mismo.org:2009:residential/INSPECTION_CompletedBy_ROLE'); r.setAttributeNS(XLN, 'xlink:from', 'INSPECTION_Appraiser'); r.setAttributeNS(XLN, 'xlink:to', 'ROLE_Appraiser'); RL.appendChild(r); } }
+  // parties: client, lender, AMC
   const parties = [[rv(J, 'client'), rv(J, 'clientAddr1'), rv(J, 'clientAddr2'), 'Client'], [rv(J, 'lender'), F.lenderAddr1, F.lenderAddr2, 'Lender'], [rv(J, 'amc'), F.amcAddr1, F.amcAddr2, 'ManagementCompany']].filter(p => p[0]);
   if (parties.length) { const PS = child(SVC, 'PARTIES');
     parties.forEach(([name, a1, a2, role]) => { const P = add(PS, 'PARTY'); const le = child(P, 'LEGAL_ENTITY'); set(child(le, 'LEGAL_ENTITY_DETAIL'), 'FullName', name.slice(0, 100));
       const m = String(a2 || '').match(/^(.*?),\s*([A-Z]{2})\s+(\d{5})/); if (a1 && m) { const ad = path(P, 'ADDRESSES', 'ADDRESS'); set(ad, 'AddressLineText', a1); set(ad, 'CityName', m[1]); set(ad, 'PostalCode', m[3]); set(ad, 'StateCode', m[2]); }
       set(path(P, 'ROLES', 'ROLE', 'ROLE_DETAIL'), 'PartyRoleType', role); }); }
 }
+
+/* =====================================================================
+   Drafts for SFREP's empty comment boxes (her ask Oct 21 2026): Analysis of Prior Sale and Transfer History (subject
+   and comps), Site commentary, Subject property commentary, Market commentary. Built only from her data (iPad, CRS,
+   CORT, MLS, the order's Market tab); [brackets] are hers to fill. She edits or rewrites them – nothing is sent
+   until it is in the box.
+   ===================================================================== */
+const CMT_BOXES = [
+  ['cSubjPrior', 'SubjectPriorSalesAndTransferHistory', 'Analysis of prior sale and transfer history – subject', 4000],
+  ['cCompPrior', 'ComparablesPriorSalesAndTransferHistory', 'Analysis of prior sale and transfer history – comparable sales', 4000],
+  ['cSite', 'Site', 'Site commentary', 4000],
+  ['cSubject', 'SubjectProperty', 'Subject property commentary', 4000],
+  ['cMarket', 'Market', 'Market commentary', 4000]];
+/* her view line in words, each view once: "a partial residential view (neutral)" */
+function cmtView(v) { if (!v) return ''; let L = []; try { L = vwParse(v); } catch (e) {} const seen = new Set(); L = L.filter(x => { const k = x.type + '|' + x.range + '|' + x.impact; if (seen.has(k)) return false; seen.add(k); return true; });
+  if (!L.length) return 'view: ' + v; return 'the view is ' + L.map(x => `${x.range ? x.range.toLowerCase() + ' ' : ''}${x.type === 'Other' ? (x.other || 'other') : words(x.type)} (${String(x.impact || '').toLowerCase()})`).join(' and '); }
+const words = v => String(v || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\bAnd\b/g, 'and').toLowerCase();
+function cmtDraft(J, k) { const S = subjFacts(J), F = reportFrom(J), o = orderOf(J) || {}, eff = J.subject.eff || F.eff; const d = x => showDate(x);
+  if (k === 'cSubjPrior') { const crs = J.subject.crs || {}; const L = (crs.priorSales || []).filter(s => s.date && eff && monthsBetween(s.date, eff) >= 0 && monthsBetween(s.date, eff) <= 36);
+    const src = crs.priorSales ? 'public records (CRS Data)' : '[source: CRS Data / MLS / county records]';
+    let t = L.length ? `According to ${src}, the subject transferred ${L.length === 1 ? '' : L.length + ' times '}in the three years before the effective date: ${L.map(s => `${d(s.date)}${s.price ? ' for ' + money(s.price) : ' (no price disclosed)'}`).join('; ')}. [Explain each transfer – arm's length or not, and how it relates to the current value.]`
+      : `According to ${src}, there were no sales or transfers of the subject in the three years before the effective date${eff ? ' of ' + d(eff) : ''}.`;
+    t += o.listing === 'listed' ? ` The subject is currently listed for sale [MLS #, list price, days on market].` : o.listing === 'contract' ? ` The subject is under contract; the contract is analyzed in the Sales Contract section.` : o.listing === 'notListed' ? ' The subject is not currently listed for sale and was not listed in the past 12 months [confirm in the MLS].' : '';
+    return t; }
+  if (k === 'cCompPrior') { const U = usedComps(J); if (!U.length) return '';
+    const parts = U.map(c => { const P = priorSales(c).filter(s => s.monthsBefore > 0 && s.monthsBefore <= 12); return `Comp ${c.use} (${compTitle(c)}): ${P.length ? P.map(s => `prior ${s.type === 'Sale' ? 'sale' : 'transfer'} ${d(s.date)}${s.price ? ' for ' + money(s.price) : ''}`).join('; ') + ' [explain]' : 'no prior sales or transfers in the 12 months before its sale'}.`; });
+    return `The comparable sales were researched in the MLS, public records (CRS Data) and the recorded deeds (CORT) for sales and transfers in the 12 months before each sale. ${parts.join(' ')}`; }
+  if (k === 'cSite') { const sf = num(S.site), us = num(S.usable); const zone = F.zone, zd = F.zoneDesc;
+    const bits = [sf ? `The site is ${int(sf)} sq ft (${(sf / 43560).toFixed(2)} acre)${us ? `, with about ${(+us).toFixed(2)} acre usable` : ''}` : 'The site is [size]',
+      S.topo ? `topography is ${String(S.topo).toLowerCase()}` : '', cmtView(S.view), S.loc ? `the location is ${[...new Set(String(S.loc).split(/;\s*/).filter(Boolean))].map(x => x.replace(/^(\w+):\s*(.*)$/, (m0, i, w) => `${w.toLowerCase()} (${i.toLowerCase()})`)).join(', ')}` : ''].filter(Boolean);
+    return `${bits.join('; ')}.${zone ? ` It is zoned ${zone}${zd ? ' (' + zd + ')' : ''}, and the present use is a legal, conforming use [confirm].` : ''} Utilities are public [confirm]. [Note any easements, encroachments or adverse site conditions observed, or state that none were observed.]`; }
+  if (k === 'cSubject') { const bits = [];
+    bits.push(`The subject is a${/^[aeiou]/i.test(String(S.style || '')) ? 'n' : ''} ${S.style ? String(S.style).toLowerCase() + ' ' : ''}${num(S.levels) ? num(S.levels) + '-story ' : ''}${/attach/i.test(String(S.attach || '')) && !/detach/i.test(String(S.attach || '')) ? 'attached' : 'detached'} single-family residence${num(S.year) ? ' built in ' + num(S.year) : ''}`);
+    const rm = [num(S.gla) ? int(num(S.gla)) + ' sq ft above grade' : '', num(S.beds) ? num(S.beds) + ' bedrooms' : '', num(S.full) ? num(S.full) + ' full bath' + (num(S.full) > 1 ? 's' : '') + (num(S.half) ? ' and ' + num(S.half) + ' half bath' + (num(S.half) > 1 ? 's' : '') : '') : ''].filter(Boolean);
+    let t = bits[0] + (rm.length ? ', with ' + rm.join(', ') : '') + '.';
+    if (num(S.garage)) t += ` It has a ${num(S.garage)}-car garage.`;
+    if (S.q || S.c) t += ` Overall quality ${String(S.q || '[Q]').match(/Q\d|\[Q\]/)[0]} and condition ${String(S.c || '[C]').match(/C\d|\[C\]/)[0]} (see the Quality and Condition section).`;
+    return t + ' [Add anything a reader should know about the subject that is not shown elsewhere – e.g. recent work, unusual features.]'; }
+  if (k === 'cMarket') { const M = F.market; if (!M) return 'Market conditions are analyzed in the Market section above. [Add demand / supply, marketing time and any other factors affecting this market.]';
+    const t = [M.supply ? `housing is ${({ Shortage: 'in short supply', InBalance: 'in balance', OverSupply: 'over-supplied', Oversupply: 'over-supplied' })[M.supply] || words(M.supply)}` : '', M.mktime ? `typical marketing time is ${words(M.mktime)}` : '', M.salesN ? `${M.salesN} competing sales in the last ${M.L || '[n]'} months ranged from ${money(M.saleLow)} to ${money(M.saleHigh)} (median ${money(M.saleMed)})` : '', !blank(M.activeN) ? `there ${M.activeN === 1 ? 'is' : 'are'} ${M.activeN} active listing${M.activeN === 1 ? '' : 's'}${!blank(M.pendingN) ? ' and ' + M.pendingN + ' pending' : ''}` : '', M.distress === 'false' || M.distress === false ? 'distressed sales are not a factor' : M.distress ? 'distressed sales are present [describe their effect]' : ''].filter(Boolean);
+    return (t.length ? t.join('; ').replace(/^./, x => x.toUpperCase()) + '.' : '') + ' [Add interest rates, financing and any other factor affecting this market.]'; }
+  return ''; }
+function cmtBoxesHTML(J) { const R = R0(J);
+  return `<section><h3>Comments for SFREP <small>boxes that came in empty – draft from your data, then edit</small></h3>
+    ${CMT_BOXES.map(([k, , l, max]) => `<label class="fld"><span>${l} <button type="button" class="btn sm" data-cmtdraft="${k}">Draft it</button></span><textarea class="txt" rows="3" maxlength="${max}" data-rpt="${k}">${esc(R[k] || '')}</textarea></label>`).join('')}</section>`; }
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-cmtdraft]'); if (!b || !app.job) return; const k = b.dataset.cmtdraft; const R = R0(app.job);
+  if (R[k] && !confirm('Replace your text in this box with a new draft?')) return; R[k] = cmtDraft(app.job, k); save(); const c = document.getElementById('reportCard'); if (c) c.innerHTML = reportHTML(app.job); });
 
 /* =====================================================================
    Cost approach (her request, Oct 20 2026). Her cost source is her own database of local contractor budgets
@@ -4490,7 +4594,7 @@ function costAgeXML(J, K, doc, NS, child, set, VR, SVC) {
   const DS = child(VA, 'DATA_SOURCES'); [...DS.children].filter(k => k.getAttributeNS(XL, 'label') === 'DATA_SOURCE_CostApproach').forEach(k => k.remove());
   const e = doc.createElementNS(NS, 'DATA_SOURCE'); e.setAttributeNS(XL, 'xlink:label', 'DATA_SOURCE_CostApproach'); DS.appendChild(e);
   const lf = (t, v) => { if (!v) return; const x = doc.createElementNS(NS, t); x.textContent = v; e.appendChild(x); };
-  lf('DataSourceEffectiveDate', eff); lf('DataSourceName', 'Local contractor budgets');   /* A-1: 33 characters */ lf('DataSourceType', 'BuilderOrDeveloper');
+  lf('DataSourceEffectiveDate', eff); lf('DataSourceType', 'BuilderOrDeveloper');   /* A-1 1100.0066: a name only for a cost service – SFREP read 'Local contractor budgets' as Cost Service Provider "Other" (red, her Oct 21 import) */
   const RL = [...SVC.children].find(k => k.localName === 'RELATIONSHIPS'); if (RL) { const r = doc.createElementNS(NS, 'RELATIONSHIP'); r.setAttributeNS(XL, 'xlink:arcrole', 'urn:fdc:mismo.org:2009:residential/DATA_SOURCE_IsDataSourceFor_COST_APPROACH'); r.setAttributeNS(XL, 'xlink:from', 'DATA_SOURCE_CostApproach'); r.setAttributeNS(XL, 'xlink:to', 'COST_APPROACH_Subject'); RL.appendChild(r); } }
 /* line by line (UAD 3.6 schema, D-1 MH1 sample): COST_APPROACH / IMPROVEMENT_COST_AND_DEPRECIATED_VALUES – one per building (dwelling, each ADU / outbuilding),
    its REPLACEMENT_REPRODUCTION_COSTS, depreciation and depreciated value, linked to the iPad's IMPROVEMENT; then SITE_IMPROVEMENTS_AS_IS_COSTS. */
@@ -6657,7 +6761,7 @@ const HW_SEL = [
   // iPad inspection app: the section summaries (your added comment, or the final wording when you edit it)
   'textarea[data-comment]', 'textarea[data-final]',
   // comp genie
-  '#drText', 'textarea[data-gnote]', 'textarea[data-landc]', 'textarea[data-ck="comment"]', 'textarea[data-ik="comment"]', 'textarea[data-rpt="reconNote"]', 'textarea[data-rpt="eaNote"]', 'textarea[data-rpt="hcNote"]', 'textarea[data-rpt="hbuNote"]', 'textarea[data-rpt="sowNote"]', 'textarea[data-rpt="priorSvcText"]', 'textarea[data-rpt="addlCondText"]', 'textarea[data-rpt="rightsNot"]'].join(',');
+  '#drText', 'textarea[data-gnote]', 'textarea[data-landc]', 'textarea[data-ck="comment"]', 'textarea[data-ik="comment"]', 'textarea[data-rpt="reconNote"]', 'textarea[data-rpt="cSubjPrior"]', 'textarea[data-rpt="cCompPrior"]', 'textarea[data-rpt="cSite"]', 'textarea[data-rpt="cSubject"]', 'textarea[data-rpt="cMarket"]', 'textarea[data-rpt="eaNote"]', 'textarea[data-rpt="hcNote"]', 'textarea[data-rpt="hbuNote"]', 'textarea[data-rpt="sowNote"]', 'textarea[data-rpt="priorSvcText"]', 'textarea[data-rpt="addlCondText"]', 'textarea[data-rpt="rightsNot"]'].join(',');
 const HW_BIAS = /\b(pride of ownership|desirable|undesirable|safe (?:area|neighborhood|community|street)|unsafe|crime|dangerous|exclusive|prestigious|upscale|elite|family[- ]friendly|young famil(?:y|ies)|kids|singles|retirees|elderly|seniors|church\w*|synagogue|mosque|ethnic\w*|integrated|diverse|master (?:bed(?:room)?|bath|suite)|man cave|handicap(?:ped)?|wheelchair[- ]bound|good (?:neighborhood|area|location)|bad (?:neighborhood|area)|neighborhood)\b/gi;
 const hwKey = () => { try { return localStorage.getItem('aa.claudeKey') || ''; } catch (e) { return ''; } };
 const hwModel = () => { let m = ''; try { m = localStorage.getItem('aa.claudeModel') || ''; } catch (e) {} m = m.trim().toLowerCase().replace(/[\s.]+/g, '-').replace(/-+/g, '-'); return m || 'claude-sonnet-5-5'; };
