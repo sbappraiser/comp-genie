@@ -502,7 +502,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1022-0609';
+const BUILD='g2-1022-0621';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1863,8 +1863,8 @@ const ADJ_ROWS = [
   ['bathQ', 'Bathrooms – quality summary', 'Dwelling', null], ['bathUpd', 'Bathrooms – update status', 'Dwelling', null],
   ['floorQ', 'Flooring – quality summary', 'Dwelling', null], ['floorUpd', 'Flooring – update status', 'Dwelling', null],
   ['wallQ', 'Walls and ceiling – quality summary', 'Dwelling', null], ['wallCnd', 'Walls and ceiling – condition', 'Dwelling', null],
-  ['winQ', 'Windows – quality summary', 'Dwelling', null], ['winCnd', 'Windows – condition', 'Dwelling', null],
-  ['extWallCnd', 'Exterior walls and trim – condition', 'Dwelling', null], ['fndCnd', 'Foundation – condition', 'Dwelling', null], ['roofCnd', 'Roof – condition', 'Dwelling', null],
+  ['winQ', 'Windows – quality summary', 'Dwelling', null], ['winCnd', 'Windows – condition (only when needed)', 'Dwelling', null],
+  ['extWallCnd', 'Exterior walls and trim – condition (only when needed)', 'Dwelling', null], ['fndCnd', 'Foundation – condition (only when needed)', 'Dwelling', null], ['roofCnd', 'Roof – condition (only when needed, e.g. a comp needs a new roof)', 'Dwelling', null],
   ['func', 'Functional utility (functional issues)', 'Dwelling', 'FunctionalIssues'],
   ['porch', 'Porch / patio / deck', 'Amenities', 'OutdoorLivingAmenity'],
   ['pool', 'Water features (pool / spa / pond / lake)', 'Amenities', 'WaterFeaturesAmenity', ['pool', 'spa', 'pond', 'lake']],
