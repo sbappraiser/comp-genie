@@ -510,7 +510,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1022-0819';
+const BUILD='g2-1022-0830';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -3515,6 +3515,9 @@ function qcdCheck(J, F, who, out, subj) { if (typeof QCD_IDS === 'undefined') re
 /* A-1 "R" (always required) fields the file must carry – each named with its F-1 place and the tentacle where it is answered */
 function precheckReq(doc) { if (typeof A1_REQ === 'undefined') return []; const out = []; const kids = (el, t) => [...el.children].filter(k => k.localName === t);
   const VA = doc.getElementsByTagNameNS('*', 'VALUATION_ANALYSIS')[0]; if (!VA) return out; const PR = kids(VA, 'PROPERTIES')[0]; const SUBJ = PR && kids(PR, 'PROPERTY').find(p => p.getAttribute('ValuationUseType') === 'SubjectProperty');
+  { const VR = kids(VA, 'VALUATION_REPORT')[0], VC = VR && kids(VR, 'VALUATION_COMMENTARIES')[0];   // A-1 R: the reconciliation of overall quality and condition (F-1 15.010)
+    const ok = VC && kids(VC, 'VALUATION_COMMENTARY').some(c => kids(c, 'ValuationAnalysisCategoryType').some(x => x.textContent === 'OverallQualityAndCondition') && kids(c, 'ValuationCommentText').some(x => x.textContent.trim()));
+    if (!ok) out.push({ sev: 'Must fix', msg: 'Required by Fannie Mae and missing: 15.010 Reconciliation of Overall Quality and Condition – tentacle 2 (your iPad comments, or Report details › Improvements)', hint: 'One short comment on how the quality and condition ratings were reached.', tent: 2 }); }
   A1_REQ.forEach(([subj, rel, fld, lab, t]) => { const base = subj ? SUBJ : VA; if (!base) return; let nodes = [base];
     rel.split('/').filter(Boolean).forEach(tag => { nodes = nodes.flatMap(n => kids(n, tag)); });
     const ok = nodes.some(n => kids(n, fld).some(f => f.textContent.trim() !== ''));
@@ -3844,6 +3847,7 @@ const CPK_BOX = [
   ['textarea[data-rpt="cSubjPrior"], textarea[data-rpt="cCompPrior"]', 'Prior sales and transfers', /prior sale|transfer|sales history/i],
   ['textarea[data-rpt="cSite"]', 'Site', /^site(?! value)|zoning|hazard|flood|fire|views?\b/i],
   ['textarea[data-rpt="cSubject"]', 'Subject property', /subject|improvement|functional|energy|green|ansi/i],
+  ['textarea[data-rpt="cQC"]', 'Quality and condition', /quality and condition|overall quality|condition rating/i],
   ['textarea[data-rpt="cMarket"], textarea[data-mcx="summary"]', 'Market', /market(?! boundar)|price trend/i],
   ['textarea[data-mk="general"]', 'Market', /market(?! boundar)|price trend/i],
   ['textarea[data-mk="comment"]', 'Price trends', /price trend|market commentary|market condition/i],
@@ -4448,7 +4452,7 @@ function reportHTML(J, part) {   // part: 'early' (Assignment, scope and site �
       ${CMT_TIP}${cmtBoxHTML(J, 'cSite')}</section>
     <section><h3>Improvements</h3>
       <p class="help">The rooms, finishes, quality, condition, defects and photos come from your inspection. Add here only what those fields cannot show.</p>
-      ${cmtBoxHTML(J, 'cSubject')}</section>
+      ${cmtBoxHTML(J, 'cSubject')}${cmtBoxHTML(J, 'cQC')}</section>
     <section><h3>Contract and history</h3>
       <label class="fld"><span>Is there a sales contract? <small>(3.6 always asks)</small></span>${yn('contractYN', F.contract && (F.contract.price || F.contract.cdate) ? true : F.purchase)}</label>
       ${(R.contractYN || (F.purchase ? 'true' : '')) === 'true' && !(F.contract && (F.contract.price || F.contract.cdate)) ? `<p class="help warnTxt">Read the contract in <b>1 Intake › Order documents</b> (drop the purchase agreement) so its price, date and terms go into the report.</p>` : ''}
@@ -4827,6 +4831,7 @@ const CMT_BOXES = [
   ['cCompPrior', 'ComparablesPriorSalesAndTransferHistory', 'Analysis of prior sale and transfer history – comparable sales', 5000],
   ['cSite', 'Site', 'Site commentary', 5000],
   ['cSubject', 'SubjectProperty', 'Subject property commentary', 5000],
+  ['cQC', 'OverallQualityAndCondition', 'Reconciliation of overall quality and condition (always required, F-1 15.010) – blank uses the one from your iPad', 5000],
   ['cMarket', 'Market', 'Market commentary', 5000]];
 /* her view line in words, each view once: "a partial residential view (neutral)" */
 function cmtView(v) { if (!v) return ''; let L = []; try { L = vwParse(v); } catch (e) {} const seen = new Set(); L = L.filter(x => { const k = x.type + '|' + x.range + '|' + x.impact; if (seen.has(k)) return false; seen.add(k); return true; });
@@ -4850,6 +4855,7 @@ function cmtDraft(J, k) { const S = subjFacts(J), F = reportFrom(J), o = orderOf
   /* Site, Subject property and Market: the fields already carry size, topography, view, location, zoning, rooms, ratings and market numbers – the
      commentary adds only what they cannot show (her note Oct 22 2026), so no repeating */
   if (k === 'cSite') return 'No adverse easements, encroachments or site conditions were apparent from the inspection or the documents reviewed [plat map / preliminary title report / CRS]. [Add only what the Site fields do not show – e.g. shared driveway or road, excess or surplus land, drainage, slope stability, off-site influences.]';
+  if (k === 'cQC') { const q = S.q || '[Q]', c = S.c || '[C]'; return `The overall quality rating of ${q} and condition rating of ${c} were reconciled from the exterior and interior ratings and the components observed: [what sets the ratings – e.g. updated kitchen and baths, original windows and roof, deferred maintenance].`; }
   if (k === 'cSubject') return '[Add only what the Improvements fields do not show – e.g. the scope and quality of recent work, permits, unusual features or layout, deferred maintenance.]';
   if (k === 'cMarket') return '[Add what the market numbers do not show – e.g. what is driving demand, financing and interest rates, seasonality, how this property type is selling in this market.]';
   return ''; }
