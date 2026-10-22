@@ -511,11 +511,15 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 .cneed { display: inline-block; margin: 3px 4px 0 0; padding: 2px 10px; border-radius: 999px; background: var(--look-pink); border: 1px solid var(--look-pink-b); font-weight: 600; }
 .cneed.warn { background: #ffecec; border-color: var(--look-warn); color: var(--look-warn); }
 
+#lookFile .lfName { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+#lookFile .lfT { display: inline-flex; flex-direction: column; line-height: 1.15; }
+#lookFile .lfT small { font-weight: 600; font-size: .78em; opacity: .8; }
+
 </style></head><body>
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1022-1907';
+const BUILD='g2-1022-1909';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -7207,7 +7211,8 @@ async function pullMicro(o, quiet) {
   return note;
 }
 window.addEventListener('focus', async () => { const o = await readOrders(); if (o.length !== (app.orders || []).length) { app.orders = o; render(); } else app.orders = o; });
-const jobLabel = j => { const same = app.jobs.filter(x => x.name === j.name).length > 1; return j.name + (same ? ` – started ${new Date(j.created || 0).toLocaleDateString()} ${new Date(j.created || 0).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, ${(j.comps || []).filter(c => c.use).length} on the grid` : ''); };   // two assignments with one name: tell them apart
+const jobShow = j => { const n = String(j.name || ''); const f = String(j.fileNo || (j.subject && j.subject.fileNo) || ''); return f && n.startsWith(f + ' ') ? n.slice(f.length + 1) + ' — File ' + f : n; };   /* her ask (Oct 22 2026): address first, the file number apart from it */
+const jobLabel = j => { const same = app.jobs.filter(x => x.name === j.name).length > 1; return jobShow(j) + (same ? ` – started ${new Date(j.created || 0).toLocaleDateString()} ${new Date(j.created || 0).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, ${(j.comps || []).filter(c => c.use).length} on the grid` : ''); };   // two assignments with one name: tell them apart
 const orderName = o => [o.fileNo, String(o.address || '').split(',')[0].trim()].filter(Boolean).join(' ') || 'Order';
 async function jobFromOrder(o) {
   const parts = String(o.address || '').split(',').map(x => x.trim());
@@ -8320,7 +8325,9 @@ if (location.protocol === 'file:') {
   let F = null; function corner() { if (!F) { F = document.createElement('div'); F.id = 'lookFile'; } const H = document.querySelector('header.top, .top');   // in the page's own top bar, at its right end (pages that redraw their top bar get it back)
     if (H) { if (F.parentNode !== H) { F.className = 'inhead'; H.appendChild(F); const h = H.offsetHeight; if (h && getComputedStyle(H).position === 'sticky') document.documentElement.style.setProperty('--toph', h + 'px'); } }   /* the genie keeps its grid under the top bar (--toph): adding this box can make the bar taller */ else if (F.parentNode !== document.body) { F.className = ''; document.body.appendChild(F); }
     let name = ''; try { name = typeof window.lookFileName === 'function' ? String(window.lookFileName() || '') : ''; } catch (e) {}
-    const want = (name ? `<span title="The file you are working in">📄 ${name.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span>` : '') + '<button type="button" data-lookleg="1" title="What the colors mean">ⓘ Colors</button>';
+    const e = t => t.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    const parts = name.split(' · '); const fno = parts.length > 1 ? parts.shift() : '', addr = parts.join(' · ');   /* her ask (Oct 22 2026): the address on its own line, the file number under it */
+    const want = (name ? `<span class="lfName" title="The file you are working in">📄 <span class="lfT"><span>${e(addr)}</span>${fno ? `<small>File ${e(fno)}</small>` : ''}</span></span>` : '') + '<button type="button" data-lookleg="1" title="What the colors mean">ⓘ Colors</button>';
     if (F.innerHTML !== want) F.innerHTML = want; }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-lookleg]')) legend(); });
   /* the mouse wheel moves a drop-down up and down once she has clicked on it (her ask) – the page still scrolls everywhere else */
