@@ -521,7 +521,7 @@ nav.tabs button[aria-selected="true"] { background: var(--look-navy) !important;
 <div id="app"><p id="bootMsg" style="font:700 20px system-ui,sans-serif;padding:32px">Starting Comp Genie…</p></div>
 <script>window.onerror=function(m,s,l){var b=document.getElementById('bootMsg');if(b){b.style.color='#c00';b.textContent='Comp Genie could not start: '+m+' (line '+l+'). Send a screenshot to Claude.';}};</script>
 <script>
-const BUILD='g2-1022-2054';
+const BUILD='g2-1023-0415';
 /* ---------------- small helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -986,7 +986,7 @@ function mlsCanon(raw, G, g) {
   const cpN = Math.max(0, ...(G['Parking/Garage'] || []).map(x => (x.match(/^Cpt #(\d+)/) || [])[1] || 0).map(Number)) || null;
   const uncN = Math.max(0, ...(G['Parking/Garage'] || []).map(x => (x.match(/^Unc #(\d+)/) || [])[1] || 0).map(Number)) || null;
   const garType = has('Parking/Garage', /^Attached$/) ? 'Attached' : has('Parking/Garage', /^Detached$/) ? 'Detached' : '';
-  const acres = num(g('Apx # Acres')), lotSf = num(g('Apx Lot SqFt'));
+  const acres = num(g('Apx # Acres')); let lotSf = num(g('Apx Lot SqFt')); if (lotSf && lotSf < 1000 && acres >= 0.05) lotSf = Math.round(acres * 43560);   // agent typed acres in the sq ft box (24-693: 99.75 sq ft, 2.29 acres)
   const typ = g('TYP'); const condoDet = has('Condo/CO-OP/PUD', /^Detached$/), condoAtt = has('Condo/CO-OP/PUD', /^Attached$/);
   const saleTypeTxt = [...(G['Pub Listing Details'] || []), ...(G['Pvt Listing Details'] || [])].filter(x => !/^(None|Standard)$/.test(x));
   const saleType = saleTypeTxt.some(x => /REO|Bank Owned|Foreclosure/i.test(x)) ? 'REO' : saleTypeTxt.some(x => /Short/i.test(x)) ? 'Short' : saleTypeTxt.some(x => /Probate|Court|Conservator/i.test(x)) ? 'CrtOrd' : saleTypeTxt.some(x => /Estate|Trust/i.test(x)) ? 'Estate' : saleTypeTxt.some(x => /Bankruptcy/i.test(x)) ? 'CrtOrd' : (status === 'Closed' ? 'ArmLth' : '');
@@ -1093,7 +1093,7 @@ function pdfCanon(p) {
     terms: d['Terms'] || '', concessionsOffered: d['Seller Consider Concessions'] || '',
     sfSource: sfSrc(d['Source']), gla: num(d['Total SqFt.']), mainSf: num(d['Main House SqFt']), yearBuilt: num(d['Year Built']),
     beds: num(d['Total Bedrooms']), full: num(d['Total Full Baths']), half: num(d['Total Half Baths']), acres: num(d['Apx # Acres']),
-    siteSf: num(d['Apx Lot SqFt']) || (num(d['Apx # Acres']) ? Math.round(num(d['Apx # Acres']) * 43560) : null),
+    siteSf: (num(d['Apx Lot SqFt']) >= 1000 || !(num(d['Apx # Acres']) >= 0.05) ? num(d['Apx Lot SqFt']) : null) || (num(d['Apx # Acres']) ? Math.round(num(d['Apx # Acres']) * 43560) : null),
     lat: num(d['Geo Lat']), lon: num(d['Geo Lon']), style: d['Style'] || '', mlsCondition: d['Condition'] || '', viewTypes: d['View'] || '', topo: d['Location/Topo'] || '',
     parkingText: d['Parking/Garage'] || '', ...parkingCounts(d['Parking/Garage'] || ''), heatCool: [d['Heating'], d['Cooling']].filter(Boolean).join(' / '), heating: d['Heating'] || '', cooling: d['Cooling'] || '',
     zoning: d['Zoning'] || '', water: d['Water/Sewer'] || '',
@@ -4997,7 +4997,7 @@ function t2XML(J, R, SUBJ, VR, child, add, set, path, doc, NS) { const v = k => 
   if (v('encr') === 'true' && v('encrType')) enc('Encroachment', en => { const e = path(en, 'ENCROACHMENTS', 'ENCROACHMENT'); set(e, 'EncroachmentType', v('encrType')); if (v('encrType') === 'Other') set(e, 'EncroachmentTypeOtherDescription', v('encrTypeOther').slice(0, 45));
     if (v('encrDir')) set(e, 'EncroachmentDirectionType', v('encrDir')); if (v('encrImpact')) set(e, 'ValueMarketabilityImpactType', v('encrImpact')); if (v('encrDesc')) set(e, 'EncroachmentDescription', v('encrDesc').slice(0, 140)); });
   const PD = child(SUBJ, 'PROPERTY_DETAIL');
-  set(PD, 'ConstructionStatusType', v('constr') || 'Complete');
+  if ((v('constr') && v('constr') !== 'Complete') || ((PD.getElementsByTagName('NewConstructionIndicator')[0] || {}).textContent === 'true')) set(PD, 'ConstructionStatusType', v('constr') || 'Complete');   // Fannie's D-1 samples leave it out for an existing home; SFREP showed 'Complete' red (Oct 22 2026)
   if (rv(J, 'allRights') !== 'false') set(PD, 'MineralRightsLeasedIndicator', v('minLeased') || 'false');
   if (v('nonArmsNote')) set(path(SUBJ, 'SALES_CONTRACTS', 'SALES_CONTRACT', 'SALES_CONTRACT_DETAIL'), 'NonArmsLengthCommentText', v('nonArmsNote').slice(0, 1250));
   if ((v('listedYear') || X.listedYear) === 'true') { const LD = path(SUBJ, 'LISTING_INFORMATIONS', 'LISTING_INFORMATION', 'LISTING_INFORMATION_DETAIL'); const d = k => { const x = isoDate(v(k)); return x || null; }, amt = k => { const n = num(v(k).replace(/[$,\s]/g, '')); return blank(n) ? null : Math.round(n); };
